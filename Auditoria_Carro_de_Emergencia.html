@@ -69,6 +69,31 @@ input,select,textarea{font-family:inherit;}
 .auth-toggle{text-align:center;font-size:13px;margin-top:16px;color:var(--ink-soft);}
 .auth-toggle a{color:var(--blue-600);font-weight:600;cursor:pointer;text-decoration:none;}
 .btn-logout{background:none;border:none;color:#7FA3C6;font-size:11px;cursor:pointer;text-decoration:underline;padding:0;margin-top:6px;}
+
+.avatar{border-radius:50%;object-fit:cover;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:var(--blue-100);color:var(--blue-600);font-weight:800;font-family:'Manrope';overflow:hidden;}
+.avatar-sm{width:26px;height:26px;font-size:11px;}
+.avatar-md{width:38px;height:38px;font-size:14px;}
+.avatar-lg{width:88px;height:88px;font-size:30px;}
+.avatar img{width:100%;height:100%;object-fit:cover;}
+
+.sidebar .avatar{background:rgba(255,255,255,.15);color:#fff;}
+.sidebar-profile{display:flex;align-items:center;gap:10px;width:100%;padding:8px;border:none;background:rgba(255,255,255,.06);border-radius:10px;cursor:pointer;text-align:left;margin-bottom:10px;}
+.sidebar-profile:hover{background:rgba(255,255,255,.12);}
+.sidebar-profile .info{overflow:hidden;}
+.sidebar-profile .name{font-size:12.5px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sidebar-profile .email{font-size:10.5px;color:#7FA3C6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+.online-section{padding:0 10px 12px;}
+.online-section h4{font-size:10.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:#7FA3C6;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.online-dot{width:7px;height:7px;border-radius:50%;background:#2ECC71;box-shadow:0 0 0 2px rgba(46,204,113,.25);flex-shrink:0;}
+.online-list{display:flex;flex-wrap:wrap;gap:8px;}
+.online-chip{position:relative;}
+.online-chip .online-dot{position:absolute;bottom:-1px;right:-1px;border:2px solid var(--navy-900);}
+.online-chip .avatar{cursor:default;}
+
+.profile-field{margin-bottom:16px;}
+.profile-field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
+.profile-field input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;box-sizing:border-box;}
 .auth-logo-wrap{display:flex;justify-content:center;margin-bottom:18px;}
 .auth-logo{max-width:180px;height:auto;}
 
@@ -378,8 +403,18 @@ input,select,textarea{font-family:inherit;}
         <span>Nova Auditoria</span>
       </div>
     </nav>
+    <div class="online-section">
+      <h4><span class="online-dot"></span>Online agora</h4>
+      <div class="online-list" id="onlineList"></div>
+    </div>
+    <button class="sidebar-profile" id="btnOpenProfile">
+      <span class="avatar avatar-md" id="sidebarAvatar"></span>
+      <span class="info">
+        <div class="name" id="sidebarUserName"></div>
+        <div class="email" id="sidebarUserEmail"></div>
+      </span>
+    </button>
     <div class="sidebar-footer">
-      <span id="sidebarUserEmail"></span><br>
       Dados salvos automaticamente neste dispositivo/conta.<br>Auditoria de Carros de Emergência v1.0<br>
       <button class="btn-logout" id="btnLogout">Sair</button>
     </div>
@@ -604,6 +639,21 @@ input,select,textarea{font-family:inherit;}
   </div>
 </div>
 
+<div class="modal-backdrop" id="modalProfile">
+  <div class="modal" style="max-width:380px;">
+    <h3>Meu Perfil</h3>
+    <div style="display:flex;justify-content:center;margin-bottom:18px;">
+      <span class="avatar avatar-lg" id="profileAvatarPreview"></span>
+    </div>
+    <div class="profile-field"><label>Nome de exibição</label><input type="text" id="profileNameInput" placeholder="Seu nome"></div>
+    <div class="sub" style="margin-bottom:16px;color:var(--ink-soft);font-size:12.5px;" id="profileEmailLabel"></div>
+    <div class="actions">
+      <button class="btn btn-ghost" id="profileCancel">Cancelar</button>
+      <button class="btn btn-primary" id="profileSave">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="modalReportText">
   <div class="modal" style="max-width:540px;">
     <h3>Relatório</h3>
@@ -766,13 +816,121 @@ document.getElementById('btnLogout').addEventListener('click', async ()=>{
   await sb.auth.signOut();
 });
 
+/* =========================================================================
+   PERFIL DO USUÁRIO E PRESENÇA ONLINE
+   Perfil básico (nome + foto) guardado em public.profiles, uma linha por
+   usuário autenticado. A foto é redimensionada no navegador e guardada como
+   data URL (sem depender de um bucket separado no Supabase Storage).
+   "Quem está online" usa o Realtime Presence do Supabase: cada aba conectada
+   se anuncia num canal compartilhado e todos veem a lista em tempo real.
+   ========================================================================= */
+let currentAuthUser = null;
+let currentProfile = null;
+let presenceChannel = null;
+
+function avatarContent(name){
+  const initials = (name||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  return escapeHtml(initials || '?');
+}
+function setAvatarEl(el, name){
+  if(el) el.innerHTML = avatarContent(name);
+}
+
+async function ensureProfile(user){
+  try{
+    let { data, error } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+    if(error) throw error;
+    if(!data){
+      const defaultName = (user.email||'').split('@')[0];
+      const created = await sb.from('profiles').upsert({ id:user.id, name:defaultName }).select().maybeSingle();
+      if(created.error) throw created.error;
+      data = created.data;
+    }
+    return data;
+  }catch(e){
+    console.error('profile error', e);
+    return { id:user.id, name:(user.email||'').split('@')[0] };
+  }
+}
+
+function renderSidebarProfile(){
+  setAvatarEl(document.getElementById('sidebarAvatar'), currentProfile.name);
+  document.getElementById('sidebarUserName').textContent = currentProfile.name || currentAuthUser.email;
+  document.getElementById('sidebarUserEmail').textContent = currentAuthUser.email;
+}
+
+document.getElementById('btnOpenProfile').addEventListener('click', ()=>{
+  setAvatarEl(document.getElementById('profileAvatarPreview'), currentProfile.name);
+  document.getElementById('profileNameInput').value = currentProfile.name || '';
+  document.getElementById('profileEmailLabel').textContent = currentAuthUser.email;
+  document.getElementById('modalProfile').classList.add('open');
+});
+document.getElementById('profileCancel').addEventListener('click', ()=>{
+  document.getElementById('modalProfile').classList.remove('open');
+});
+document.getElementById('profileSave').addEventListener('click', async ()=>{
+  const name = document.getElementById('profileNameInput').value.trim();
+  if(!name){ toast('Informe um nome.','bad'); return; }
+  const btn = document.getElementById('profileSave');
+  btn.disabled = true;
+  try{
+    const { data, error } = await sb.from('profiles')
+      .upsert({ id: currentAuthUser.id, name })
+      .select().maybeSingle();
+    if(error) throw error;
+    currentProfile = data;
+    renderSidebarProfile();
+    if(presenceChannel) await presenceChannel.track({ name: currentProfile.name, email: currentAuthUser.email });
+    document.getElementById('modalProfile').classList.remove('open');
+    toast('Perfil atualizado.','ok');
+  }catch(e){
+    toast('Erro ao salvar perfil. Tente novamente.','bad');
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+function renderOnlineUsers(){
+  if(!presenceChannel) return;
+  const state = presenceChannel.presenceState();
+  const entries = Object.values(state).map(arr=>arr[0]).filter(Boolean);
+  const list = document.getElementById('onlineList');
+  list.innerHTML = entries.length ? entries.map(u=>`
+    <div class="online-chip" title="${escapeHtml(u.name||u.email||'')}">
+      <span class="avatar avatar-sm">${avatarContent(u.name)}</span>
+      <span class="online-dot"></span>
+    </div>`).join('') : '<div style="font-size:11px;color:#7FA3C6;">Ninguém além de você</div>';
+}
+
+function setupPresence(user){
+  if(presenceChannel){ sb.removeChannel(presenceChannel); presenceChannel = null; }
+  presenceChannel = sb.channel('online-users', { config: { presence: { key: user.id } } });
+  presenceChannel
+    .on('presence', {event:'sync'}, renderOnlineUsers)
+    .on('presence', {event:'join'}, renderOnlineUsers)
+    .on('presence', {event:'leave'}, renderOnlineUsers)
+    .subscribe(async (status)=>{
+      if(status==='SUBSCRIBED'){
+        await presenceChannel.track({ name: currentProfile.name, email: user.email });
+      }
+    });
+}
+
 sb.auth.onAuthStateChange((event, session)=>{
   if(session){
     document.getElementById('authScreen').classList.add('hidden');
     document.getElementById('app').classList.remove('app-hidden');
-    document.getElementById('sidebarUserEmail').textContent = session.user.email;
+    currentAuthUser = session.user;
+    ensureProfile(session.user).then(profile=>{
+      currentProfile = profile;
+      renderSidebarProfile();
+      setupPresence(session.user);
+    });
     if(!appStarted){ appStarted = true; init(); }
   } else {
+    if(presenceChannel){ sb.removeChannel(presenceChannel); presenceChannel = null; }
+    currentAuthUser = null;
+    currentProfile = null;
     document.getElementById('authScreen').classList.remove('hidden');
     document.getElementById('app').classList.add('app-hidden');
   }
