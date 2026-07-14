@@ -9,6 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 :root{
   --navy-900:#071D33;
@@ -54,6 +55,20 @@ input,select,textarea{font-family:inherit;}
 
 /* ---------- LAYOUT ---------- */
 #app{display:flex;min-height:100vh;}
+#app.app-hidden{display:none;}
+#authScreen{position:fixed;inset:0;background:linear-gradient(135deg,var(--navy-900),var(--navy-700));display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
+#authScreen.hidden{display:none;}
+.auth-card{background:#fff;border-radius:16px;padding:32px 28px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.auth-card h2{font-size:20px;font-weight:800;color:var(--navy-900);margin-bottom:4px;}
+.auth-card .sub{font-size:13px;color:var(--ink-soft);margin-bottom:20px;}
+.auth-field{margin-bottom:14px;}
+.auth-field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
+.auth-field input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;box-sizing:border-box;}
+.auth-error{color:var(--bad);font-size:12.5px;margin-bottom:10px;display:none;}
+.auth-msg{color:var(--ok);font-size:12.5px;margin-bottom:10px;display:none;}
+.auth-toggle{text-align:center;font-size:13px;margin-top:16px;color:var(--ink-soft);}
+.auth-toggle a{color:var(--blue-600);font-weight:600;cursor:pointer;text-decoration:none;}
+.btn-logout{background:none;border:none;color:#7FA3C6;font-size:11px;cursor:pointer;text-decoration:underline;padding:0;margin-top:6px;}
 
 .sidebar{
   width:248px;flex-shrink:0;background:linear-gradient(190deg,var(--navy-900),var(--navy-800) 75%);
@@ -299,7 +314,22 @@ input,select,textarea{font-family:inherit;}
 </head>
 <body>
 
-<div id="app">
+<div id="authScreen">
+  <div class="auth-card">
+    <h2 id="authTitle">Entrar</h2>
+    <div class="sub" id="authSub">Acesse com seu email e senha para continuar.</div>
+    <div class="auth-error" id="authError"></div>
+    <div class="auth-msg" id="authMsg"></div>
+    <div class="auth-field"><label>Email</label><input type="email" id="authEmail" autocomplete="username" placeholder="seuemail@hospital.com"></div>
+    <div class="auth-field"><label>Senha</label><input type="password" id="authPassword" autocomplete="current-password" placeholder="Mínimo 6 caracteres"></div>
+    <button class="btn btn-primary" id="authSubmit" style="width:100%;justify-content:center;">Entrar</button>
+    <div class="auth-toggle">
+      <span id="authToggleText">Ainda não tem conta?</span> <a id="authToggleLink">Criar conta</a>
+    </div>
+  </div>
+</div>
+
+<div id="app" class="app-hidden">
   <div class="sidebar-scrim" id="scrim"></div>
   <aside class="sidebar" id="sidebar">
     <div class="brand">
@@ -329,7 +359,9 @@ input,select,textarea{font-family:inherit;}
       </div>
     </nav>
     <div class="sidebar-footer">
-      Dados salvos automaticamente neste dispositivo/conta.<br>Auditoria de Carros de Emergência v1.0
+      <span id="sidebarUserEmail"></span><br>
+      Dados salvos automaticamente neste dispositivo/conta.<br>Auditoria de Carros de Emergência v1.0<br>
+      <button class="btn-logout" id="btnLogout">Sair</button>
     </div>
   </aside>
 
@@ -598,18 +630,104 @@ const SCORE_VALUE = {'conforme':1,'parcial':0.5,'nao-conforme':0};
    Reforçado contra perda de dados: leituras têm retentativa, e o índice de
    auditorias NUNCA é sobrescrito com um array vazio por causa de uma falha
    de leitura — isso é o que causava o "sumiço" de auditorias anteriores.
+   Backend: Supabase (tabela kv_store: key text PK, value jsonb).
    ========================================================================= */
 function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+const SUPABASE_URL = 'https://ztbrkxeulrdzdsreldrc.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_f3Wx5oJPSD8N0kWs11IVig_sFKJtwYo';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* =========================================================================
+   AUTENTICAÇÃO (Supabase Auth — email/senha, autocadastro liberado)
+   ========================================================================= */
+let authMode = 'signin'; // 'signin' | 'signup'
+let appStarted = false;
+
+function setAuthMode(mode){
+  authMode = mode;
+  document.getElementById('authError').style.display='none';
+  document.getElementById('authMsg').style.display='none';
+  if(mode==='signup'){
+    document.getElementById('authTitle').textContent = 'Criar conta';
+    document.getElementById('authSub').textContent = 'Cadastre-se com seu email institucional para acessar o instrumento.';
+    document.getElementById('authSubmit').textContent = 'Criar conta';
+    document.getElementById('authToggleText').textContent = 'Já tem conta?';
+    document.getElementById('authToggleLink').textContent = 'Entrar';
+  } else {
+    document.getElementById('authTitle').textContent = 'Entrar';
+    document.getElementById('authSub').textContent = 'Acesse com seu email e senha para continuar.';
+    document.getElementById('authSubmit').textContent = 'Entrar';
+    document.getElementById('authToggleText').textContent = 'Ainda não tem conta?';
+    document.getElementById('authToggleLink').textContent = 'Criar conta';
+  }
+}
+document.getElementById('authToggleLink').addEventListener('click', ()=> setAuthMode(authMode==='signin'?'signup':'signin'));
+
+function authTranslateError(msg){
+  const m = (msg||'').toLowerCase();
+  if(m.includes('invalid login credentials')) return 'Email ou senha incorretos.';
+  if(m.includes('email not confirmed')) return 'Você precisa confirmar seu email antes de entrar. Verifique sua caixa de entrada (ou peça ao administrador para desativar a confirmação de email no Supabase).';
+  if(m.includes('user already registered')) return 'Já existe uma conta com este email. Tente entrar.';
+  if(m.includes('password') && m.includes('6')) return 'A senha precisa ter no mínimo 6 caracteres.';
+  if(m.includes('email') && m.includes('invalid')) return 'Email inválido.';
+  return msg || 'Ocorreu um erro. Tente novamente.';
+}
+
+document.getElementById('authSubmit').addEventListener('click', async ()=>{
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const errEl = document.getElementById('authError');
+  const msgEl = document.getElementById('authMsg');
+  errEl.style.display='none'; msgEl.style.display='none';
+  if(!email || !password){ errEl.textContent='Preencha email e senha.'; errEl.style.display='block'; return; }
+
+  const btn = document.getElementById('authSubmit');
+  btn.disabled = true;
+  try{
+    if(authMode==='signup'){
+      const { data, error } = await sb.auth.signUp({ email, password });
+      if(error) throw error;
+      if(!data.session){
+        setAuthMode('signin');
+        msgEl.textContent = 'Conta criada! Verifique seu email para confirmar antes de entrar.';
+        msgEl.style.display='block';
+      }
+    } else {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if(error) throw error;
+    }
+  }catch(e){
+    errEl.textContent = authTranslateError(e.message);
+    errEl.style.display='block';
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('btnLogout').addEventListener('click', async ()=>{
+  await sb.auth.signOut();
+});
+
+sb.auth.onAuthStateChange((event, session)=>{
+  if(session){
+    document.getElementById('authScreen').classList.add('hidden');
+    document.getElementById('app').classList.remove('app-hidden');
+    document.getElementById('sidebarUserEmail').textContent = session.user.email;
+    if(!appStarted){ appStarted = true; init(); }
+  } else {
+    document.getElementById('authScreen').classList.remove('hidden');
+    document.getElementById('app').classList.add('app-hidden');
+  }
+});
 
 async function storageGet(key, attempts=2){
   for(let i=0;i<attempts;i++){
     try{
-      const r = await window.storage.get(key,false);
-      return r ? JSON.parse(r.value) : null;
+      const { data, error } = await sb.from('kv_store').select('value').eq('key', key).maybeSingle();
+      if(error) throw error;
+      return data ? data.value : null;
     }catch(e){
-      const msg = ((e&&e.message)||'').toLowerCase();
-      const notFound = msg.includes('not found') || msg.includes('404') || msg.includes('no such') || msg.includes('does not exist');
-      if(notFound) return null; // chave realmente não existe ainda (ex.: primeiro uso)
       if(i<attempts-1) await sleep(200*(i+1)); // erro transitório: tenta de novo
     }
   }
@@ -617,14 +735,16 @@ async function storageGet(key, attempts=2){
 }
 async function storageSet(key,val,attempts=2){
   for(let i=0;i<attempts;i++){
-    try{ const r = await window.storage.set(key, JSON.stringify(val), false); if(r) return true; }
-    catch(e){ console.error('storage set error',e); }
+    try{
+      const { error } = await sb.from('kv_store').upsert({ key, value: val });
+      if(!error) return true;
+    }catch(e){ console.error('storage set error',e); }
     if(i<attempts-1) await sleep(200*(i+1));
   }
   return false;
 }
 async function storageDelete(key){
-  try{ await window.storage.delete(key,false); }catch(e){}
+  try{ await sb.from('kv_store').delete().eq('key', key); }catch(e){}
 }
 
 /* Busca o índice com segurança. Retorna [] se de fato não existir ainda,
@@ -1084,7 +1204,7 @@ function renderDashboard(){
   charts.sector = new Chart(ctxS, {
     type:'bar',
     data:{ labels: sectorNames, datasets:[{ label:'Conformidade média', data: sectorAvgs.map(v=>Math.round(v*100)),
-      backgroundColor: sectorAvgs.map(v=> v>=0.85?'#12876F': v>=0.7?'#E8A33D':'#E4572E'), borderRadius:8, maxBarThickness:46 }] },
+      backgroundColor: sectorAvgs.map(v=> v>=0.85?'#22C55E': v>=0.7?'#FACC15':'#EF4444'), borderRadius:8, maxBarThickness:46 }] },
     options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
       scales:{ y:{min:0,max:100, ticks:{callback:v=>v+'%'}, grid:{color:'#EEF4FA'} }, x:{grid:{display:false}} },
       onClick:(evt,els)=>{ if(els.length){ const idx=els[0].index; openSectorDetail(sectorNames[idx]); } } }
@@ -1411,7 +1531,7 @@ async function init(){
   allAudits = fetched===undefined ? [] : fetched;
   showView('dashboard');
 }
-init();
+/* init() é chamado por sb.auth.onAuthStateChange() após confirmar a sessão. */
 </script>
 </body>
 </html>
