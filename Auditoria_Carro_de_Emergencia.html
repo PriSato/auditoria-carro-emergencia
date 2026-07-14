@@ -168,6 +168,12 @@ input,select,textarea{font-family:inherit;}
 .rank-row .txt{flex:1;font-size:12.8px;font-weight:600;color:var(--ink);line-height:1.35;}
 .rank-row .pct{font-size:12.5px;font-weight:800;color:var(--bad);flex-shrink:0;}
 
+.cycle-progress-label{font-size:13px;font-weight:700;color:var(--ink-soft);margin-top:8px;}
+.cycle-sector-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+.cycle-sector-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid transparent;}
+.cycle-sector-chip.done{background:var(--ok-bg);color:var(--ok);}
+.cycle-sector-chip.pending{background:var(--blue-50);color:var(--ink-soft);border-color:var(--line);}
+.cycle-banner-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
 .sector-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;}
 .sector-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px;cursor:pointer;transition:.15s;box-shadow:var(--shadow-sm);}
 .sector-card:hover{border-color:var(--blue-500);transform:translateY(-2px);box-shadow:var(--shadow-md);}
@@ -362,6 +368,10 @@ input,select,textarea{font-family:inherit;}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6"/></svg>
           <span>Setores</span>
         </div>
+        <div class="nav-item" data-view="cycles">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+          <span>Ciclos</span>
+        </div>
       </div>
       <div class="nav-cta" id="btnNovaAuditoriaNav">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -417,6 +427,7 @@ input,select,textarea{font-family:inherit;}
             </div>
           </div>
         </div>
+        <div class="card card-pad" id="currentCycleBanner" style="margin-bottom:18px;"></div>
         <div class="kpi-grid" id="kpiGrid"></div>
         <div class="dash-grid">
           <div class="card card-pad">
@@ -473,6 +484,7 @@ input,select,textarea{font-family:inherit;}
       <section class="view" id="view-history">
         <div class="filters-bar">
           <select id="fltSetor"><option value="">Todos os setores</option></select>
+          <select id="fltCiclo"><option value="">Todos os ciclos</option></select>
           <select id="fltStatus">
             <option value="">Todos os status</option>
             <option value="finalizada">Finalizada</option>
@@ -484,7 +496,7 @@ input,select,textarea{font-family:inherit;}
         </div>
         <div class="card" style="overflow:auto;">
           <table class="audit-table" id="historyTable">
-            <thead><tr><th>Data</th><th>Setor</th><th>Auditor</th><th>Conformidade</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Data</th><th>Setor</th><th>Ciclo</th><th>Auditor</th><th>Conformidade</th><th>Status</th><th></th></tr></thead>
             <tbody id="historyBody"></tbody>
           </table>
           <div class="empty-state" id="historyEmpty" style="display:none;">
@@ -502,6 +514,23 @@ input,select,textarea{font-family:inherit;}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6"/></svg>
           <h3>Nenhum setor auditado ainda</h3>
           <p>Crie a primeira auditoria para ver os setores aqui.</p>
+        </div>
+      </section>
+
+      <!-- ============ CICLOS ============ -->
+      <section class="view" id="view-cycles">
+        <div class="card card-pad" id="currentCycleCard" style="margin-bottom:22px;"></div>
+        <div class="section-title"><h2>Histórico de Ciclos</h2><span class="hint">Ciclos concluídos</span></div>
+        <div class="card" style="overflow:auto;">
+          <table class="audit-table" id="cyclesHistoryTable">
+            <thead><tr><th>Ciclo</th><th>Período</th><th>Duração</th><th>Setores</th><th>Conformidade média</th><th></th></tr></thead>
+            <tbody id="cyclesHistoryBody"></tbody>
+          </table>
+          <div class="empty-state" id="cyclesHistoryEmpty" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+            <h3>Nenhum ciclo concluído ainda</h3>
+            <p>Quando todos os setores forem auditados no ciclo atual, você poderá concluí-lo.</p>
+          </div>
         </div>
       </section>
 
@@ -829,10 +858,171 @@ async function refreshAuditsFromStorage(){
 }
 
 /* =========================================================================
+   CICLOS DE AUDITORIA
+   Um ciclo agrupa a rodada de auditorias por todos os setores previstos
+   (SETORES_PLANILHA). Cada auditoria criada é marcada com o ciclo aberto no
+   momento. Quando todos os setores do ciclo têm ao menos uma auditoria
+   finalizada, o ciclo pode ser concluído e um novo é iniciado automaticamente,
+   preservando o histórico completo dos ciclos anteriores.
+   ========================================================================= */
+function requiredSectors(){ return SETORES_PLANILHA; }
+
+async function fetchCyclesSafe(){
+  const c = await storageGet('cycles');
+  if(c===undefined) return undefined; // falha real de leitura
+  return c || [];
+}
+
+/* Garante que exista um ciclo aberto, criando o primeiro (Nº 1) se necessário. */
+async function ensureCurrentCycle(){
+  const fetched = await fetchCyclesSafe();
+  let cycles = fetched===undefined ? allCycles.slice() : fetched;
+  let current = cycles.find(c=>c.status==='aberto');
+  if(!current){
+    current = {
+      id: uid(),
+      numero: cycles.length + 1,
+      iniciadoEm: new Date().toISOString(),
+      concluidoEm: null,
+      status: 'aberto',
+      setores: requiredSectors(),
+    };
+    cycles = [...cycles, current];
+    await storageSet('cycles', cycles);
+  }
+  allCycles = cycles;
+  return current;
+}
+/* Mesmo espírito de refreshAuditsFromStorage: revalida em segundo plano sem
+   nunca substituir por um resultado vazio caso a leitura falhe. */
+async function refreshCyclesFromStorage(){
+  const fetched = await fetchCyclesSafe();
+  if(fetched===undefined) return;
+  allCycles = fetched;
+}
+function getCurrentCycle(){
+  return allCycles.find(c=>c.status==='aberto') || allCycles[allCycles.length-1] || null;
+}
+function cycleNumeroById(id){
+  const c = allCycles.find(c=>c.id===id);
+  return c ? c.numero : null;
+}
+function cycleProgress(cycle){
+  const doneSet = new Set(
+    allAudits.filter(a=>a.status==='finalizada' && a.cicloId===cycle.id).map(a=>a.setor)
+  );
+  const total = cycle.setores.length;
+  const doneSectors = cycle.setores.filter(s=>doneSet.has(s));
+  const pendingSectors = cycle.setores.filter(s=>!doneSet.has(s));
+  return { done: doneSectors.length, total, pct: total? doneSectors.length/total : 0, doneSectors, pendingSectors };
+}
+function cycleAvgScore(cycle){
+  const fin = allAudits.filter(a=>a.status==='finalizada' && a.cicloId===cycle.id);
+  if(!fin.length) return 0;
+  return fin.reduce((s,a)=>s+a.score,0)/fin.length;
+}
+function fmtDateShort(iso){ if(!iso) return '—'; return new Date(iso).toLocaleDateString('pt-BR'); }
+
+async function closeCycleAndStartNew(){
+  const current = getCurrentCycle();
+  if(!current) return false;
+  const closed = { ...current, status:'concluido', concluidoEm:new Date().toISOString() };
+  const novo = {
+    id: uid(), numero: current.numero+1, iniciadoEm: new Date().toISOString(),
+    concluidoEm: null, status:'aberto', setores: requiredSectors(),
+  };
+  const updated = allCycles.map(c=> c.id===current.id ? closed : c).concat([novo]);
+  const ok = await storageSet('cycles', updated);
+  if(!ok){ toast('Erro ao concluir o ciclo. Tente novamente.','bad'); return false; }
+  allCycles = updated;
+  return true;
+}
+
+function renderCycleBanner(){
+  const el = document.getElementById('currentCycleBanner');
+  if(!el) return;
+  const current = getCurrentCycle();
+  if(!current){ el.innerHTML=''; return; }
+  const prog = cycleProgress(current);
+  const pctVal = Math.round(prog.pct*100);
+  el.innerHTML = `
+    <div class="cycle-banner-head">
+      <div>
+        <div class="section-title" style="margin:0;"><h2 style="font-size:15px;">Ciclo Atual — Nº ${current.numero}</h2></div>
+        <div class="cycle-progress-label" style="margin-top:2px;">${prog.done} de ${prog.total} setores auditados neste ciclo (${pctVal}%)</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="btnGoToCycles">Ver ciclos</button>
+    </div>
+    <div class="progress-bar-bg" style="margin-top:12px;"><div class="progress-bar-fg" style="width:${pctVal}%"></div></div>
+  `;
+  document.getElementById('btnGoToCycles').addEventListener('click', ()=> showView('cycles'));
+}
+
+function renderCycles(){
+  const current = getCurrentCycle();
+  const card = document.getElementById('currentCycleCard');
+  if(current){
+    const prog = cycleProgress(current);
+    const pctVal = Math.round(prog.pct*100);
+    const chips = current.setores.map(s=>{
+      const done = prog.doneSectors.includes(s);
+      return `<div class="cycle-sector-chip ${done?'done':'pending'}">${done?'✓':'○'} ${escapeHtml(s)}</div>`;
+    }).join('');
+    card.innerHTML = `
+      <div class="cycle-banner-head">
+        <div>
+          <div class="section-title" style="margin:0;"><h2>Ciclo Atual — Nº ${current.numero}</h2></div>
+          <div class="cycle-progress-label" style="margin-top:2px;">Iniciado em ${fmtDateShort(current.iniciadoEm)}</div>
+        </div>
+      </div>
+      <div class="progress-bar-bg" style="margin-top:14px;"><div class="progress-bar-fg" style="width:${pctVal}%"></div></div>
+      <div class="cycle-progress-label">${prog.done} de ${prog.total} setores auditados (${pctVal}%)</div>
+      <div class="cycle-sector-grid">${chips}</div>
+      ${prog.pct>=1 ? `<button class="btn btn-primary" id="btnCloseCycle" style="margin-top:18px;">Concluir Ciclo e Iniciar Novo</button>` : ''}
+    `;
+    const btn = document.getElementById('btnCloseCycle');
+    if(btn){
+      btn.addEventListener('click', ()=>{
+        openConfirm('Concluir ciclo', `Todos os ${prog.total} setores foram auditados no Ciclo ${current.numero}. Deseja concluí-lo e iniciar o Ciclo ${current.numero+1}? O histórico deste ciclo será mantido.`, async ()=>{
+          const ok = await closeCycleAndStartNew();
+          if(ok){ toast(`Ciclo ${current.numero} concluído! Ciclo ${current.numero+1} iniciado.`,'ok'); renderCycles(); renderCycleBanner(); }
+        });
+      });
+    }
+  } else {
+    card.innerHTML = '';
+  }
+
+  const closedCycles = allCycles.filter(c=>c.status==='concluido').sort((a,b)=>b.numero-a.numero);
+  document.getElementById('cyclesHistoryEmpty').style.display = closedCycles.length? 'none':'flex';
+  document.getElementById('cyclesHistoryBody').innerHTML = closedCycles.map(c=>{
+    const p = cycleProgress(c);
+    const avg = cycleAvgScore(c);
+    const sc = scoreColor(avg);
+    const durDays = Math.max(0, Math.round((new Date(c.concluidoEm)-new Date(c.iniciadoEm))/86400000));
+    return `<tr onclick="viewCycleAudits('${c.id}')" style="cursor:pointer;">
+      <td>Ciclo ${c.numero}</td>
+      <td>${fmtDateShort(c.iniciadoEm)} – ${fmtDateShort(c.concluidoEm)}</td>
+      <td>${durDays} dia${durDays===1?'':'s'}</td>
+      <td>${p.done}/${p.total}</td>
+      <td><span class="score-pill" style="background:${sc.bg};color:${sc.c};">${pct(avg)}</span></td>
+      <td style="text-align:right;"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();viewCycleAudits('${c.id}')">Ver auditorias</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function viewCycleAudits(cycleId){
+  await showView('history');
+  document.getElementById('fltCiclo').value = cycleId;
+  applyHistoryFilters();
+}
+
+/* =========================================================================
    STATE
    ========================================================================= */
 let currentAudit = null; // objeto em edição
 let allAudits = [];      // índice carregado
+let allCycles = [];      // ciclos de auditoria carregados
 let currentDetailId = null;
 let currentSector = null;
 let charts = {};
@@ -865,6 +1055,7 @@ const VIEW_TITLES = {
   'new-audit':['Nova Auditoria','Preencha o checklist do carro de emergência'],
   'history':['Histórico de Auditorias','Consulte, filtre e exporte auditorias anteriores'],
   'sectors':['Setores','Desempenho de conformidade por setor'],
+  'cycles':['Gerenciamento de Ciclos','Acompanhe o progresso e o histórico dos ciclos de auditoria'],
   'audit-detail':['Detalhe da Auditoria',''],
   'sector-detail':['Detalhe do Setor',''],
 };
@@ -877,17 +1068,20 @@ async function showView(name){
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('scrim').classList.remove('open');
   window.scrollTo({top:0,behavior:'smooth'});
-  if(name==='dashboard'||name==='history'||name==='sectors'){
+  if(name==='dashboard'||name==='history'||name==='sectors'||name==='cycles'){
     // Renderiza imediatamente com o que já está em memória (sem tela em branco)...
-    if(name==='dashboard') renderDashboard();
+    if(name==='dashboard'){ renderDashboard(); renderCycleBanner(); }
     if(name==='history') renderHistory();
     if(name==='sectors') renderSectors();
+    if(name==='cycles') renderCycles();
     // ...e revalida com o armazenamento em segundo plano (nunca remove itens, só une/atualiza).
     await refreshAuditsFromStorage();
+    await refreshCyclesFromStorage();
     if(document.getElementById('view-'+name).classList.contains('active')){
-      if(name==='dashboard') renderDashboard();
+      if(name==='dashboard'){ renderDashboard(); renderCycleBanner(); }
       if(name==='history') renderHistory();
       if(name==='sectors') renderSectors();
+      if(name==='cycles') renderCycles();
     }
   }
 }
@@ -937,8 +1131,10 @@ function openLightbox(src){ document.getElementById('lightboxImg').src=src; docu
    NOVA AUDITORIA — build form
    ========================================================================= */
 function startNewAudit(){
+  const cycle = getCurrentCycle();
   currentAudit = {
     id: uid(),
+    cicloId: cycle ? cycle.id : null,
     header:{ data: todayISO(), setor:'', auditor:'', enfermeiro:'' },
     items: ITEMS.map(it=>({ id:it.id, status:null, obs:'', photos:[], medExtra:'' })),
     status:'rascunho',
@@ -1156,6 +1352,7 @@ async function persistAudit(finalize){
 
   const summary = {
     id: currentAudit.id,
+    cicloId: currentAudit.cicloId || null,
     setor: h.setor, auditor: h.auditor, enfermeiro: h.enfermeiro, data: h.data,
     createdAt: currentAudit.createdAt, updatedAt: currentAudit.updatedAt,
     status: currentAudit.status, score: currentAudit.score, counts: currentAudit.counts,
@@ -1263,15 +1460,22 @@ function renderHistory(){
   const fltSetor = document.getElementById('fltSetor');
   const setores = [...new Set(allAudits.map(a=>a.setor))].filter(Boolean).sort();
   fltSetor.innerHTML = '<option value="">Todos os setores</option>' + setores.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  const fltCiclo = document.getElementById('fltCiclo');
+  const prevCiclo = fltCiclo.value;
+  const ciclosOrdenados = [...allCycles].sort((a,b)=>b.numero-a.numero);
+  fltCiclo.innerHTML = '<option value="">Todos os ciclos</option>' + ciclosOrdenados.map(c=>`<option value="${c.id}">Ciclo ${c.numero}${c.status==='aberto'?' (atual)':''}</option>`).join('');
+  if(ciclosOrdenados.some(c=>c.id===prevCiclo)) fltCiclo.value = prevCiclo;
   applyHistoryFilters();
 }
 function applyHistoryFilters(){
   const setor = document.getElementById('fltSetor').value;
+  const ciclo = document.getElementById('fltCiclo').value;
   const status = document.getElementById('fltStatus').value;
   const dIni = document.getElementById('fltDataIni').value;
   const dFim = document.getElementById('fltDataFim').value;
   let list = [...allAudits];
   if(setor) list = list.filter(a=>a.setor===setor);
+  if(ciclo) list = list.filter(a=>a.cicloId===ciclo);
   if(status) list = list.filter(a=>a.status===status);
   if(dIni) list = list.filter(a=>a.data>=dIni);
   if(dFim) list = list.filter(a=>a.data<=dFim);
@@ -1281,9 +1485,11 @@ function applyHistoryFilters(){
   document.getElementById('historyEmpty').style.display = list.length? 'none':'flex';
   body.innerHTML = list.map(a=>{
     const sc = scoreColor(a.score||0);
+    const numeroCiclo = a.cicloId ? cycleNumeroById(a.cicloId) : null;
     return `<tr onclick="openAuditDetail('${a.id}')">
       <td>${fmtDate(a.data)}</td>
       <td>${escapeHtml(a.setor)}</td>
+      <td>${numeroCiclo?('Ciclo '+numeroCiclo):'—'}</td>
       <td>${escapeHtml(a.auditor)}</td>
       <td><span class="score-pill" style="background:${sc.bg};color:${sc.c};">${a.status==='finalizada'?pct(a.score||0):'—'}</span></td>
       <td>${a.status==='finalizada'?'<span class="tag tag-ok">Finalizada</span>':'<span class="tag tag-neutral">Rascunho</span>'}</td>
@@ -1291,11 +1497,12 @@ function applyHistoryFilters(){
     </tr>`;
   }).join('');
 }
-['fltSetor','fltStatus','fltDataIni','fltDataFim'].forEach(id=>{
+['fltSetor','fltCiclo','fltStatus','fltDataIni','fltDataFim'].forEach(id=>{
   document.getElementById(id).addEventListener('change', applyHistoryFilters);
 });
 document.getElementById('btnClearFilters').addEventListener('click', ()=>{
   document.getElementById('fltSetor').value='';
+  document.getElementById('fltCiclo').value='';
   document.getElementById('fltStatus').value='';
   document.getElementById('fltDataIni').value='';
   document.getElementById('fltDataFim').value='';
@@ -1558,6 +1765,12 @@ function buildDashboardReportText(){
   const recent = [...fin].sort((a,b)=> new Date(b.data)-new Date(a.data)).slice(0,10)
     .map(a=>`  ${fmtDate(a.data)} — ${a.setor} — ${a.auditor||'—'} — ${pct(a.score)}`);
 
+  const currentCycle = getCurrentCycle();
+  const cicloLine = currentCycle ? (()=>{
+    const p = cycleProgress(currentCycle);
+    return `  Ciclo atual: Nº ${currentCycle.numero} — ${p.done} de ${p.total} setores auditados (${Math.round(p.pct*100)}%)`;
+  })() : '  Nenhum ciclo em andamento.';
+
   return [
     'RELATÓRIO — AUDITORIA DE CARROS DE EMERGÊNCIA',
     'Hospital Maternidade São Vicente de Paulo',
@@ -1568,6 +1781,7 @@ function buildDashboardReportText(){
     `  Conformidade média: ${pct(avg)}`,
     `  Auditorias este mês: ${thisMonth}`,
     `  Auditorias críticas (abaixo de 70%): ${criticos}`,
+    cicloLine,
     '',
     'CONFORMIDADE MÉDIA POR SETOR',
     ...(sectorLines.length? sectorLines : ['  Nenhum dado disponível.']),
@@ -1654,6 +1868,7 @@ document.getElementById('btnExportSector').addEventListener('click', async ()=>{
 async function init(){
   const fetched = await fetchIndexSafe();
   allAudits = fetched===undefined ? [] : fetched;
+  await ensureCurrentCycle();
   showView('dashboard');
 }
 /* init() é chamado por sb.auth.onAuthStateChange() após confirmar a sessão. */
