@@ -284,6 +284,13 @@ input,select,textarea{font-family:inherit;}
 .modal p{font-size:13px;color:var(--ink-soft);line-height:1.55;margin-bottom:18px;}
 .modal .actions{display:flex;justify-content:flex-end;gap:10px;}
 
+.report-menu-wrap{position:relative;}
+.report-menu{position:absolute;top:calc(100% + 6px);right:0;background:#fff;border-radius:12px;box-shadow:var(--shadow-lg);border:1px solid var(--line);padding:6px;min-width:190px;display:none;flex-direction:column;z-index:60;}
+.report-menu.open{display:flex;}
+.report-menu button{display:flex;align-items:center;gap:9px;width:100%;padding:9px 10px;border:none;background:none;border-radius:8px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;text-align:left;}
+.report-menu button:hover{background:var(--blue-50);color:var(--blue-600);}
+.report-menu button svg{width:16px;height:16px;flex-shrink:0;}
+
 .badge-count{background:var(--bad);color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:999px;margin-left:auto;}
 
 /* ---------- RESPONSIVE ---------- */
@@ -380,10 +387,16 @@ input,select,textarea{font-family:inherit;}
         </div>
       </div>
       <div class="topbar-right">
-        <button class="btn btn-secondary btn-sm" id="btnExportGeral">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 10l5 5 5-5"/><path d="M20 21H4"/></svg>
-          Exportar PDF
-        </button>
+        <div class="report-menu-wrap" id="reportMenuWrap">
+          <button class="btn btn-secondary btn-sm" id="btnGerarRelatorio">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 11h6M9 19h3"/></svg>
+            Gerar Relatório
+          </button>
+          <div class="report-menu" id="reportMenu">
+            <button id="reportMenuPdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 10l5 5 5-5"/><path d="M20 21H4"/></svg>Baixar em PDF</button>
+            <button id="reportMenuCopy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar relatório</button>
+          </div>
+        </div>
         <button class="btn btn-primary btn-sm" id="btnNovaAuditoriaTop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
           Nova Auditoria
@@ -558,6 +571,17 @@ input,select,textarea{font-family:inherit;}
     <div class="actions">
       <button class="btn btn-ghost" id="modalCancel">Cancelar</button>
       <button class="btn btn-danger" id="modalOk">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalReportText">
+  <div class="modal" style="max-width:540px;">
+    <h3>Relatório</h3>
+    <p>Não foi possível copiar automaticamente. Selecione o texto abaixo e copie manualmente (Ctrl+C).</p>
+    <textarea id="reportTextArea" readonly style="width:100%;height:280px;font-family:monospace;font-size:12px;padding:10px;border:1px solid var(--line);border-radius:8px;resize:vertical;box-sizing:border-box;"></textarea>
+    <div class="actions" style="margin-top:14px;">
+      <button class="btn btn-primary" id="reportTextClose">Fechar</button>
     </div>
   </div>
 </div>
@@ -1479,7 +1503,7 @@ document.getElementById('btnExportAudit').addEventListener('click', async ()=>{
   toast('PDF exportado.','ok');
 });
 
-document.getElementById('btnExportGeral').addEventListener('click', async ()=>{
+function generateDashboardPdf(){
   const fin = finalizedAudits();
   const doc = new jsPDF();
   pdfHeader(doc,'Dashboard Geral — Auditoria de Carros de Emergência', `${fin.length} auditorias finalizadas`);
@@ -1506,6 +1530,103 @@ document.getElementById('btnExportGeral').addEventListener('click', async ()=>{
   pdfFooter(doc);
   doc.save(`Dashboard_Geral_${todayISO()}.pdf`);
   toast('PDF exportado.','ok');
+}
+
+function buildDashboardReportText(){
+  const fin = finalizedAudits();
+  const avg = fin.length? fin.reduce((s,a)=>s+a.score,0)/fin.length : 0;
+  const setores = new Set(fin.map(a=>a.setor));
+  const now = new Date();
+  const thisMonth = fin.filter(a=>{ const d=new Date(a.data); return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear(); }).length;
+  const criticos = fin.filter(a=>a.score<0.7).length;
+
+  const bySector = {};
+  fin.forEach(a=>{ (bySector[a.setor]=bySector[a.setor]||[]).push(a.score); });
+  const sectorLines = Object.keys(bySector).sort().map(s=>{
+    const avgS = bySector[s].reduce((x,y)=>x+y,0)/bySector[s].length;
+    return `  ${s}: ${pct(avgS)}`;
+  });
+
+  const itemFailCount = {};
+  fin.forEach(a=>{ (a.itemStatus||[]).forEach(is=>{ if(is.status==='nao-conforme' || is.status==='parcial'){ itemFailCount[is.id]=(itemFailCount[is.id]||0)+ (is.status==='nao-conforme'?1:0.5); } }); });
+  const ranked = Object.entries(itemFailCount).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const rankedLines = ranked.map(([id,val],idx)=>{
+    const it = ITEMS.find(i=>i.id==id);
+    return `  ${idx+1}. ${it?it.texto:''} (${val}x)`;
+  });
+
+  const recent = [...fin].sort((a,b)=> new Date(b.data)-new Date(a.data)).slice(0,10)
+    .map(a=>`  ${fmtDate(a.data)} — ${a.setor} — ${a.auditor||'—'} — ${pct(a.score)}`);
+
+  return [
+    'RELATÓRIO — AUDITORIA DE CARROS DE EMERGÊNCIA',
+    'Hospital Maternidade São Vicente de Paulo',
+    `Gerado em ${new Date().toLocaleString('pt-BR')}`,
+    '',
+    'RESUMO GERAL',
+    `  Total de auditorias: ${fin.length} (${setores.size} setores avaliados)`,
+    `  Conformidade média: ${pct(avg)}`,
+    `  Auditorias este mês: ${thisMonth}`,
+    `  Auditorias críticas (abaixo de 70%): ${criticos}`,
+    '',
+    'CONFORMIDADE MÉDIA POR SETOR',
+    ...(sectorLines.length? sectorLines : ['  Nenhum dado disponível.']),
+    '',
+    'ITENS MAIS NÃO CONFORMES',
+    ...(rankedLines.length? rankedLines : ['  Nenhuma não conformidade registrada.']),
+    '',
+    'ÚLTIMAS AUDITORIAS',
+    ...(recent.length? recent : ['  Nenhuma auditoria finalizada ainda.']),
+  ].join('\n');
+}
+
+const reportMenuWrap = document.getElementById('reportMenuWrap');
+const reportMenu = document.getElementById('reportMenu');
+document.getElementById('btnGerarRelatorio').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  reportMenu.classList.toggle('open');
+});
+document.addEventListener('click', (e)=>{
+  if(!reportMenuWrap.contains(e.target)) reportMenu.classList.remove('open');
+});
+document.getElementById('reportMenuPdf').addEventListener('click', ()=>{
+  reportMenu.classList.remove('open');
+  generateDashboardPdf();
+});
+async function copyTextToClipboard(text){
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  }catch(e){}
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    if(ok) return true;
+  }catch(e){}
+  return false;
+}
+document.getElementById('reportMenuCopy').addEventListener('click', async ()=>{
+  reportMenu.classList.remove('open');
+  const text = buildDashboardReportText();
+  const copied = await copyTextToClipboard(text);
+  if(copied){
+    toast('Relatório copiado para a área de transferência.','ok');
+  } else {
+    const ta = document.getElementById('reportTextArea');
+    ta.value = text;
+    document.getElementById('modalReportText').classList.add('open');
+    setTimeout(()=>{ ta.focus(); ta.select(); }, 50);
+  }
+});
+document.getElementById('reportTextClose').addEventListener('click', ()=>{
+  document.getElementById('modalReportText').classList.remove('open');
 });
 
 document.getElementById('btnExportSector').addEventListener('click', async ()=>{
