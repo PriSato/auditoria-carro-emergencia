@@ -218,6 +218,8 @@ input,select,textarea{font-family:inherit;}
 
 /* ---------- FORM / NEW AUDIT ---------- */
 .header-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;}
+.checkbox-label{display:flex;align-items:center;gap:9px;margin-top:16px;font-size:13.5px;font-weight:600;color:var(--ink);cursor:pointer;}
+.checkbox-label input[type="checkbox"]{width:17px;height:17px;accent-color:var(--bad);cursor:pointer;}
 .field{display:flex;flex-direction:column;gap:6px;}
 .field label{font-size:11.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px;}
 .field input,.field select,.field textarea{
@@ -498,9 +500,17 @@ input,select,textarea{font-family:inherit;}
             <div class="field"><label>Auditor</label><input type="text" id="fAuditor" placeholder="Nome do auditor"></div>
             <div class="field"><label>Enfermeiro Responsável</label><input type="text" id="fEnfermeiro" placeholder="Nome do enfermeiro"></div>
           </div>
+          <label class="checkbox-label">
+            <input type="checkbox" id="fCarroIndisponivel">
+            Carro de emergência não disponível no setor
+          </label>
         </div>
 
-        <div class="progress-wrap">
+        <div class="card card-pad" id="carroIndisponivelBanner" style="display:none;margin-bottom:18px;background:var(--bad-bg);border-color:var(--bad);">
+          <strong style="color:var(--bad);">Carro não disponível.</strong> Esta auditoria será registrada como não conformidade total do setor — não é necessário preencher o checklist item a item.
+        </div>
+
+        <div class="progress-wrap" id="progressWrap">
           <div class="progress-meta"><span id="progressLabel">0 de 23 itens avaliados</span><span id="progressPct">0%</span></div>
           <div class="progress-bar-bg"><div class="progress-bar-fg" id="progressBarFg" style="width:0%"></div></div>
         </div>
@@ -1308,7 +1318,7 @@ function startNewAudit(){
   currentAudit = {
     id: uid(),
     cicloId: cycle ? cycle.id : null,
-    header:{ data: todayISO(), setor:'', auditor:'', enfermeiro:'' },
+    header:{ data: todayISO(), setor:'', auditor:'', enfermeiro:'', carroIndisponivel:false },
     items: ITEMS.map(it=>({ id:it.id, status:null, obs:'', photos:[], medExtra:'' })),
     status:'rascunho',
     createdAt: Date.now(),
@@ -1320,10 +1330,26 @@ function startNewAudit(){
   document.getElementById('fSetor').value = '';
   document.getElementById('fSetorOutroWrap').style.display = 'none';
   document.getElementById('fSetorOutro').value = '';
+  document.getElementById('fCarroIndisponivel').checked = false;
+  setCarroIndisponivelUI(false);
   buildCategoriesUI();
   updateProgress();
   showView('new-audit');
 }
+function setCarroIndisponivelUI(indisponivel){
+  document.getElementById('carroIndisponivelBanner').style.display = indisponivel ? 'block' : 'none';
+  document.getElementById('progressWrap').style.display = indisponivel ? 'none' : '';
+  document.getElementById('categoriesWrap').style.display = indisponivel ? 'none' : '';
+}
+document.getElementById('fCarroIndisponivel').addEventListener('change', (e)=>{
+  if(!currentAudit) return;
+  const checked = e.target.checked;
+  currentAudit.header.carroIndisponivel = checked;
+  currentAudit.items.forEach(i=>{ i.status = checked ? 'nao-conforme' : null; });
+  buildCategoriesUI();
+  updateProgress();
+  setCarroIndisponivelUI(checked);
+});
 function populateSetorSelect(){
   const sel = document.getElementById('fSetor');
   sel.innerHTML = '<option value="" disabled selected>Selecione o setor...</option>'
@@ -1528,6 +1554,7 @@ async function persistAudit(finalize){
   const summary = {
     id: currentAudit.id,
     cicloId: currentAudit.cicloId || null,
+    carroIndisponivel: !!h.carroIndisponivel,
     setor: h.setor, auditor: h.auditor, enfermeiro: h.enfermeiro, data: h.data,
     createdAt: currentAudit.createdAt, updatedAt: currentAudit.updatedAt,
     status: currentAudit.status, score: currentAudit.score, counts: currentAudit.counts,
@@ -1701,7 +1728,7 @@ async function openAuditDetail(id){
   if(!full){ toast('Auditoria não encontrada.','bad'); return; }
   currentDetailId = id;
   document.getElementById('detTitle').textContent = full.header.setor + ' — ' + fmtDate(full.header.data);
-  document.getElementById('detSub').textContent = `Auditor: ${full.header.auditor}${full.header.enfermeiro? ' · Enfermeiro: '+full.header.enfermeiro:''}`;
+  document.getElementById('detSub').innerHTML = `Auditor: ${escapeHtml(full.header.auditor)}${full.header.enfermeiro? ' · Enfermeiro: '+escapeHtml(full.header.enfermeiro):''}${full.header.carroIndisponivel? ' <span class="tag tag-bad">Carro não disponível</span>':''}`;
 
   const sc = scoreColor(full.score||0);
   document.getElementById('detMetaGrid').innerHTML = `
