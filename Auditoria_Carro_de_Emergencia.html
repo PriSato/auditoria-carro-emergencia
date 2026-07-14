@@ -1096,6 +1096,19 @@ async function closeCycleAndStartNew(){
   return true;
 }
 
+/* Setores "Outro" (nome digitado livremente) não fazem parte da lista fixa
+   de setores previstos (SETORES_PLANILHA). Quando uma auditoria é salva para
+   um desses setores, ele passa a ser rastreado também no ciclo ao qual a
+   auditoria pertence, para contar na conclusão do ciclo. */
+async function ensureSectorInCycle(cycleId, setorName){
+  if(!setorName || !cycleId) return;
+  const cycle = allCycles.find(c=>c.id===cycleId);
+  if(!cycle || cycle.setores.includes(setorName)) return;
+  const updated = allCycles.map(c=> c.id===cycleId ? {...c, setores:[...c.setores, setorName]} : c);
+  const ok = await storageSet('cycles', updated);
+  if(ok) allCycles = updated;
+}
+
 function renderCycleBanner(){
   const el = document.getElementById('currentCycleBanner');
   if(!el) return;
@@ -1501,6 +1514,8 @@ async function persistAudit(finalize){
   currentAudit.score = computeScore(currentAudit);
   currentAudit.counts = computeCounts(currentAudit);
   currentAudit.updatedAt = Date.now();
+
+  await ensureSectorInCycle(currentAudit.cicloId, h.setor);
 
   const savedDetail = await storageSet('audit_'+currentAudit.id, currentAudit);
   if(!savedDetail){
