@@ -1190,13 +1190,27 @@ function renderCycleBanner(){
   document.getElementById('btnGoToCycles').addEventListener('click', ()=> showView('cycles'));
 }
 
+/* Ordena setores pela ordem oficial da planilha (SETORES_PLANILHA); setores
+   personalizados ("Outro", fora da lista fixa) vão ao final, em ordem
+   alfabética. Evita que ações como desativar/reativar bagunçem a ordem. */
+function sortSectorsForDisplay(sectors){
+  return [...sectors].sort((a,b)=>{
+    const ia = SETORES_PLANILHA.indexOf(a);
+    const ib = SETORES_PLANILHA.indexOf(b);
+    const ra = ia===-1 ? Infinity : ia;
+    const rb = ib===-1 ? Infinity : ib;
+    if(ra!==rb) return ra-rb;
+    return a.localeCompare(b);
+  });
+}
+
 function renderCycles(){
   const current = getCurrentCycle();
   const card = document.getElementById('currentCycleCard');
   if(current){
     const prog = cycleProgress(current);
     const pctVal = Math.round(prog.pct*100);
-    const chips = current.setores.map(s=>{
+    const chips = sortSectorsForDisplay(current.setores).map(s=>{
       const done = prog.doneSectors.includes(s);
       return `<div class="cycle-sector-chip ${done?'done':'pending'}">${done?'✓':'○'} ${escapeHtml(s)}<button class="chip-remove" title="Desativar setor" onclick="event.stopPropagation();confirmDeactivateSector('${escapeHtml(s).replace(/'/g,"\\'")}')">✕</button></div>`;
     }).join('');
@@ -1231,7 +1245,7 @@ function renderCycles(){
     inactiveCard.innerHTML = `
       <div class="section-title" style="margin-top:0;"><h2>Setores Inativos</h2><span class="hint">Fora dos ciclos e indicadores</span></div>
       <div class="cycle-sector-grid">
-        ${inactiveSectors.map(s=>`<div class="cycle-sector-chip inactive">${escapeHtml(s)}<button class="chip-remove" title="Reativar setor" onclick="reactivateSectorClick('${escapeHtml(s).replace(/'/g,"\\'")}')">↺</button></div>`).join('')}
+        ${sortSectorsForDisplay(inactiveSectors).map(s=>`<div class="cycle-sector-chip inactive">${escapeHtml(s)}<button class="chip-remove" title="Reativar setor" onclick="reactivateSectorClick('${escapeHtml(s).replace(/'/g,"\\'")}')">↺</button></div>`).join('')}
       </div>
     `;
   } else {
