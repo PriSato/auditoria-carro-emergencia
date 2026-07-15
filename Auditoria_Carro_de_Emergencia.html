@@ -222,6 +222,8 @@ input,select,textarea{font-family:inherit;}
 /* ---------- FORM / NEW AUDIT ---------- */
 .header-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;}
 .checkbox-label{display:flex;align-items:center;gap:9px;margin-top:16px;font-size:13.5px;font-weight:600;color:var(--ink);cursor:pointer;}
+.link-btn{display:block;background:none;border:none;color:var(--blue-600);font-size:12.5px;font-weight:700;cursor:pointer;padding:0;margin-top:14px;text-align:left;}
+.link-btn:hover{text-decoration:underline;}
 .checkbox-label input[type="checkbox"]{width:17px;height:17px;accent-color:var(--bad);cursor:pointer;}
 .field{display:flex;flex-direction:column;gap:6px;}
 .field label{font-size:11.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px;}
@@ -500,9 +502,14 @@ input,select,textarea{font-family:inherit;}
               <label>Especifique o setor</label>
               <input type="text" id="fSetorOutro" placeholder="Digite o nome do setor">
             </div>
+            <div class="field" id="fCarroWrap" style="display:none;">
+              <label>Carro</label>
+              <select id="fCarro"></select>
+            </div>
             <div class="field"><label>Auditor</label><input type="text" id="fAuditor" placeholder="Nome do auditor"></div>
             <div class="field"><label>Enfermeiro Responsável</label><input type="text" id="fEnfermeiro" placeholder="Nome do enfermeiro"></div>
           </div>
+          <button type="button" class="link-btn" id="btnAddCart" style="display:none;">+ Este setor tem mais de um carro? Adicionar carro</button>
           <label class="checkbox-label">
             <input type="checkbox" id="fCarroIndisponivel">
             Carro de emergência não disponível no setor
@@ -546,7 +553,7 @@ input,select,textarea{font-family:inherit;}
         </div>
         <div class="card" style="overflow:auto;">
           <table class="audit-table" id="historyTable">
-            <thead><tr><th>Data</th><th>Setor</th><th>Ciclo</th><th>Auditor</th><th>Conformidade</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Data</th><th>Setor</th><th>Carro</th><th>Ciclo</th><th>Auditor</th><th>Conformidade</th><th>Status</th><th></th></tr></thead>
             <tbody id="historyBody"></tbody>
           </table>
           <div class="empty-state" id="historyEmpty" style="display:none;">
@@ -633,7 +640,7 @@ input,select,textarea{font-family:inherit;}
         </div>
         <div class="section-title"><h2>Auditorias do setor</h2></div>
         <div class="card" style="overflow:auto;">
-          <table class="audit-table"><thead><tr><th>Data</th><th>Auditor</th><th>Conformidade</th><th>Status</th><th></th></tr></thead>
+          <table class="audit-table"><thead><tr><th>Data</th><th>Carro</th><th>Auditor</th><th>Conformidade</th><th>Status</th><th></th></tr></thead>
           <tbody id="secHistoryBody"></tbody></table>
         </div>
       </section>
@@ -666,6 +673,18 @@ input,select,textarea{font-family:inherit;}
     <div class="actions">
       <button class="btn btn-ghost" id="profileCancel">Cancelar</button>
       <button class="btn btn-primary" id="profileSave">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalAddCart">
+  <div class="modal" style="max-width:380px;">
+    <h3>Adicionar carro</h3>
+    <p id="addCartSub">Informe um nome para identificar o novo carro deste setor (ex.: "Carro 1", "Carro 2").</p>
+    <div class="profile-field"><label>Nome do carro</label><input type="text" id="addCartInput" placeholder="Carro 1"></div>
+    <div class="actions">
+      <button class="btn btn-ghost" id="addCartCancel">Cancelar</button>
+      <button class="btn btn-primary" id="addCartConfirm">Adicionar</button>
     </div>
   </div>
 </div>
@@ -737,8 +756,18 @@ const ITEMS = [
  {id:23,cat:'localizacao',texto:'Organização padronizada em todas as unidades do hospital.'},
 ];
 
-const SETORES_PLANILHA = ['Bloco 1','Bloco 2','Bloco 4','Bloco 5','Oncologia Ala A','Bloco III (Pediatria)','Hemodinâmica','Hospital Dia','Centro Cirúrgico','RPA','CCMI','UTI Adulto 1 - Carro 1','UTI Adulto 1 - Carro 2','UTI Adulto 2 - Carro 1','UTI Adulto 2 - Carro 2','UTI Ped. - Carro 1','UTI Ped. - Carro 2','UTI Neo 1 - Carro 1','UTI Neo 1 - Carro 2','UTI Neo 2 - Carro 1','UTI Neo 2 - Carro 2','Maternidade Ala A','Maternidade Ala B','UCINCO','UCINCA','Traumatologia','Radioterapia','Quimioterapia','Ressonância Magnética','Centro de Imagem e Diagnóstico','Ambulatório Oncológico','Endoscopia','Ambulatório Oncologia Pediátrica','Internação Oncologia Pediaátrica','Pronto Socorro Adulto','Pronto Socorro Infantil'];
+const SETORES_PLANILHA = ['Bloco 1','Bloco 2','Bloco 4','Bloco 5','Oncologia Ala A','Bloco III (Pediatria)','Hemodinâmica','Hospital Dia','Centro Cirúrgico','RPA','CCMI','UTI Adulto 1','UTI Adulto 2','UTI Ped.','UTI Neo 1','UTI Neo 2','Maternidade Ala A','Maternidade Ala B','UCINCO','UCINCA','Traumatologia','Radioterapia','Quimioterapia','Ressonância Magnética','Centro de Imagem e Diagnóstico','Ambulatório Oncológico','Endoscopia','Ambulatório Oncologia Pediátrica','Internação Oncologia Pediaátrica','Pronto Socorro Adulto','Pronto Socorro Infantil'];
 const SETOR_OUTRO = 'Outro';
+/* Semente inicial de setores com mais de um carro de emergência (ex.: UTIs).
+   Persistida em Supabase (chave "sector_carts") na primeira carga, e depois
+   editável pelos usuários através de "Adicionar carro" na Nova Auditoria. */
+const DEFAULT_SECTOR_CARTS = {
+  'UTI Adulto 1': ['Carro 1','Carro 2'],
+  'UTI Adulto 2': ['Carro 1','Carro 2'],
+  'UTI Ped.': ['Carro 1','Carro 2'],
+  'UTI Neo 1': ['Carro 1','Carro 2'],
+  'UTI Neo 2': ['Carro 1','Carro 2'],
+};
 
 const STATUS_META = {
   'conforme':{label:'Conforme', cls:'sel-ok', color:'#12876F', bg:'#E4F6F1'},
@@ -1039,7 +1068,87 @@ async function refreshAuditsFromStorage(){
    finalizada, o ciclo pode ser concluído e um novo é iniciado automaticamente,
    preservando o histórico completo dos ciclos anteriores.
    ========================================================================= */
-function requiredSectors(){ return SETORES_PLANILHA.filter(s=>!inactiveSectors.includes(s)); }
+/* Um setor com carros cadastrados (sectorCarts[setor]) precisa de uma
+   auditoria por carro para ser considerado concluído; a chave usada para
+   rastrear cada carro no ciclo é "Setor · Carro". Setores sem carros
+   cadastrados continuam rastreados só pelo nome do setor, como antes. */
+function cartsForSector(setor){ return sectorCarts[setor] || []; }
+function trackKey(setor, carro){ return carro ? `${setor} · ${carro}` : setor; }
+function trackKeyBaseSetor(key){ return key.split(' · ')[0]; }
+
+async function fetchSectorCartsSafe(){
+  const s = await storageGet('sector_carts');
+  if(s===undefined) return undefined;
+  return s;
+}
+async function loadSectorCarts(){
+  const fetched = await fetchSectorCartsSafe();
+  if(fetched===undefined){ sectorCarts = {...DEFAULT_SECTOR_CARTS}; return; }
+  if(fetched===null){
+    sectorCarts = {...DEFAULT_SECTOR_CARTS};
+    await storageSet('sector_carts', sectorCarts);
+    return;
+  }
+  sectorCarts = fetched;
+}
+async function refreshSectorCartsFromStorage(){
+  const fetched = await fetchSectorCartsSafe();
+  if(fetched===undefined || fetched===null) return;
+  sectorCarts = fetched;
+}
+/* Adiciona um novo carro a um setor. Se for o primeiro carro do setor,
+   substitui a exigência genérica do setor (chave = nome do setor) pelas
+   chaves específicas de cada carro no ciclo atual. */
+async function addCartToSector(setor, carro){
+  carro = (carro||'').trim();
+  if(!setor || !carro) return false;
+  const existing = cartsForSector(setor);
+  if(existing.includes(carro)) return true;
+  const wasFirstCart = existing.length===0;
+  const updatedCarts = { ...sectorCarts, [setor]: [...existing, carro] };
+  const ok = await storageSet('sector_carts', updatedCarts);
+  if(!ok){ toast('Erro ao adicionar o carro. Tente novamente.','bad'); return false; }
+  sectorCarts = updatedCarts;
+
+  const current = getCurrentCycle();
+  if(current){
+    let setores = current.setores;
+    if(wasFirstCart) setores = setores.filter(s=>s!==setor);
+    const newKey = trackKey(setor, carro);
+    if(!setores.includes(newKey)) setores = [...setores, newKey];
+    const updatedCycles = allCycles.map(c=> c.id===current.id ? {...c, setores} : c);
+    const okCycle = await storageSet('cycles', updatedCycles);
+    if(okCycle) allCycles = updatedCycles;
+  }
+  return true;
+}
+
+/* Setores "previstos" para o dropdown de Nova Auditoria: a lista fixa
+   (SETORES_PLANILHA), excluindo setores totalmente desativados — um setor
+   sem carros fica de fora se o próprio nome estiver inativo; um setor com
+   carros fica de fora só quando TODOS os seus carros estiverem inativos. */
+function activeBaseSectors(){
+  return SETORES_PLANILHA.filter(setor=>{
+    const carts = cartsForSector(setor);
+    if(!carts.length) return !inactiveSectors.includes(setor);
+    return carts.some(carro=>!inactiveSectors.includes(trackKey(setor,carro)));
+  });
+}
+/* Chaves de rastreamento exigidas por um ciclo novo: uma por carro, ou o
+   nome do setor quando ele não tem carros cadastrados — excluindo o que
+   estiver desativado. */
+function requiredTrackKeys(){
+  const keys = [];
+  SETORES_PLANILHA.forEach(setor=>{
+    const carts = cartsForSector(setor);
+    if(carts.length){
+      carts.forEach(carro=>{ const k=trackKey(setor,carro); if(!inactiveSectors.includes(k)) keys.push(k); });
+    } else if(!inactiveSectors.includes(setor)){
+      keys.push(setor);
+    }
+  });
+  return keys;
+}
 
 async function fetchCyclesSafe(){
   const c = await storageGet('cycles');
@@ -1084,7 +1193,7 @@ async function reactivateSector(setorName){
   if(!ok){ toast('Erro ao reativar o setor. Tente novamente.','bad'); return false; }
   inactiveSectors = updatedInactive;
   const current = getCurrentCycle();
-  if(current && SETORES_PLANILHA.includes(setorName) && !current.setores.includes(setorName)){
+  if(current && !current.setores.includes(setorName)){
     const updatedCycles = allCycles.map(c=> c.id===current.id ? {...c, setores:[...c.setores, setorName]} : c);
     const okCycle = await storageSet('cycles', updatedCycles);
     if(okCycle) allCycles = updatedCycles;
@@ -1104,7 +1213,7 @@ async function ensureCurrentCycle(){
       iniciadoEm: new Date().toISOString(),
       concluidoEm: null,
       status: 'aberto',
-      setores: requiredSectors(),
+      setores: requiredTrackKeys(),
     };
     cycles = [...cycles, current];
     await storageSet('cycles', cycles);
@@ -1128,7 +1237,7 @@ function cycleNumeroById(id){
 }
 function cycleProgress(cycle){
   const doneSet = new Set(
-    allAudits.filter(a=>a.status==='finalizada' && a.cicloId===cycle.id).map(a=>a.setor)
+    allAudits.filter(a=>a.status==='finalizada' && a.cicloId===cycle.id).map(a=>trackKey(a.setor, a.carro))
   );
   const total = cycle.setores.length;
   const doneSectors = cycle.setores.filter(s=>doneSet.has(s));
@@ -1148,7 +1257,7 @@ async function closeCycleAndStartNew(){
   const closed = { ...current, status:'concluido', concluidoEm:new Date().toISOString() };
   const novo = {
     id: uid(), numero: current.numero+1, iniciadoEm: new Date().toISOString(),
-    concluidoEm: null, status:'aberto', setores: requiredSectors(),
+    concluidoEm: null, status:'aberto', setores: requiredTrackKeys(),
   };
   const updated = allCycles.map(c=> c.id===current.id ? closed : c).concat([novo]);
   const ok = await storageSet('cycles', updated);
@@ -1157,15 +1266,15 @@ async function closeCycleAndStartNew(){
   return true;
 }
 
-/* Setores "Outro" (nome digitado livremente) não fazem parte da lista fixa
-   de setores previstos (SETORES_PLANILHA). Quando uma auditoria é salva para
-   um desses setores, ele passa a ser rastreado também no ciclo ao qual a
-   auditoria pertence, para contar na conclusão do ciclo. */
-async function ensureSectorInCycle(cycleId, setorName){
-  if(!setorName || !cycleId) return;
+/* Garante que a chave de rastreamento (setor, ou "Setor · Carro") de uma
+   auditoria exista no ciclo a que ela pertence — cobre tanto setores "Outro"
+   (nome digitado livremente, fora de SETORES_PLANILHA) quanto carros novos
+   adicionados depois que o ciclo já estava aberto. */
+async function ensureSectorInCycle(cycleId, key){
+  if(!key || !cycleId) return;
   const cycle = allCycles.find(c=>c.id===cycleId);
-  if(!cycle || cycle.setores.includes(setorName)) return;
-  const updated = allCycles.map(c=> c.id===cycleId ? {...c, setores:[...c.setores, setorName]} : c);
+  if(!cycle || cycle.setores.includes(key)) return;
+  const updated = allCycles.map(c=> c.id===cycleId ? {...c, setores:[...c.setores, key]} : c);
   const ok = await storageSet('cycles', updated);
   if(ok) allCycles = updated;
 }
@@ -1190,13 +1299,15 @@ function renderCycleBanner(){
   document.getElementById('btnGoToCycles').addEventListener('click', ()=> showView('cycles'));
 }
 
-/* Ordena setores pela ordem oficial da planilha (SETORES_PLANILHA); setores
-   personalizados ("Outro", fora da lista fixa) vão ao final, em ordem
-   alfabética. Evita que ações como desativar/reativar bagunçem a ordem. */
+/* Ordena chaves de setor/carro pela ordem oficial da planilha
+   (SETORES_PLANILHA), agrupando os carros de um mesmo setor em sequência;
+   setores personalizados ("Outro", fora da lista fixa) vão ao final, em
+   ordem alfabética. Evita que ações como desativar/reativar/adicionar carro
+   baguncem a ordem. */
 function sortSectorsForDisplay(sectors){
   return [...sectors].sort((a,b)=>{
-    const ia = SETORES_PLANILHA.indexOf(a);
-    const ib = SETORES_PLANILHA.indexOf(b);
+    const ia = SETORES_PLANILHA.indexOf(trackKeyBaseSetor(a));
+    const ib = SETORES_PLANILHA.indexOf(trackKeyBaseSetor(b));
     const ra = ia===-1 ? Infinity : ia;
     const rb = ib===-1 ? Infinity : ib;
     if(ra!==rb) return ra-rb;
@@ -1295,6 +1406,7 @@ let currentAudit = null; // objeto em edição
 let allAudits = [];      // índice carregado
 let allCycles = [];      // ciclos de auditoria carregados
 let inactiveSectors = []; // setores desativados (fora dos ciclos novos)
+let sectorCarts = {};    // setores com mais de um carro: { setor: ['Carro 1','Carro 2'] }
 let currentDetailId = null;
 let currentSector = null;
 let charts = {};
@@ -1350,6 +1462,7 @@ async function showView(name){
     await refreshAuditsFromStorage();
     await refreshCyclesFromStorage();
     await refreshInactiveSectorsFromStorage();
+    await refreshSectorCartsFromStorage();
     if(document.getElementById('view-'+name).classList.contains('active')){
       if(name==='dashboard'){ renderDashboard(); renderCycleBanner(); }
       if(name==='history') renderHistory();
@@ -1403,12 +1516,14 @@ function openLightbox(src){ document.getElementById('lightboxImg').src=src; docu
 /* =========================================================================
    NOVA AUDITORIA — build form
    ========================================================================= */
-function startNewAudit(){
+async function startNewAudit(){
+  await refreshInactiveSectorsFromStorage();
+  await refreshSectorCartsFromStorage();
   const cycle = getCurrentCycle();
   currentAudit = {
     id: uid(),
     cicloId: cycle ? cycle.id : null,
-    header:{ data: todayISO(), setor:'', auditor:'', enfermeiro:'', carroIndisponivel:false },
+    header:{ data: todayISO(), setor:'', carro:'', auditor:'', enfermeiro:'', carroIndisponivel:false },
     items: ITEMS.map(it=>({ id:it.id, status:null, obs:'', photos:[], medExtra:'' })),
     status:'rascunho',
     createdAt: Date.now(),
@@ -1420,6 +1535,8 @@ function startNewAudit(){
   document.getElementById('fSetor').value = '';
   document.getElementById('fSetorOutroWrap').style.display = 'none';
   document.getElementById('fSetorOutro').value = '';
+  document.getElementById('fCarroWrap').style.display = 'none';
+  document.getElementById('btnAddCart').style.display = 'none';
   document.getElementById('fCarroIndisponivel').checked = false;
   setCarroIndisponivelUI(false);
   buildCategoriesUI();
@@ -1443,8 +1560,24 @@ document.getElementById('fCarroIndisponivel').addEventListener('change', (e)=>{
 function populateSetorSelect(){
   const sel = document.getElementById('fSetor');
   sel.innerHTML = '<option value="" disabled selected>Selecione o setor...</option>'
-    + SETORES_PLANILHA.filter(s=>!inactiveSectors.includes(s)).map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('')
+    + activeBaseSectors().map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('')
     + `<option value="${SETOR_OUTRO}">Outro</option>`;
+}
+/* Preenche o seletor de Carro com os carros ativos do setor escolhido.
+   Só é exibido quando o setor tem pelo menos um carro cadastrado. */
+function populateCarroSelect(setor){
+  const carts = cartsForSector(setor).filter(c=>!inactiveSectors.includes(trackKey(setor,c)));
+  const wrap = document.getElementById('fCarroWrap');
+  const sel = document.getElementById('fCarro');
+  if(!carts.length){
+    wrap.style.display = 'none';
+    currentAudit.header.carro = '';
+    return;
+  }
+  wrap.style.display = 'flex';
+  sel.innerHTML = '<option value="" disabled selected>Selecione o carro...</option>'
+    + carts.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  currentAudit.header.carro = '';
 }
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
@@ -1459,16 +1592,51 @@ document.getElementById('fSetor').addEventListener('change', (e)=>{
   if(!currentAudit) return;
   if(e.target.value===SETOR_OUTRO){
     document.getElementById('fSetorOutroWrap').style.display='flex';
+    document.getElementById('fCarroWrap').style.display='none';
+    document.getElementById('btnAddCart').style.display='none';
     currentAudit.header.setor = document.getElementById('fSetorOutro').value.trim();
+    currentAudit.header.carro = '';
     document.getElementById('fSetorOutro').focus();
   } else {
     document.getElementById('fSetorOutroWrap').style.display='none';
     currentAudit.header.setor = e.target.value;
+    document.getElementById('btnAddCart').style.display = 'block';
+    populateCarroSelect(e.target.value);
   }
 });
 document.getElementById('fSetorOutro').addEventListener('input', (e)=>{
   if(!currentAudit) return;
   currentAudit.header.setor = e.target.value.trim();
+});
+document.getElementById('fCarro').addEventListener('change', (e)=>{
+  if(!currentAudit) return;
+  currentAudit.header.carro = e.target.value;
+});
+document.getElementById('btnAddCart').addEventListener('click', ()=>{
+  if(!currentAudit || !currentAudit.header.setor || currentAudit.header.setor===SETOR_OUTRO) return;
+  document.getElementById('addCartSub').textContent = `Informe um nome para identificar o novo carro de "${currentAudit.header.setor}" (ex.: "Carro 1", "Carro 2").`;
+  document.getElementById('addCartInput').value = '';
+  document.getElementById('modalAddCart').classList.add('open');
+  setTimeout(()=>document.getElementById('addCartInput').focus(), 50);
+});
+document.getElementById('addCartCancel').addEventListener('click', ()=>{
+  document.getElementById('modalAddCart').classList.remove('open');
+});
+document.getElementById('addCartConfirm').addEventListener('click', async ()=>{
+  const label = document.getElementById('addCartInput').value.trim();
+  if(!label){ toast('Informe um nome para o carro.','bad'); return; }
+  if(!currentAudit || !currentAudit.header.setor) return;
+  const setor = currentAudit.header.setor;
+  const btn = document.getElementById('addCartConfirm');
+  btn.disabled = true;
+  const ok = await addCartToSector(setor, label);
+  btn.disabled = false;
+  if(!ok) return;
+  document.getElementById('modalAddCart').classList.remove('open');
+  populateCarroSelect(setor);
+  document.getElementById('fCarro').value = label;
+  currentAudit.header.carro = label;
+  toast(`Carro "${label}" adicionado a "${setor}".`,'ok');
 });
 
 function buildCategoriesUI(){
@@ -1620,6 +1788,7 @@ function computeCounts(audit){
 async function persistAudit(finalize){
   const h = currentAudit.header;
   if(!h.setor){ toast('Informe o setor da auditoria.','bad'); document.getElementById('fSetor').focus(); return false; }
+  if(cartsForSector(h.setor).length && !h.carro){ toast('Selecione o carro deste setor.','bad'); document.getElementById('fCarro').focus(); return false; }
   if(!h.auditor){ toast('Informe o nome do auditor.','bad'); document.getElementById('fAuditor').focus(); return false; }
   if(finalize){
     const answered = currentAudit.items.filter(i=>i.status).length;
@@ -1633,7 +1802,7 @@ async function persistAudit(finalize){
   currentAudit.counts = computeCounts(currentAudit);
   currentAudit.updatedAt = Date.now();
 
-  await ensureSectorInCycle(currentAudit.cicloId, h.setor);
+  await ensureSectorInCycle(currentAudit.cicloId, trackKey(h.setor, h.carro));
 
   const savedDetail = await storageSet('audit_'+currentAudit.id, currentAudit);
   if(!savedDetail){
@@ -1645,7 +1814,7 @@ async function persistAudit(finalize){
     id: currentAudit.id,
     cicloId: currentAudit.cicloId || null,
     carroIndisponivel: !!h.carroIndisponivel,
-    setor: h.setor, auditor: h.auditor, enfermeiro: h.enfermeiro, data: h.data,
+    setor: h.setor, carro: h.carro || null, auditor: h.auditor, enfermeiro: h.enfermeiro, data: h.data,
     createdAt: currentAudit.createdAt, updatedAt: currentAudit.updatedAt,
     status: currentAudit.status, score: currentAudit.score, counts: currentAudit.counts,
     itemStatus: currentAudit.items.map(i=>({id:i.id, status:i.status})),
@@ -1781,6 +1950,7 @@ function applyHistoryFilters(){
     return `<tr onclick="openAuditDetail('${a.id}')">
       <td>${fmtDate(a.data)}</td>
       <td>${escapeHtml(a.setor)}</td>
+      <td>${a.carro?escapeHtml(a.carro):'—'}</td>
       <td>${numeroCiclo?('Ciclo '+numeroCiclo):'—'}</td>
       <td>${escapeHtml(a.auditor)}</td>
       <td><span class="score-pill" style="background:${sc.bg};color:${sc.c};">${a.status==='finalizada'?pct(a.score||0):'—'}</span></td>
@@ -1817,7 +1987,7 @@ async function openAuditDetail(id){
   const full = await storageGet('audit_'+id);
   if(!full){ toast('Auditoria não encontrada.','bad'); return; }
   currentDetailId = id;
-  document.getElementById('detTitle').textContent = full.header.setor + ' — ' + fmtDate(full.header.data);
+  document.getElementById('detTitle').textContent = full.header.setor + (full.header.carro? ' · '+full.header.carro:'') + ' — ' + fmtDate(full.header.data);
   document.getElementById('detSub').innerHTML = `Auditor: ${escapeHtml(full.header.auditor)}${full.header.enfermeiro? ' · Enfermeiro: '+escapeHtml(full.header.enfermeiro):''}${full.header.carroIndisponivel? ' <span class="tag tag-bad">Carro não disponível</span>':''}`;
 
   const sc = scoreColor(full.score||0);
@@ -1928,7 +2098,7 @@ async function openSectorDetail(name){
   document.getElementById('secHistoryBody').innerHTML = fin.slice().reverse().map(a=>{
     const sc = scoreColor(a.score);
     return `<tr onclick="openAuditDetail('${a.id}')">
-      <td>${fmtDate(a.data)}</td><td>${escapeHtml(a.auditor)}</td>
+      <td>${fmtDate(a.data)}</td><td>${a.carro?escapeHtml(a.carro):'—'}</td><td>${escapeHtml(a.auditor)}</td>
       <td><span class="score-pill" style="background:${sc.bg};color:${sc.c};">${pct(a.score)}</span></td>
       <td><span class="tag tag-ok">Finalizada</span></td>
       <td style="text-align:right;"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();confirmDeleteAudit('${a.id}')">Excluir</button></td>
@@ -2161,6 +2331,7 @@ async function init(){
   const fetched = await fetchIndexSafe();
   allAudits = fetched===undefined ? [] : fetched;
   await loadInactiveSectors();
+  await loadSectorCarts();
   await ensureCurrentCycle();
   showView('dashboard');
 }
