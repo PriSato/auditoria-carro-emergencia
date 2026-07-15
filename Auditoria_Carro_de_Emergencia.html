@@ -196,9 +196,12 @@ input,select,textarea{font-family:inherit;}
 
 .cycle-progress-label{font-size:13px;font-weight:700;color:var(--ink-soft);margin-top:8px;}
 .cycle-sector-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
-.cycle-sector-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid transparent;}
+.cycle-sector-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 8px 6px 12px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid transparent;}
 .cycle-sector-chip.done{background:var(--ok-bg);color:var(--ok);}
 .cycle-sector-chip.pending{background:var(--blue-50);color:var(--ink-soft);border-color:var(--line);}
+.cycle-sector-chip.inactive{background:#F1F3F5;color:var(--ink-faint);}
+.chip-remove{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;border:none;background:rgba(0,0,0,.08);color:inherit;font-size:10px;line-height:1;cursor:pointer;padding:0;flex-shrink:0;}
+.chip-remove:hover{background:rgba(0,0,0,.18);}
 .cycle-banner-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
 .sector-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;}
 .sector-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px;cursor:pointer;transition:.15s;box-shadow:var(--shadow-sm);}
@@ -567,6 +570,7 @@ input,select,textarea{font-family:inherit;}
       <!-- ============ CICLOS ============ -->
       <section class="view" id="view-cycles">
         <div class="card card-pad" id="currentCycleCard" style="margin-bottom:22px;"></div>
+        <div class="card card-pad" id="inactiveSectorsCard" style="margin-bottom:22px;display:none;"></div>
         <div class="section-title"><h2>Histórico de Ciclos</h2><span class="hint">Ciclos concluídos</span></div>
         <div class="card" style="overflow:auto;">
           <table class="audit-table" id="cyclesHistoryTable">
@@ -1035,12 +1039,57 @@ async function refreshAuditsFromStorage(){
    finalizada, o ciclo pode ser concluído e um novo é iniciado automaticamente,
    preservando o histórico completo dos ciclos anteriores.
    ========================================================================= */
-function requiredSectors(){ return SETORES_PLANILHA; }
+function requiredSectors(){ return SETORES_PLANILHA.filter(s=>!inactiveSectors.includes(s)); }
 
 async function fetchCyclesSafe(){
   const c = await storageGet('cycles');
   if(c===undefined) return undefined; // falha real de leitura
   return c || [];
+}
+
+/* Setores desativados (ex.: unidade fechada/reformada) não entram mais nos
+   ciclos novos nem contam nos indicadores, mas o histórico de auditorias
+   já feitas para eles é preservado. */
+async function fetchInactiveSectorsSafe(){
+  const s = await storageGet('inactive_sectors');
+  if(s===undefined) return undefined;
+  return s || [];
+}
+async function loadInactiveSectors(){
+  const fetched = await fetchInactiveSectorsSafe();
+  inactiveSectors = fetched===undefined ? [] : fetched;
+}
+async function refreshInactiveSectorsFromStorage(){
+  const fetched = await fetchInactiveSectorsSafe();
+  if(fetched===undefined) return;
+  inactiveSectors = fetched;
+}
+async function deactivateSector(setorName){
+  if(inactiveSectors.includes(setorName)) return true;
+  const updatedInactive = [...inactiveSectors, setorName];
+  const ok = await storageSet('inactive_sectors', updatedInactive);
+  if(!ok){ toast('Erro ao desativar o setor. Tente novamente.','bad'); return false; }
+  inactiveSectors = updatedInactive;
+  const current = getCurrentCycle();
+  if(current && current.setores.includes(setorName)){
+    const updatedCycles = allCycles.map(c=> c.id===current.id ? {...c, setores:c.setores.filter(s=>s!==setorName)} : c);
+    const okCycle = await storageSet('cycles', updatedCycles);
+    if(okCycle) allCycles = updatedCycles;
+  }
+  return true;
+}
+async function reactivateSector(setorName){
+  const updatedInactive = inactiveSectors.filter(s=>s!==setorName);
+  const ok = await storageSet('inactive_sectors', updatedInactive);
+  if(!ok){ toast('Erro ao reativar o setor. Tente novamente.','bad'); return false; }
+  inactiveSectors = updatedInactive;
+  const current = getCurrentCycle();
+  if(current && SETORES_PLANILHA.includes(setorName) && !current.setores.includes(setorName)){
+    const updatedCycles = allCycles.map(c=> c.id===current.id ? {...c, setores:[...c.setores, setorName]} : c);
+    const okCycle = await storageSet('cycles', updatedCycles);
+    if(okCycle) allCycles = updatedCycles;
+  }
+  return true;
 }
 
 /* Garante que exista um ciclo aberto, criando o primeiro (Nº 1) se necessário. */
@@ -1149,7 +1198,7 @@ function renderCycles(){
     const pctVal = Math.round(prog.pct*100);
     const chips = current.setores.map(s=>{
       const done = prog.doneSectors.includes(s);
-      return `<div class="cycle-sector-chip ${done?'done':'pending'}">${done?'✓':'○'} ${escapeHtml(s)}</div>`;
+      return `<div class="cycle-sector-chip ${done?'done':'pending'}">${done?'✓':'○'} ${escapeHtml(s)}<button class="chip-remove" title="Desativar setor" onclick="event.stopPropagation();confirmDeactivateSector('${escapeHtml(s).replace(/'/g,"\\'")}')">✕</button></div>`;
     }).join('');
     card.innerHTML = `
       <div class="cycle-banner-head">
@@ -1176,6 +1225,20 @@ function renderCycles(){
     card.innerHTML = '';
   }
 
+  const inactiveCard = document.getElementById('inactiveSectorsCard');
+  if(inactiveSectors.length){
+    inactiveCard.style.display = 'block';
+    inactiveCard.innerHTML = `
+      <div class="section-title" style="margin-top:0;"><h2>Setores Inativos</h2><span class="hint">Fora dos ciclos e indicadores</span></div>
+      <div class="cycle-sector-grid">
+        ${inactiveSectors.map(s=>`<div class="cycle-sector-chip inactive">${escapeHtml(s)}<button class="chip-remove" title="Reativar setor" onclick="reactivateSectorClick('${escapeHtml(s).replace(/'/g,"\\'")}')">↺</button></div>`).join('')}
+      </div>
+    `;
+  } else {
+    inactiveCard.style.display = 'none';
+    inactiveCard.innerHTML = '';
+  }
+
   const closedCycles = allCycles.filter(c=>c.status==='concluido').sort((a,b)=>b.numero-a.numero);
   document.getElementById('cyclesHistoryEmpty').style.display = closedCycles.length? 'none':'flex';
   document.getElementById('cyclesHistoryBody').innerHTML = closedCycles.map(c=>{
@@ -1200,12 +1263,24 @@ async function viewCycleAudits(cycleId){
   applyHistoryFilters();
 }
 
+function confirmDeactivateSector(setorName){
+  openConfirm('Desativar setor', `"${setorName}" deixará de contar nos indicadores e no progresso dos ciclos (atual e futuros). O histórico de auditorias já feitas para esse setor é mantido, e você pode reativá-lo depois.`, async ()=>{
+    const ok = await deactivateSector(setorName);
+    if(ok){ toast(`Setor "${setorName}" desativado.`,'ok'); renderCycles(); renderCycleBanner(); }
+  });
+}
+async function reactivateSectorClick(setorName){
+  const ok = await reactivateSector(setorName);
+  if(ok){ toast(`Setor "${setorName}" reativado.`,'ok'); renderCycles(); renderCycleBanner(); }
+}
+
 /* =========================================================================
    STATE
    ========================================================================= */
 let currentAudit = null; // objeto em edição
 let allAudits = [];      // índice carregado
 let allCycles = [];      // ciclos de auditoria carregados
+let inactiveSectors = []; // setores desativados (fora dos ciclos novos)
 let currentDetailId = null;
 let currentSector = null;
 let charts = {};
@@ -1260,6 +1335,7 @@ async function showView(name){
     // ...e revalida com o armazenamento em segundo plano (nunca remove itens, só une/atualiza).
     await refreshAuditsFromStorage();
     await refreshCyclesFromStorage();
+    await refreshInactiveSectorsFromStorage();
     if(document.getElementById('view-'+name).classList.contains('active')){
       if(name==='dashboard'){ renderDashboard(); renderCycleBanner(); }
       if(name==='history') renderHistory();
@@ -1353,7 +1429,7 @@ document.getElementById('fCarroIndisponivel').addEventListener('change', (e)=>{
 function populateSetorSelect(){
   const sel = document.getElementById('fSetor');
   sel.innerHTML = '<option value="" disabled selected>Selecione o setor...</option>'
-    + SETORES_PLANILHA.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('')
+    + SETORES_PLANILHA.filter(s=>!inactiveSectors.includes(s)).map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('')
     + `<option value="${SETOR_OUTRO}">Outro</option>`;
 }
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -2070,6 +2146,7 @@ document.getElementById('btnExportSector').addEventListener('click', async ()=>{
 async function init(){
   const fetched = await fetchIndexSafe();
   allAudits = fetched===undefined ? [] : fetched;
+  await loadInactiveSectors();
   await ensureCurrentCycle();
   showView('dashboard');
 }
