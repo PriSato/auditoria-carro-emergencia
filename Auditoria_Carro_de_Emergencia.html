@@ -506,8 +506,8 @@ input,select,textarea{font-family:inherit;}
               <label>Carro</label>
               <select id="fCarro"></select>
             </div>
-            <div class="field"><label>Auditor</label><input type="text" id="fAuditor" placeholder="Nome do auditor"></div>
-            <div class="field"><label>Enfermeiro Responsável</label><input type="text" id="fEnfermeiro" placeholder="Nome do enfermeiro"></div>
+            <div class="field"><label>Auditor *</label><input type="text" id="fAuditor" placeholder="Nome do auditor"></div>
+            <div class="field"><label>Enfermeiro Responsável *</label><input type="text" id="fEnfermeiro" placeholder="Nome do enfermeiro"></div>
           </div>
           <button type="button" class="link-btn" id="btnAddCart" style="display:none;">+ Este setor tem mais de um carro? Adicionar carro</button>
           <label class="checkbox-label">
@@ -1787,9 +1787,11 @@ function computeCounts(audit){
 
 async function persistAudit(finalize){
   const h = currentAudit.header;
+  if(!h.data){ toast('Informe a data da auditoria.','bad'); document.getElementById('fData').focus(); return false; }
   if(!h.setor){ toast('Informe o setor da auditoria.','bad'); document.getElementById('fSetor').focus(); return false; }
   if(cartsForSector(h.setor).length && !h.carro){ toast('Selecione o carro deste setor.','bad'); document.getElementById('fCarro').focus(); return false; }
-  if(!h.auditor){ toast('Informe o nome do auditor.','bad'); document.getElementById('fAuditor').focus(); return false; }
+  if(!h.auditor || !h.auditor.trim()){ toast('Informe o nome do auditor.','bad'); document.getElementById('fAuditor').focus(); return false; }
+  if(!h.enfermeiro || !h.enfermeiro.trim()){ toast('Informe o nome do enfermeiro responsável.','bad'); document.getElementById('fEnfermeiro').focus(); return false; }
   if(finalize){
     const answered = currentAudit.items.filter(i=>i.status).length;
     if(answered < currentAudit.items.length){
