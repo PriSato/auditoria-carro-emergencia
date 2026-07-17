@@ -270,6 +270,23 @@ input,select,textarea{font-family:inherit;}
 .med-alert{display:flex;flex-direction:column;gap:6px;background:var(--warn-bg);border:1px solid #F0DBAA;padding:10px 12px;border-radius:10px;}
 .med-alert label{font-size:11px;font-weight:700;color:var(--warn);text-transform:uppercase;}
 .med-alert select{border:1.5px solid #F0DBAA;background:#fffdf8;}
+.cart-checklist{margin-top:10px;max-height:420px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;background:#fff;}
+.cart-summary{position:sticky;top:0;background:#fff;padding:9px 12px;font-size:12px;font-weight:800;color:var(--navy-800);border-bottom:1px solid var(--line);z-index:1;}
+.cart-cat-head{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--navy-800);border-bottom:1px solid var(--line);user-select:none;}
+.cart-cat-head .hint{font-weight:600;color:var(--ink-faint);font-size:11px;}
+.cart-cat-head .chev{width:14px;height:14px;color:var(--ink-faint);transition:transform .2s;flex-shrink:0;margin-left:auto;}
+.cart-cat.open .chev{transform:rotate(180deg);}
+.cart-cat-body{display:none;}
+.cart-cat.open .cart-cat-body{display:block;}
+.cart-item-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 12px;border-bottom:1px solid #F3F7FB;font-size:12px;}
+.cart-item-row:last-child{border-bottom:none;}
+.cart-item-txt{flex:1;color:var(--ink);}
+.cart-item-txt .qtd{color:var(--ink-faint);font-weight:700;margin-right:6px;}
+.cart-item-btns{display:flex;gap:4px;flex-shrink:0;}
+.cart-btn{width:26px;height:26px;border-radius:7px;border:1.5px solid var(--line);background:#fff;font-size:12px;color:var(--ink-soft);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.cart-btn.sel-ok{background:var(--ok-bg);border-color:var(--ok);color:var(--ok);}
+.cart-btn.sel-warn{background:var(--warn-bg);border-color:var(--warn);color:var(--warn);}
+.cart-btn.sel-bad{background:var(--bad-bg);border-color:var(--bad);color:var(--bad);}
 .photo-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
 .photo-thumb{position:relative;width:64px;height:64px;border-radius:10px;overflow:hidden;border:1px solid var(--line);flex-shrink:0;}
 .photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
@@ -729,6 +746,12 @@ const ICONS = {
   refresh:'<path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 4v4h-4M6 20v-4h4"/>',
   pin:'<path d="M12 21s7-6.6 7-12a7 7 0 1 0-14 0c0 5.4 7 12 7 12z"/><circle cx="12" cy="9" r="2.4"/>',
 };
+
+/* Listas de medicamentos e insumos por perfil de carro (Adulto/Infantil/Misto),
+   extraídas dos arquivos "C LIST E INSUMOS PARA CARRO DE PARADA..." da farmácia
+   (atualizado em julho/2025). Usadas no item 16 para facilitar a conferência
+   de validade item a item. */
+const CART_PROFILES = {"adulto":[{"nome":"Medicamentos","itens":[{"qtd":"03 ampolas","nome":"Ácido tranexâmico 250 mg/5 ml"},{"qtd":"03 ampolas","nome":"Adenosina 3mg/ml 2ml"},{"qtd":"10 ampolas","nome":"Água destilada 10 ml"},{"qtd":"03 ampolas","nome":"Amiodarona, cloridrato 50mg/3mL"},{"qtd":"5 comp.","nome":"Ácido Acetilsalicilico 100 mg"},{"qtd":"20 ampolas","nome":"Atropina, sulfato 25 mcg/1mL"},{"qtd":"05 ampolas","nome":"Bicarbonato de sódio 8,4% 10ml"},{"qtd":"01 ampola","nome":"Clonidina, Cloridrato 150 mcg/ml 1 ml"},{"qtd":"05 comp.","nome":"Clopidogrel 75 mg"},{"qtd":"01 ampola","nome":"Deslanosídeo 0,2mg/ml"},{"qtd":"02 ampolas","nome":"Dexametasona 4 mg/ml 2,5 ml"},{"qtd":"02 ampolas","nome":"Diazepam 5mg/ml 2ml"},{"qtd":"02 ampolas","nome":"Dopamina, cloridrato 5 mg/10mL"},{"qtd":"05 ampolas","nome":"Dobutamina 250mg 5mg/ml 10ml"},{"qtd":"02 ampolas","nome":"Etomidato 2mg /mL"},{"qtd":"40 ampolas","nome":"Epinefrina 1mg/ml (Adrenalina)"},{"qtd":"02 ampolas","nome":"Fenitoína 50 mg/ml 5mL"},{"qtd":"02 ampolas","nome":"Fenobarbital 100 mg/2mL"},{"qtd":"05 frascos","nome":"Fentanila, citrato 0,05mg/mL 10 mL"},{"qtd":"02 ampolas","nome":"Flumazenil 0,1 mg/ml 5 ml"},{"qtd":"05 ampolas","nome":"Glicose 50% - 10ml"},{"qtd":"04 ampolas","nome":"Gliconato de cálcio 10%"},{"qtd":"01 ampola","nome":"Heparina 5000UI 5ml"},{"qtd":"02 ampolas","nome":"Hidrocortisona 100mg"},{"qtd":"01 ampola","nome":"Hidrocortisona 500mg"},{"qtd":"05 comp.","nome":"Isordil ,Isossorbida 5mg (Sublingual)"},{"qtd":"05 ampolas","nome":"Magnésio, sulfato 10% 10 mL"},{"qtd":"01 ampola","nome":"Morfina, sulfato 10 mg/ml 1 ml"},{"qtd":"03 ampolas","nome":"Midazolan 5 mg/ml 3 ml (15mg)"},{"qtd":"03 ampolas","nome":"Midazolan 5 mg/ml 10 ml (50mg)"},{"qtd":"01 ampola","nome":"Naloxona Cloridrato 0,4 mg/ml 1 ml"},{"qtd":"08 ampolas","nome":"Noradrenalina 2mg/ml 4 ml (norepinefrina)"},{"qtd":"03 ampolas","nome":"Prometazina 25 mg/ml 2 ml"},{"qtd":"02 frascos","nome":"Suxametônio, cloridrato 100 mg"},{"qtd":"03 ampolas","nome":"Tramadol, cloridrato 50 mg/ml 2 ml"},{"qtd":"02 ampolas","nome":"Vasopressina 20U/Ml 1ml"}]},{"nome":"Acesso Intravascular","itens":[{"qtd":"5","nome":"Agulha descartável 13x4,5"},{"qtd":"5","nome":"Agulha descartável 25x7,0"},{"qtd":"5","nome":"Agulha descartável 40x12"},{"qtd":"2","nome":"Angiocath nº 14 (jelco)"},{"qtd":"2","nome":"Angiocath nº 16 (jelco)"},{"qtd":"2","nome":"Angiocath nº 18 (jelco)"},{"qtd":"2","nome":"Angiocath nº 20 (jelco)"},{"qtd":"2","nome":"Angiocath nº 22 (jelco)"},{"qtd":"2","nome":"Angiocath nº 24 (jelco)"},{"qtd":"1","nome":"Cateter duplo - lumen adulto"},{"qtd":"2","nome":"Equipo para bomba infusão parenteral"},{"qtd":"2","nome":"Equipo macrogotas simples"},{"qtd":"1","nome":"Equipo para sangue"},{"qtd":"2","nome":"Extensorfix equipo 2 vias c/ clamp"},{"qtd":"1","nome":"Curativo IVFIX"},{"qtd":"5","nome":"Seringa descartável 01 ml"},{"qtd":"5","nome":"Seringa descartável 03 ml"},{"qtd":"5","nome":"Seringa descartável 05 ml"},{"qtd":"5","nome":"Seringa descartável 10 ml"},{"qtd":"5","nome":"Seringa descartável 20 ml"},{"qtd":"1","nome":"Seringa descartável 60 ml"}]},{"nome":"Suporte Ventilatório","itens":[{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 7,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 7,5"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 8,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 8,5"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 9,0"},{"qtd":"1","nome":"Sonda nasogástrica longa nº 16"},{"qtd":"1","nome":"Sonda nasogástrica longa nº 18"},{"qtd":"1","nome":"Sonda nasogastrica longa nº 20"},{"qtd":"2","nome":"Sonda para aspiração traqueal nº12"},{"qtd":"1","nome":"TQT 7,0"},{"qtd":"1","nome":"TQT 7,5"},{"qtd":"1","nome":"TQT 8,0"},{"qtd":"1","nome":"TQT 8,5"},{"qtd":"1","nome":"TQT 9,0"},{"qtd":"1","nome":"Filtro HEPA"},{"qtd":"1","nome":"Filtro HEMF"},{"qtd":"1","nome":"Cadarço 60cm"}]},{"nome":"Soluções e Outros","itens":[{"qtd":"2","nome":"Sonda uretral nº12"},{"qtd":"1","nome":"Sonda foley nº 16 duas vias"},{"qtd":"1","nome":"Coletor de urina fechado"},{"qtd":"1","nome":"Coletor de urina aberto"},{"qtd":"2","nome":"Bicarbonato de sódio 8,4% 250ml"},{"qtd":"4","nome":"Soro fisiológico 0,9% 100 ml"},{"qtd":"4","nome":"Soro fisiológico 0,9% 250 ml"},{"qtd":"3","nome":"Soro fisiológico 0,9% 500 ml"},{"qtd":"1","nome":"Soro glicofisiológico 500 ml"},{"qtd":"2","nome":"Soro glicosado 5% 100 ml"},{"qtd":"2","nome":"Soro glicosado 5% 250 ml"},{"qtd":"1","nome":"Soro glicosada 5% 500 ml"},{"qtd":"1","nome":"Soro de ringer lactato 500 ml"}]},{"nome":"Material Externo","itens":[{"qtd":"1","nome":"Luva estéril 6,5"},{"qtd":"1","nome":"Luva estéril 7,0"},{"qtd":"1","nome":"Luva estéril 7,5"},{"qtd":"1","nome":"Luva estéril 8,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 7,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 7,5"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 8,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 8,5"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 9,0"},{"qtd":"1","nome":"Compressa de gaze 7,5cm x 7,5cm estéril"},{"qtd":"1","nome":"Sonda para aspiração nº12"},{"qtd":"1","nome":"Xilocalina spray"},{"qtd":"1","nome":"Xilocaina gel"},{"qtd":"1","nome":"Fio guia Bougie"},{"qtd":"1","nome":"Lâmina laring. Curva nº 3.0"},{"qtd":"1","nome":"Lâmina laring. Curva nº 4.0"},{"qtd":"1","nome":"Lâmina laring. Curva nº 5.0"},{"qtd":"2","nome":"Cabo de laringoscópio"},{"qtd":"2","nome":"Pilhas de reserva"},{"qtd":"1","nome":"Fluxômetro"},{"qtd":"1","nome":"Cilindro de O2 com válvula fechada"},{"qtd":"1","nome":"Seringa 20 cc"},{"qtd":"1","nome":"Monitor multiparâmetro"},{"qtd":"1","nome":"Desfibrilador"},{"qtd":"10","nome":"Eletrodo Descartável"},{"qtd":"1","nome":"Prancha de compressão toracica"},{"qtd":"2","nome":"Carro com lacre"}]}],"infantil":[{"nome":"Medicamentos","itens":[{"qtd":"03 ampolas","nome":"Adenosina 3mg/ml - 2ml (6mg)"},{"qtd":"10 ampolas","nome":"Água destilada 10 ml"},{"qtd":"02 ampolas","nome":"Amiodarona, cloridrato 50 mg/3mL"},{"qtd":"05 ampolas","nome":"Atropina, sulfato 25 mcg/1mL"},{"qtd":"02 ampolas","nome":"Bicarbonato de sódio 8,4% 10ml"},{"qtd":"05 ampolas","nome":"Cloreto de Sódio 0,9% 10ml"},{"qtd":"02 ampolas","nome":"Cloreto de Potássio 10% 10ml"},{"qtd":"02 ampolas","nome":"Cloreto de Sódio 10% 10ml"},{"qtd":"02 ampolas","nome":"Dexametasona 4 mg/ml 2,5 ml"},{"qtd":"01 ampola","nome":"Dexmedetomidina 100mcg/ml"},{"qtd":"04 ampolas","nome":"Escetamina, cloridrato 50mg/ml (Ketamin)"},{"qtd":"02 ampolas","nome":"Diazepam 5 mg/2mL"},{"qtd":"02 ampolas","nome":"Dopamina, cloridrato 5 mg/10mL"},{"qtd":"02 ampolas","nome":"Dobutamina 250mg 5mg/ml 10ml"},{"qtd":"02 ampolas","nome":"Etilefrina 10mg/1ml"},{"qtd":"10 ampolas","nome":"Epinefrina 1mg/ml (Adrenalina)"},{"qtd":"02 ampolas","nome":"Fenitoína 50 mg/ml 5mL"},{"qtd":"05 frascos","nome":"Fentanila, citrato 0,05mg/mL 10 mL"},{"qtd":"02 ampolas","nome":"Fenobarbital 100 mg/2mL"},{"qtd":"02 ampolas","nome":"Furosemida 10mg/2mL"},{"qtd":"04 ampolas","nome":"Glicose 50% 10 mL"},{"qtd":"02 ampolas","nome":"Gliconato de Cálcio 10% 10mL"},{"qtd":"02 ampolas","nome":"Haloperidol 5mg/ml 1 ml"},{"qtd":"02 frascos","nome":"Hidrocortisona, succinato 100mg"},{"qtd":"02 ampolas","nome":"Lidocaína sem epinefrina 2% 20ml"},{"qtd":"05 ampolas","nome":"Magnésio, sulfato 10% 10 mL"},{"qtd":"03 ampolas","nome":"Midazolan 5 mg/ml 10 ml (50mg)"},{"qtd":"03 ampolas","nome":"Midazolan 5 mg/ml 3 ml (15mg)"},{"qtd":"02 ampolas","nome":"Morfina, sulfato 10 mg/ml 1 ml"},{"qtd":"02 ampolas","nome":"Noradrenalina 2mg/ml 4 ml"},{"qtd":"02 ampolas","nome":"Prometazina 25 mg/ml 2 ml"},{"qtd":"02 ampolas","nome":"Vasopressina 20U/Ml 1ml"}]},{"nome":"Acesso Intravascular","itens":[{"qtd":"3","nome":"Agulha descartável 13x4,5"},{"qtd":"3","nome":"Agulha descartável 25x7,0"},{"qtd":"3","nome":"Agulha descartável 40x12"},{"qtd":"2","nome":"Angiocath nº 20 (jelco)"},{"qtd":"2","nome":"Angiocath nº 22 (jelco)"},{"qtd":"2","nome":"Angiocath nº 24 (jelco)"},{"qtd":"1","nome":"Equipo para bomba de infusão"},{"qtd":"1","nome":"Equipo para sangue"},{"qtd":"1","nome":"Torneirinha 3 vias"},{"qtd":"1","nome":"Extensorfix equipo 2 vias c/ clamp"},{"qtd":"5","nome":"Seringa descartável 01 ml"},{"qtd":"5","nome":"Seringa descartável 03 ml"},{"qtd":"5","nome":"Seringa descartável 05 ml"},{"qtd":"5","nome":"Seringa descartável 10 ml"},{"qtd":"5","nome":"Seringa descartável 20 ml"},{"qtd":"1","nome":"Curativo IVFIX"},{"qtd":"1","nome":"Cateter duplo lúmen pediátrico"}]},{"nome":"Suporte Ventilatório","itens":[{"qtd":"2","nome":"Sonda endot. s/balão nº 2,0"},{"qtd":"2","nome":"Sonda endot. s/balão nº 2,5"},{"qtd":"2","nome":"Sonda endot. s/balão nº 3,0"},{"qtd":"2","nome":"Sonda endot. s/balão nº 3,5"},{"qtd":"2","nome":"Sonda endot. c/balão nº 4,0"},{"qtd":"2","nome":"Sonda endot. c/balão nº 4,5"},{"qtd":"2","nome":"Sonda endot. s/balão nº 4,0"},{"qtd":"2","nome":"Sonda endot. s/balão nº 4,5"},{"qtd":"2","nome":"Sonda endot. s/balão nº 5,0"},{"qtd":"2","nome":"Sonda endot. s/balão nº 5,5"},{"qtd":"2","nome":"Sonda endot. s/balão nº 6,0"},{"qtd":"2","nome":"Sonda endot. c/balão nº 5,0"},{"qtd":"2","nome":"Sonda endot. c/balão nº 5,5"},{"qtd":"2","nome":"Sonda endot. c/balão nº 6,0"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 06"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 08"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 10"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 12"},{"qtd":"3","nome":"Sonda para aspiração traqueal nº 6"},{"qtd":"3","nome":"Sonda para aspiração traqueal nº 8"},{"qtd":"3","nome":"Sonda para aspiração traqueal nº 10"},{"qtd":"1","nome":"Cateter de O2 tipo óculos infantil"}]},{"nome":"Soluções e Outros","itens":[{"qtd":"2","nome":"Sonda uretral nº 4"},{"qtd":"2","nome":"Sonda uretral nº 6"},{"qtd":"2","nome":"Sonda uretral nº 8"},{"qtd":"2","nome":"Sonda uretal nº 10"},{"qtd":"2","nome":"Sonda uretal nº 12"},{"qtd":"1","nome":"Bicarbonato de sódio 8,4% 250ml"},{"qtd":"2","nome":"Água destilada 100ml"},{"qtd":"2","nome":"Água destilada 250ml"},{"qtd":"2","nome":"Soro fisiológico 0,9% 100 ml"},{"qtd":"2","nome":"Soro fisiológico 0,9% 250 ml"},{"qtd":"2","nome":"Soro fisiológico 0,9% 500 ml"},{"qtd":"2","nome":"Soro glicofisiológico 500 ml"},{"qtd":"2","nome":"Soro glicosado 5% 100 ml"},{"qtd":"2","nome":"Soro glicosado 5% 250 ml"},{"qtd":"2","nome":"Soro glicosado 5% 500 ml"}]},{"nome":"Material Externo","itens":[{"qtd":"1","nome":"Luva estéril 6,5"},{"qtd":"1","nome":"Luva estéril 7,0"},{"qtd":"1","nome":"Luva estéril 7,5"},{"qtd":"1","nome":"Luva estéril 8,0"},{"qtd":"1","nome":"Compressa de gaze estéril"},{"qtd":"1","nome":"Latex"},{"qtd":"1","nome":"Sonda para aspiração nº 12"},{"qtd":"1","nome":"Máscara de O2 com reservatório"},{"qtd":"1","nome":"Soro fisiológico 0,9% 10ml"},{"qtd":"1","nome":"Umidificador"},{"qtd":"1","nome":"Cânula orofaríngea (guedel) n°0,1,2,3,7 e 9"},{"qtd":"1","nome":"Cadarço"},{"qtd":"1","nome":"Bougie"},{"qtd":"1","nome":"Lâmina laring. Curva nº 3"},{"qtd":"1","nome":"Lâmina laring. Curva nº 4"},{"qtd":"1","nome":"Lâmina laring. Curva nº 5"},{"qtd":"2","nome":"Cabo de laringoscópio"},{"qtd":"2","nome":"Pilhas de reserva"},{"qtd":"1","nome":"Fluxômetro"},{"qtd":"1","nome":"Cilindro de O2 com válvula fechada"},{"qtd":"1","nome":"Seringa 20cc"},{"qtd":"1","nome":"Monitor multiparâmetro"},{"qtd":"1","nome":"Desfibrilador testado"},{"qtd":"10","nome":"Eletrodo Descartável"},{"qtd":"1","nome":"Prancha de compressão toracica"},{"qtd":"1","nome":"Gel contador"},{"qtd":"1","nome":"Quantidade de litros de O2"}]}],"misto":[{"nome":"Medicamentos","itens":[{"qtd":"03 ampolas","nome":"Ácido tranexâmico 250 mg/5 ml"},{"qtd":"03 ampolas","nome":"Adenosina 3mg/ml/ 2ml"},{"qtd":"10 ampolas","nome":"Água destilada 10 ml"},{"qtd":"03 ampolas","nome":"Amiodarona, cloridrato 50mg/3mL"},{"qtd":"5 comp.","nome":"Ácido Acetilsalicilico 100 mg"},{"qtd":"20 ampolas","nome":"Atropina, sulfato 25 mcg/1mL"},{"qtd":"05 ampolas","nome":"Bicarbonato de sódio 8,4% 10ml"},{"qtd":"01 ampola","nome":"Clonidina, Cloridrato 150 mcg/ml 1 ml"},{"qtd":"05 comp.","nome":"Clopidogrel 75 mg"},{"qtd":"05 ampolas","nome":"Cloreto de Potássio 19,1% 10ml"},{"qtd":"02 ampolas","nome":"Cloreto de Potássio 10% 10ml"},{"qtd":"02 ampolas","nome":"Cloreto de Sódio 10% 10ml"},{"qtd":"01 ampola","nome":"Deslanosídeo 0,2mg/ml"},{"qtd":"02 ampolas","nome":"Dexametasona 4 mg/ml 2,5 ml"},{"qtd":"01 ampola","nome":"Dextrocetamina 50 mg/ml 2ml"},{"qtd":"02 ampolas","nome":"Diazepam 5mg/ml 2ml"},{"qtd":"02 ampolas","nome":"Dopamina, cloridrato 5 mg/10mL"},{"qtd":"05 ampolas","nome":"Dobutamina 250mg 5mg/ml 10ml"},{"qtd":"02 ampolas","nome":"Etomidato 2mg /mL"},{"qtd":"40 ampolas","nome":"Epinefrina 1mg/ml (Adrenalina)"},{"qtd":"02 ampolas","nome":"Fenitoína 50 mg/ml 5mL"},{"qtd":"02 ampolas","nome":"Fenobarbital 100 mg/2mL"},{"qtd":"05 frascos","nome":"Fentanila, citrato 0,05mg/mL 10 mL"},{"qtd":"02 ampolas","nome":"Furosemida 10mg/2mL"},{"qtd":"02 ampolas","nome":"Flumazenil 0,1 mg/ml 5 ml"},{"qtd":"5 ampolas","nome":"Glicose 50% 10 mL"},{"qtd":"04 ampolas","nome":"Gliconato de Cálcio 10% 10mL"},{"qtd":"01 ampolas","nome":"Heparina (IV) 5000UI/ML 5ML"},{"qtd":"02 frascos","nome":"Hidrocortisona, succinato 100mg"},{"qtd":"01 frasco","nome":"Hidrocortisona, succinato 500mg"},{"qtd":"05 comp.","nome":"Isordil ,Isossorbida 5mg (Sublingual)"},{"qtd":"02 ampolas","nome":"Lidocaína sem epinefrina 2% 20ml"},{"qtd":"05 ampolas","nome":"Magnésio, sulfato 10% 10 mL"},{"qtd":"03 ampolas","nome":"Midazolan 5 mg/ml 3 ml (15mg)"},{"qtd":"03 ampolas","nome":"Midazolan 5 mg/ml 10 ml (50mg)"},{"qtd":"01 ampola","nome":"Morfina, sulfato 10 mg/ml 1 ml"},{"qtd":"01 ampola","nome":"Naloxona Cloridrato 0,4 mg/ml 1 ml"},{"qtd":"05 ampolas","nome":"Noradrenalina 2mg/ml 4 ml (norepinefrina)"},{"qtd":"03 ampolas","nome":"Prometazina 25 mg/ml 2 ml"},{"qtd":"02 frascos","nome":"Suxametônio, cloridrato 100 mg"},{"qtd":"03 ampolas","nome":"Tramadol, cloridrato 50 mg/ml 2 ml"},{"qtd":"02 ampolas","nome":"Vasopressina 20U/Ml 1ml"}]},{"nome":"Acesso Intravascular","itens":[{"qtd":"5","nome":"Agulha descartável 13x4,5"},{"qtd":"5","nome":"Agulha descartável 25x7,0"},{"qtd":"5","nome":"Agulha descartável 40x12"},{"qtd":"2","nome":"Angiocath nº 14 (jelco)"},{"qtd":"2","nome":"Angiocath nº 16 (jelco)"},{"qtd":"2","nome":"Angiocath nº 18 (jelco)"},{"qtd":"2","nome":"Angiocath nº 20 (jelco)"},{"qtd":"2","nome":"Angiocath nº 22 (jelco)"},{"qtd":"2","nome":"Angiocath nº 24 (jelco)"},{"qtd":"1","nome":"Cateter duplo - lumen"},{"qtd":"1","nome":"Cateter duplo lúmen pediátrico"},{"qtd":"2","nome":"Equipo para bomba de infusão"},{"qtd":"2","nome":"Equipo macrogotas simples"},{"qtd":"1","nome":"Equipo para sangue"},{"qtd":"1","nome":"Curativo IVFIX"},{"qtd":"2","nome":"Extensorfix equipo 2 vias c/ clamp"},{"qtd":"5","nome":"Seringa descartável 01 ml"},{"qtd":"5","nome":"Seringa descartável 03 ml"},{"qtd":"5","nome":"Seringa descartável 05 ml"},{"qtd":"5","nome":"Seringa descartável 10 ml"},{"qtd":"5","nome":"Seringa descartável 20 ml"},{"qtd":"1","nome":"Seringa descartável 60 ml"}]},{"nome":"Suporte Ventilatório","itens":[{"qtd":"1","nome":"Cateter de O2 tipo óculos infantil"},{"qtd":"1","nome":"Cateter de O2 tipo óculos adulto"},{"qtd":"1","nome":"Sonda endot. s/balão nº 2,0"},{"qtd":"1","nome":"Sonda endot. s/balão nº 2,5"},{"qtd":"1","nome":"Sonda endot. s/balão nº 3,0"},{"qtd":"1","nome":"Sonda endot. s/balão nº 3,5"},{"qtd":"1","nome":"Sonda endot. c/balão nº 4,0"},{"qtd":"1","nome":"Sonda endot. c/balão nº 4,5"},{"qtd":"1","nome":"Sonda endot. s/balão nº 4,0"},{"qtd":"1","nome":"Sonda endot. s/balão nº 4,5"},{"qtd":"1","nome":"Sonda endot. c/balão nº 5,0"},{"qtd":"1","nome":"Sonda endot. c/balão nº 5,5"},{"qtd":"1","nome":"Sonda endot. c/balão nº 6,0"},{"qtd":"1","nome":"Sonda endot. s/balão nº 5,0"},{"qtd":"1","nome":"Sonda endot. s/balão nº 5,5"},{"qtd":"1","nome":"Sonda endot. s/balão nº 6,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 7,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 7,5"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 8,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 8,5"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 9,0"},{"qtd":"1","nome":"Sonda nasogástrica longa nº 16"},{"qtd":"1","nome":"Sonda nasogástrica longa nº 18"},{"qtd":"1","nome":"Sonda nasogastrica longa nº 20"},{"qtd":"3","nome":"Sonda para aspiração traqueal nº 8"},{"qtd":"3","nome":"Sonda para aspiração traqueal nº 10"},{"qtd":"2","nome":"Sonda para aspiração traqueal nº12"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 06"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 08"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 10"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 12"},{"qtd":"1","nome":"Sonda nasogástrica longa nº 16"},{"qtd":"1","nome":"Sonda nasogástrica longa nº 18"},{"qtd":"1","nome":"Sonda nasogástrica longa nº 20"}]},{"nome":"Soluções e Outros","itens":[{"qtd":"1","nome":"Coletor de urina fechado"},{"qtd":"1","nome":"Coletor de urina aberto"},{"qtd":"1","nome":"Sonda foley nº 16 duas vias"},{"qtd":"1","nome":"Cadarço 60cm"},{"qtd":"2","nome":"Sonda uretral nº 4"},{"qtd":"2","nome":"Sonda uretral nº 6"},{"qtd":"2","nome":"Sonda uretral nº 8"},{"qtd":"2","nome":"Sonda uretal nº 10"},{"qtd":"2","nome":"Sonda uretal nº 12"},{"qtd":"2","nome":"Bicarbonato de sódio 8,4% 250ml"},{"qtd":"4","nome":"Soro fisiológico 0,9% 100 ml"},{"qtd":"4","nome":"Soro fisiológico 0,9% 250 ml"},{"qtd":"3","nome":"Soro fisiológico 0,9% 500 ml"},{"qtd":"1","nome":"Soro glicofisiológico 500 ml"},{"qtd":"2","nome":"Soro glicosado 5% 100 ml"},{"qtd":"2","nome":"Soro glicosado 5% 250 ml"},{"qtd":"1","nome":"Soro glicosada 5% 500 ml"},{"qtd":"1","nome":"Soro de ringer lactato 500 ml"}]},{"nome":"Material Externo","itens":[{"qtd":"1","nome":"Luva estéril 6,5"},{"qtd":"1","nome":"Luva estéril 7,0"},{"qtd":"1","nome":"Luva estéril 7,5"},{"qtd":"1","nome":"Luva estéril 8,0"},{"qtd":"1","nome":"Luva estéril 8,5"},{"qtd":"1","nome":"Compressa de gaze 7,5cm x 7,5cm estéril"},{"qtd":"2","nome":"Água para injeção 10ml"},{"qtd":"1","nome":"Sonda para aspiração nº12"},{"qtd":"1","nome":"Xilocalina spray"},{"qtd":"1","nome":"Xilocaina gel"},{"qtd":"1","nome":"Fio guia - Bougie"},{"qtd":"1","nome":"Lâmina laring. Curva nº 3.0"},{"qtd":"1","nome":"Lâmina laring. Curva nº 4.0"},{"qtd":"1","nome":"Lâmina laring. Curva nº 5.0"},{"qtd":"1","nome":"Cânula orofaríngea (guedel) n°0,1,2,3,7 e 9"},{"qtd":"2","nome":"Cabo de laringoscópio"},{"qtd":"2","nome":"Pilhas de reserva"},{"qtd":"1","nome":"Fluxômetro"},{"qtd":"1","nome":"Seringa 20 cc"},{"qtd":"1","nome":"Monitor multiparâmetro"},{"qtd":"1","nome":"Desfibrilador"},{"qtd":"10","nome":"Eletrodos Descartáveis"},{"qtd":"1","nome":"Prancha de compressão toracica"},{"qtd":"1","nome":"Cilindro de O2 com válvula fechada"},{"qtd":"1","nome":"Quantidade de litros de O2"}]}]};
 
 const ITEMS = [
  {id:1,cat:'acesso',texto:'Carro com fácil acesso, sem obstruções.'},
@@ -1524,7 +1547,7 @@ async function startNewAudit(){
     id: uid(),
     cicloId: cycle ? cycle.id : null,
     header:{ data: todayISO(), setor:'', carro:'', auditor:'', enfermeiro:'', carroIndisponivel:false },
-    items: ITEMS.map(it=>({ id:it.id, status:null, obs:'', photos:[], medExtra:'' })),
+    items: ITEMS.map(it=>({ id:it.id, status:null, obs:'', photos:[], medExtra:'', cartPerfil:null, cartRespostas:{} })),
     status:'rascunho',
     createdAt: Date.now(),
   };
@@ -1679,14 +1702,15 @@ function itemRowHtml(it){
     </div>
     <div class="item-extra" id="itemextra-${it.id}" style="display:none;">
       ${it.medCheck ? `
-      <div class="med-alert" id="medalert-${it.id}" style="display:none;">
-        <label>Situação do medicamento/material</label>
-        <select onchange="setMedExtra(${it.id}, this.value)">
+      <div class="med-alert" id="medalert-${it.id}">
+        <label>Perfil do carro (abre a lista de itens para conferir a validade)</label>
+        <select id="cartPerfilSel-${it.id}" onchange="setCartPerfil(${it.id}, this.value)">
           <option value="">Selecione...</option>
-          <option value="vencido">Medicamento/material vencido</option>
-          <option value="proximo">Próximo do vencimento</option>
-          <option value="outro">Outra não conformidade</option>
+          <option value="adulto">Adulto</option>
+          <option value="misto">Misto (Adulto e Pediátrico)</option>
+          <option value="infantil">Infantil</option>
         </select>
+        <div id="cartChecklist-${it.id}"></div>
       </div>` : ``}
       <textarea placeholder="Observações (opcional)" onchange="setObs(${it.id}, this.value)"></textarea>
       <div class="photo-row" id="photorow-${it.id}">
@@ -1709,14 +1733,88 @@ function setStatus(itemId, status){
   const btn = document.querySelector(`.status-btn[data-item="${itemId}"][data-status="${status}"]`);
   btn.classList.add(meta.cls);
   document.getElementById('itemextra-'+itemId).style.display='flex';
-  const itDef = ITEMS.find(i=>i.id===itemId);
-  if(itDef.medCheck){
-    document.getElementById('medalert-'+itemId).style.display = (status!=='conforme') ? 'flex':'none';
-  }
   updateProgress();
 }
 function setObs(itemId, val){ const item = currentAudit.items.find(i=>i.id===itemId); item.obs = val; }
-function setMedExtra(itemId, val){ const item = currentAudit.items.find(i=>i.id===itemId); item.medExtra = val; }
+
+/* =========================================================================
+   ITEM 16 — CONFERÊNCIA DE VALIDADE POR PERFIL DE CARRO
+   Ao escolher o perfil (Adulto/Misto/Infantil), abre a lista de
+   medicamentos e insumos daquele carro (CART_PROFILES) para o auditor
+   marcar item a item: válido, próximo do vencimento ou vencido.
+   ========================================================================= */
+function setCartPerfil(itemId, perfil){
+  const item = currentAudit.items.find(i=>i.id===itemId);
+  if(item.cartPerfil !== perfil){
+    // Os índices das respostas são específicos de cada perfil (listas
+    // diferentes); trocar de perfil sem limpar faria um "vencido" do
+    // Infantil, por exemplo, aparecer erroneamente num item do Misto.
+    item.cartRespostas = {};
+  }
+  item.cartPerfil = perfil || null;
+  renderCartChecklist(itemId);
+}
+function renderCartChecklist(itemId){
+  const item = currentAudit.items.find(i=>i.id===itemId);
+  const wrap = document.getElementById('cartChecklist-'+itemId);
+  if(!item.cartPerfil){ wrap.innerHTML=''; return; }
+  const categorias = CART_PROFILES[item.cartPerfil];
+  const respostas = item.cartRespostas || {};
+  const catsHtml = categorias.map((cat,ci)=>{
+    const rowsHtml = cat.itens.map((it2,ii)=>{
+      const key = ci+'_'+ii;
+      const val = respostas[key];
+      const cls = val==='ok'?'sel-ok':val==='proximo'?'sel-warn':val==='vencido'?'sel-bad':'';
+      return `<div class="cart-item-row" data-key="${key}">
+        <div class="cart-item-txt"><span class="qtd">${escapeHtml(it2.qtd)}</span>${escapeHtml(it2.nome)}</div>
+        <div class="cart-item-btns">
+          <button class="cart-btn ${val==='ok'?cls:''}" data-val="ok" title="Válido" onclick="setCartResposta(${itemId},'${key}','ok')">✓</button>
+          <button class="cart-btn ${val==='proximo'?cls:''}" data-val="proximo" title="Próx. vencimento" onclick="setCartResposta(${itemId},'${key}','proximo')">◐</button>
+          <button class="cart-btn ${val==='vencido'?cls:''}" data-val="vencido" title="Vencido" onclick="setCartResposta(${itemId},'${key}','vencido')">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="cart-cat open" data-cat="${ci}">
+      <div class="cart-cat-head" onclick="toggleCartCat(${itemId},${ci})">
+        ${escapeHtml(cat.nome)} <span class="hint">${cat.itens.length} itens</span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="cart-cat-body">${rowsHtml}</div>
+    </div>`;
+  }).join('');
+  wrap.innerHTML = `<div class="cart-checklist"><div class="cart-summary" id="cartSummary-${itemId}"></div>${catsHtml}</div>`;
+  updateCartSummary(itemId);
+}
+function setCartResposta(itemId, key, val){
+  const item = currentAudit.items.find(i=>i.id===itemId);
+  item.cartRespostas = item.cartRespostas || {};
+  const cur = item.cartRespostas[key];
+  const next = cur===val ? null : val;
+  if(next) item.cartRespostas[key] = next; else delete item.cartRespostas[key];
+  const row = document.querySelector(`#cartChecklist-${itemId} .cart-item-row[data-key="${key}"]`);
+  if(row){
+    row.querySelectorAll('.cart-btn').forEach(b=>b.classList.remove('sel-ok','sel-warn','sel-bad'));
+    if(next){
+      const cls = next==='ok'?'sel-ok':next==='proximo'?'sel-warn':'sel-bad';
+      row.querySelector(`.cart-btn[data-val="${next}"]`).classList.add(cls);
+    }
+  }
+  updateCartSummary(itemId);
+}
+function updateCartSummary(itemId){
+  const item = currentAudit.items.find(i=>i.id===itemId);
+  const categorias = CART_PROFILES[item.cartPerfil];
+  const respostas = item.cartRespostas || {};
+  let total=0, vencidos=0, proximos=0, conferidos=0;
+  categorias.forEach(cat=> cat.itens.forEach(()=> total++));
+  Object.values(respostas).forEach(v=>{ conferidos++; if(v==='vencido') vencidos++; if(v==='proximo') proximos++; });
+  const el = document.getElementById('cartSummary-'+itemId);
+  if(el) el.textContent = `${conferidos} de ${total} itens conferidos${vencidos||proximos?` · ${vencidos} vencido(s) · ${proximos} próximo(s) do vencimento`:''}`;
+}
+function toggleCartCat(itemId, ci){
+  const el = document.querySelector(`#cartChecklist-${itemId} .cart-cat[data-cat="${ci}"]`);
+  if(el) el.classList.toggle('open');
+}
 
 function addPhoto(itemId, input){
   const file = input.files[0];
@@ -1982,6 +2080,26 @@ function confirmDeleteAudit(id){
   });
 }
 
+/* Resume a conferência de validade do item 16 (perfil do carro + itens
+   vencidos/próximos do vencimento) para exibição no detalhe da auditoria. */
+function cartSummaryHtml(resp){
+  const categorias = CART_PROFILES[resp.cartPerfil];
+  if(!categorias) return '';
+  const respostas = resp.cartRespostas || {};
+  let total=0; categorias.forEach(cat=>cat.itens.forEach(()=>total++));
+  const conferidos = Object.keys(respostas).length;
+  const problemas = [];
+  categorias.forEach((cat,ci)=> cat.itens.forEach((it2,ii)=>{
+    const v = respostas[ci+'_'+ii];
+    if(v==='vencido' || v==='proximo') problemas.push({nome:it2.nome, v});
+  }));
+  const perfilLabel = {adulto:'Adulto', misto:'Misto (Adulto e Pediátrico)', infantil:'Infantil'}[resp.cartPerfil] || resp.cartPerfil;
+  return `<div class="cart-summary-detail" style="margin-top:6px;font-size:12px;color:var(--ink-soft);">
+    Perfil do carro: <strong>${escapeHtml(perfilLabel)}</strong> — ${conferidos} de ${total} itens conferidos
+    ${problemas.length?`<div style="margin-top:4px;">${problemas.map(p=>`<span class="tag ${p.v==='vencido'?'tag-bad':'tag-warn'}" style="margin:2px 4px 0 0;">${escapeHtml(p.nome)} — ${p.v==='vencido'?'Vencido':'Próx. vencimento'}</span>`).join('')}</div>`:''}
+  </div>`;
+}
+
 /* =========================================================================
    DETALHE DE AUDITORIA
    ========================================================================= */
@@ -2012,6 +2130,7 @@ async function openAuditDetail(id){
           <div class="stat-dot" style="background:${meta.color}"></div>
           <div class="body">
             <div class="txt">${it.id}. ${escapeHtml(it.texto)} <span class="tag" style="background:${meta.bg||'#EEF4FA'};color:${meta.color};margin-left:6px;">${meta.label}</span>${resp.medExtra?` <span class="tag tag-warn">${resp.medExtra==='vencido'?'Vencido':resp.medExtra==='proximo'?'Próx. vencimento':'Outro'}</span>`:''}</div>
+            ${resp.cartPerfil?cartSummaryHtml(resp):''}
             ${resp.obs?`<div class="obs">${escapeHtml(resp.obs)}</div>`:''}
             ${resp.photos && resp.photos.length?`<div class="imgs">${resp.photos.map(p=>`<img src="${p}" onclick="openLightbox('${p}')">`).join('')}</div>`:''}
           </div>
