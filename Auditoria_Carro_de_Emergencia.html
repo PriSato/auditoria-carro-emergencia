@@ -619,6 +619,10 @@ input,select,textarea{font-family:inherit;}
               <div class="sub" id="detSub" style="color:var(--ink-soft);font-size:12.5px;margin-top:4px;font-weight:600;"></div>
             </div>
             <div style="display:flex;gap:8px;">
+              <button class="btn btn-secondary btn-sm" id="btnEditAudit">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                Editar
+              </button>
               <button class="btn btn-secondary btn-sm" id="btnExportAudit">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 10l5 5 5-5"/><path d="M20 21H4"/></svg>
                 PDF
@@ -1427,6 +1431,7 @@ async function reactivateSectorClick(setorName){
    STATE
    ========================================================================= */
 let currentAudit = null; // objeto em edição
+let editingAuditId = null; // id da auditoria já existente sendo editada (null = auditoria nova)
 let allAudits = [];      // índice carregado
 let allCycles = [];      // ciclos de auditoria carregados
 let inactiveSectors = []; // setores desativados (fora dos ciclos novos)
@@ -1509,7 +1514,10 @@ document.getElementById('scrim').addEventListener('click', ()=>{
 document.getElementById('btnNovaAuditoriaNav').addEventListener('click', ()=> startNewAudit());
 document.getElementById('btnNovaAuditoriaTop').addEventListener('click', ()=> startNewAudit());
 document.getElementById('btnCancelAudit').addEventListener('click', ()=>{
-  openConfirm('Cancelar auditoria', 'As respostas preenchidas não serão salvas. Deseja continuar?', ()=>{ showView('dashboard'); });
+  openConfirm('Cancelar auditoria', 'As respostas preenchidas não serão salvas. Deseja continuar?', ()=>{
+    if(editingAuditId) openAuditDetail(editingAuditId);
+    else showView('dashboard');
+  });
 });
 document.getElementById('btnBackHistory').addEventListener('click', ()=> showView('history'));
 document.getElementById('btnBackSectors').addEventListener('click', ()=> showView('sectors'));
@@ -1541,6 +1549,7 @@ function openLightbox(src){ document.getElementById('lightboxImg').src=src; docu
    NOVA AUDITORIA — build form
    ========================================================================= */
 async function startNewAudit(){
+  editingAuditId = null;
   await refreshInactiveSectorsFromStorage();
   await refreshSectorCartsFromStorage();
   const cycle = getCurrentCycle();
@@ -1567,6 +1576,109 @@ async function startNewAudit(){
   updateProgress();
   showView('new-audit');
 }
+
+/* Reabre uma auditoria já salva (rascunho ou finalizada) no formulário de
+   edição, reaproveitando o mesmo id — ao salvar, sobrescreve a auditoria
+   original em vez de criar uma nova. Preenche com status "pendente" (sem
+   travar o salvamento) qualquer item do checklist que não existia quando
+   essa auditoria foi originalmente feita, principalmente para permitir
+   auditar itens novos em auditorias antigas. */
+async function editAudit(id){
+  const full = await storageGet('audit_'+id);
+  if(!full){ toast('Auditoria não encontrada.','bad'); return; }
+  editingAuditId = id;
+  await refreshInactiveSectorsFromStorage();
+  await refreshSectorCartsFromStorage();
+
+  full.header.carro = full.header.carro || '';
+  full.header.carroIndisponivel = !!full.header.carroIndisponivel;
+  const existingIds = new Set(full.items.map(i=>i.id));
+  ITEMS.forEach(it=>{
+    if(!existingIds.has(it.id)) full.items.push({ id:it.id, status:null, obs:'', photos:[], medExtra:'', cartPerfil:null, cartRespostas:{} });
+  });
+  full.items.forEach(i=>{
+    i.photos = i.photos || [];
+    i.cartPerfil = i.cartPerfil || null;
+    i.cartRespostas = i.cartRespostas || {};
+  });
+  currentAudit = full;
+
+  document.getElementById('fData').value = currentAudit.header.data || todayISO();
+  document.getElementById('fAuditor').value = currentAudit.header.auditor || '';
+  document.getElementById('fEnfermeiro').value = currentAudit.header.enfermeiro || '';
+
+  populateSetorSelect();
+  const sel = document.getElementById('fSetor');
+  const originalSetor = currentAudit.header.setor;
+  const isKnownSetor = SETORES_PLANILHA.includes(originalSetor);
+  if(isKnownSetor){
+    if(!Array.from(sel.options).some(o=>o.value===originalSetor)){
+      // Setor foi desativado depois que esta auditoria foi criada; adiciona
+      // de volta como opção só para exibir corretamente aqui.
+      const opt = document.createElement('option');
+      opt.value = originalSetor; opt.textContent = originalSetor + ' (desativado)';
+      sel.insertBefore(opt, sel.querySelector(`option[value="${SETOR_OUTRO}"]`));
+    }
+    sel.value = originalSetor;
+    document.getElementById('fSetorOutroWrap').style.display = 'none';
+    document.getElementById('fSetorOutro').value = '';
+    document.getElementById('btnAddCart').style.display = 'block';
+    const originalCarro = currentAudit.header.carro;
+    populateCarroSelect(originalSetor); // zera header.carro — restaurado abaixo
+    if(originalCarro){
+      document.getElementById('fCarro').value = originalCarro;
+      currentAudit.header.carro = originalCarro;
+    }
+  } else {
+    sel.value = SETOR_OUTRO;
+    document.getElementById('fSetorOutroWrap').style.display = 'flex';
+    document.getElementById('fSetorOutro').value = originalSetor || '';
+    document.getElementById('fCarroWrap').style.display = 'none';
+    document.getElementById('btnAddCart').style.display = 'none';
+    currentAudit.header.setor = originalSetor;
+  }
+
+  document.getElementById('fCarroIndisponivel').checked = !!currentAudit.header.carroIndisponivel;
+  setCarroIndisponivelUI(!!currentAudit.header.carroIndisponivel);
+
+  buildCategoriesUI();
+  restoreAuditUI();
+  updateProgress();
+  showView('new-audit');
+  document.getElementById('topTitle').textContent = 'Editar Auditoria';
+  document.getElementById('topSub').textContent = `${currentAudit.header.setor}${currentAudit.header.carro? ' · '+currentAudit.header.carro:''} — ${fmtDate(currentAudit.header.data)}`;
+}
+/* Restaura na tela (botões de status, observações, fotos, e a conferência
+   de validade do item 16) o que já estava salvo em currentAudit.items —
+   usado só ao entrar em modo de edição, já que uma auditoria nova sempre
+   começa em branco. */
+function restoreAuditUI(){
+  currentAudit.items.forEach(item=>{
+    const itDef = ITEMS.find(i=>i.id===item.id);
+    if(!itDef) return;
+    if(item.status){
+      document.querySelectorAll(`.status-btn[data-item="${item.id}"]`).forEach(b=>b.classList.remove('sel-ok','sel-warn','sel-bad'));
+      const meta = STATUS_META[item.status];
+      const btn = document.querySelector(`.status-btn[data-item="${item.id}"][data-status="${item.status}"]`);
+      if(btn) btn.classList.add(meta.cls);
+      const extra = document.getElementById('itemextra-'+item.id);
+      if(extra) extra.style.display = 'flex';
+    }
+    if(item.obs){
+      const ta = document.querySelector(`#itemextra-${item.id} textarea`);
+      if(ta) ta.value = item.obs;
+    }
+    renderPhotos(item.id);
+    if(itDef.medCheck && item.cartPerfil){
+      const sel = document.getElementById('cartPerfilSel-'+item.id);
+      if(sel){ sel.value = item.cartPerfil; renderCartChecklist(item.id); }
+    }
+  });
+}
+document.getElementById('btnEditAudit').addEventListener('click', ()=>{
+  if(currentDetailId) editAudit(currentDetailId);
+});
+
 function setCarroIndisponivelUI(indisponivel){
   document.getElementById('carroIndisponivelBanner').style.display = indisponivel ? 'block' : 'none';
   document.getElementById('progressWrap').style.display = indisponivel ? 'none' : '';
