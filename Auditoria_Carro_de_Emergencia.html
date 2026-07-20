@@ -108,6 +108,16 @@ input,select,textarea{font-family:inherit;}
 .brand-logo-plate img{display:block;width:100%;height:auto;filter:brightness(0) invert(1);}
 .brand-subtitle{color:#9FC1E3;font-size:11px;font-weight:600;letter-spacing:.3px;text-align:center;margin-top:10px;text-transform:uppercase;}
 
+.tipo-switcher{display:flex;gap:6px;background:rgba(255,255,255,.06);border-radius:11px;padding:4px;margin:0 4px 16px;}
+.tipo-btn{flex:1;background:none;border:none;color:#C9DEF2;font-size:11.5px;font-weight:700;padding:9px 6px;border-radius:8px;cursor:pointer;transition:.15s;text-align:center;}
+.tipo-btn:hover{background:rgba(255,255,255,.1);color:#fff;}
+.tipo-btn.active{background:rgba(46,139,255,.28);color:#fff;}
+.tipo-select-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
+.tipo-select-card{display:flex;flex-direction:column;align-items:center;gap:10px;padding:22px 14px;border:1.5px solid var(--line);border-radius:14px;background:#fff;cursor:pointer;transition:.15s;}
+.tipo-select-card:hover{border-color:var(--blue-500);background:var(--blue-50);transform:translateY(-1px);}
+.tipo-select-icon{width:42px;height:42px;border-radius:12px;background:var(--blue-100);color:var(--blue-600);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.tipo-select-label{font-size:13px;font-weight:700;color:var(--navy-900);text-align:center;}
+
 .nav-group{margin-bottom:6px;}
 .nav-item{
   display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:11px;color:#C9DEF2;
@@ -386,7 +396,7 @@ input,select,textarea{font-family:inherit;}
 <div id="authScreen">
   <div class="auth-card">
     <div class="auth-logo-wrap"><img id="authLogo" class="auth-logo" alt="Hospital Maternidade São Vicente de Paulo"></div>
-    <div class="auth-title">Auditoria dos Carros de Emergência</div>
+    <div class="auth-title">Auditoria de Carros — Emergência e Medicação</div>
     <h2 id="authTitle">Entrar</h2>
     <div class="sub" id="authSub">Acesse com seu email e senha para continuar.</div>
     <div class="auth-error" id="authError"></div>
@@ -407,7 +417,11 @@ input,select,textarea{font-family:inherit;}
       <div class="brand-logo-plate">
         <img id="sidebarLogoImg" src="data:image/png;base64,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" alt="Hospital Maternidade São Vicente de Paulo">
       </div>
-      <div class="brand-subtitle">Auditoria de Carros de Emergência</div>
+      <div class="brand-subtitle" id="brandSubtitle">Auditoria de Carros de Emergência</div>
+    </div>
+    <div class="tipo-switcher" id="tipoSwitcher">
+      <button type="button" class="tipo-btn active" data-tipo="emergencia">🚑 Emergência</button>
+      <button type="button" class="tipo-btn" data-tipo="medicacao">💊 Medicação</button>
     </div>
     <nav>
       <div class="nav-group">
@@ -445,7 +459,7 @@ input,select,textarea{font-family:inherit;}
       </span>
     </button>
     <div class="sidebar-footer">
-      Dados salvos automaticamente neste dispositivo/conta.<br>Auditoria de Carros de Emergência v1.0<br>
+      Dados salvos automaticamente neste dispositivo/conta.<br><span id="sidebarFooterTipo">Auditoria de Carros de Emergência v1.0</span><br>
       <button class="btn-logout" id="btnLogout">Sair</button>
     </div>
   </aside>
@@ -488,7 +502,7 @@ input,select,textarea{font-family:inherit;}
           <div class="dash-hero-overlay">
             <div class="dash-hero-text">
               <h2>Hospital Maternidade São Vicente de Paulo</h2>
-              <p>Painel de Conformidade — Auditoria de Carros de Emergência</p>
+              <p id="dashHeroSubtitle">Painel de Conformidade — Auditoria de Carros de Emergência</p>
             </div>
           </div>
         </div>
@@ -533,7 +547,7 @@ input,select,textarea{font-family:inherit;}
           <button type="button" class="link-btn" id="btnAddCart" style="display:none;">+ Este setor tem mais de um carro? Adicionar carro</button>
           <label class="checkbox-label">
             <input type="checkbox" id="fCarroIndisponivel">
-            Carro de emergência não disponível no setor
+            <span id="lblCarroIndisponivel">Carro de emergência não disponível no setor</span>
           </label>
         </div>
 
@@ -676,6 +690,30 @@ input,select,textarea{font-family:inherit;}
 
 <div class="lightbox" id="lightbox"><button class="close-lb" id="closeLb">✕</button><img id="lightboxImg" src=""></div>
 
+<div class="modal-backdrop" id="modalTipoSelect">
+  <div class="modal" style="max-width:460px;">
+    <h3>Nova Auditoria</h3>
+    <p>Qual tipo de carro será auditado?</p>
+    <div class="tipo-select-grid">
+      <button type="button" class="tipo-select-card" data-tipo="emergencia">
+        <div class="tipo-select-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12.5l-8 8-8-8a5 5 0 0 1 7-7.2l1 1 1-1a5 5 0 0 1 7 7.2z"/><path d="M4 12.5h4l1.5-3 2 5 1.5-2.5h6.5"/></svg>
+        </div>
+        <div class="tipo-select-label">Carro de Emergência</div>
+      </button>
+      <button type="button" class="tipo-select-card" data-tipo="medicacao">
+        <div class="tipo-select-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="9.5" width="17" height="7" rx="3.5" transform="rotate(-35 12 13)"/><path d="M11 10l3 6" stroke-width="1.6"/></svg>
+        </div>
+        <div class="tipo-select-label">Carro de Medicação</div>
+      </button>
+    </div>
+    <div class="actions" style="margin-top:16px;">
+      <button class="btn btn-ghost" id="tipoSelectCancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="modalConfirm">
   <div class="modal">
     <h3 id="modalTitle">Confirmar ação</h3>
@@ -731,7 +769,7 @@ input,select,textarea{font-family:inherit;}
 /* =========================================================================
    DADOS BASE DO CHECKLIST (extraído da planilha original, estrutura preservada)
    ========================================================================= */
-const CATEGORIES = [
+let CATEGORIES = [
   {id:'acesso', nome:'Acesso, Limpeza e Conservação', icon:'cart'},
   {id:'lacre', nome:'Lacre e Controle do Carro', icon:'lock'},
   {id:'desfibrilador', nome:'Desfibrilador', icon:'heart'},
@@ -741,6 +779,15 @@ const CATEGORIES = [
   {id:'medicamentos', nome:'Gavetas, Medicamentos e Validade', icon:'pill'},
   {id:'reposicao', nome:'Reposição e Organização', icon:'refresh'},
   {id:'localizacao', nome:'Localização e Padronização', icon:'pin'},
+];
+
+/* Categorias e itens da auditoria dos Carros de Medicação (módulo separado,
+   ver TIPOS mais abaixo). */
+const CATEGORIES_MED = [
+  {id:'seguranca', nome:'Segurança e Controle de Acesso', icon:'lock'},
+  {id:'identificacao', nome:'Identificação e Organização dos Medicamentos', icon:'pill'},
+  {id:'limpeza', nome:'Limpeza e Conservação do Carrinho', icon:'cart'},
+  {id:'residuos', nome:'Descarte de Perfurocortantes e Resíduos', icon:'trash'},
 ];
 
 const ICONS = {
@@ -753,15 +800,16 @@ const ICONS = {
   pill:'<rect x="3.5" y="9.5" width="17" height="7" rx="3.5" transform="rotate(-35 12 13)"/><path d="M11 10l3 6" stroke-width="1.6"/>',
   refresh:'<path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 4v4h-4M6 20v-4h4"/>',
   pin:'<path d="M12 21s7-6.6 7-12a7 7 0 1 0-14 0c0 5.4 7 12 7 12z"/><circle cx="12" cy="9" r="2.4"/>',
+  trash:'<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
 };
 
 /* Listas de medicamentos e insumos por perfil de carro (Adulto/Infantil/Misto),
    extraídas dos arquivos "C LIST E INSUMOS PARA CARRO DE PARADA..." da farmácia
    (atualizado em julho/2025). Usadas no item 16 para facilitar a conferência
    de validade item a item. */
-const CART_PROFILES = {"adulto":[{"nome":"Medicamentos","itens":[{"qtd":"03 ampolas","nome":"Ácido tranexâmico 250 mg/5 ml"},{"qtd":"03 ampolas","nome":"Adenosina 3mg/ml 2ml"},{"qtd":"10 ampolas","nome":"Água destilada 10 ml"},{"qtd":"03 ampolas","nome":"Amiodarona, cloridrato 50mg/3mL"},{"qtd":"5 comp.","nome":"Ácido Acetilsalicilico 100 mg"},{"qtd":"20 ampolas","nome":"Atropina, sulfato 25 mcg/1mL"},{"qtd":"05 ampolas","nome":"Bicarbonato de sódio 8,4% 10ml"},{"qtd":"01 ampola","nome":"Clonidina, Cloridrato 150 mcg/ml 1 ml"},{"qtd":"05 comp.","nome":"Clopidogrel 75 mg"},{"qtd":"01 ampola","nome":"Deslanosídeo 0,2mg/ml"},{"qtd":"02 ampolas","nome":"Dexametasona 4 mg/ml 2,5 ml"},{"qtd":"02 ampolas","nome":"Diazepam 5mg/ml 2ml"},{"qtd":"02 ampolas","nome":"Dopamina, cloridrato 5 mg/10mL"},{"qtd":"05 ampolas","nome":"Dobutamina 250mg 5mg/ml 10ml"},{"qtd":"02 ampolas","nome":"Etomidato 2mg /mL"},{"qtd":"40 ampolas","nome":"Epinefrina 1mg/ml (Adrenalina)"},{"qtd":"02 ampolas","nome":"Fenitoína 50 mg/ml 5mL"},{"qtd":"02 ampolas","nome":"Fenobarbital 100 mg/2mL"},{"qtd":"05 frascos","nome":"Fentanila, citrato 0,05mg/mL 10 mL"},{"qtd":"02 ampolas","nome":"Flumazenil 0,1 mg/ml 5 ml"},{"qtd":"05 ampolas","nome":"Glicose 50% - 10ml"},{"qtd":"04 ampolas","nome":"Gliconato de cálcio 10%"},{"qtd":"01 ampola","nome":"Heparina 5000UI 5ml"},{"qtd":"02 ampolas","nome":"Hidrocortisona 100mg"},{"qtd":"01 ampola","nome":"Hidrocortisona 500mg"},{"qtd":"05 comp.","nome":"Isordil ,Isossorbida 5mg (Sublingual)"},{"qtd":"05 ampolas","nome":"Magnésio, sulfato 10% 10 mL"},{"qtd":"01 ampola","nome":"Morfina, sulfato 10 mg/ml 1 ml"},{"qtd":"03 ampolas","nome":"Midazolan 5 mg/ml 3 ml (15mg)"},{"qtd":"03 ampolas","nome":"Midazolan 5 mg/ml 10 ml (50mg)"},{"qtd":"01 ampola","nome":"Naloxona Cloridrato 0,4 mg/ml 1 ml"},{"qtd":"08 ampolas","nome":"Noradrenalina 2mg/ml 4 ml (norepinefrina)"},{"qtd":"03 ampolas","nome":"Prometazina 25 mg/ml 2 ml"},{"qtd":"02 frascos","nome":"Suxametônio, cloridrato 100 mg"},{"qtd":"03 ampolas","nome":"Tramadol, cloridrato 50 mg/ml 2 ml"},{"qtd":"02 ampolas","nome":"Vasopressina 20U/Ml 1ml"}]},{"nome":"Acesso Intravascular","itens":[{"qtd":"5","nome":"Agulha descartável 13x4,5"},{"qtd":"5","nome":"Agulha descartável 25x7,0"},{"qtd":"5","nome":"Agulha descartável 40x12"},{"qtd":"2","nome":"Angiocath nº 14 (jelco)"},{"qtd":"2","nome":"Angiocath nº 16 (jelco)"},{"qtd":"2","nome":"Angiocath nº 18 (jelco)"},{"qtd":"2","nome":"Angiocath nº 20 (jelco)"},{"qtd":"2","nome":"Angiocath nº 22 (jelco)"},{"qtd":"2","nome":"Angiocath nº 24 (jelco)"},{"qtd":"1","nome":"Cateter duplo - lumen adulto"},{"qtd":"2","nome":"Equipo para bomba infusão parenteral"},{"qtd":"2","nome":"Equipo macrogotas simples"},{"qtd":"1","nome":"Equipo para sangue"},{"qtd":"2","nome":"Extensorfix equipo 2 vias c/ clamp"},{"qtd":"1","nome":"Curativo IVFIX"},{"qtd":"5","nome":"Seringa descartável 01 ml"},{"qtd":"5","nome":"Seringa descartável 03 ml"},{"qtd":"5","nome":"Seringa descartável 05 ml"},{"qtd":"5","nome":"Seringa descartável 10 ml"},{"qtd":"5","nome":"Seringa descartável 20 ml"},{"qtd":"1","nome":"Seringa descartável 60 ml"}]},{"nome":"Suporte Ventilatório","itens":[{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 7,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 7,5"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 8,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 8,5"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 9,0"},{"qtd":"1","nome":"Sonda nasogástrica longa nº 16"},{"qtd":"1","nome":"Sonda nasogástrica longa nº 18"},{"qtd":"1","nome":"Sonda nasogastrica longa nº 20"},{"qtd":"2","nome":"Sonda para aspiração traqueal nº12"},{"qtd":"1","nome":"TQT 7,0"},{"qtd":"1","nome":"TQT 7,5"},{"qtd":"1","nome":"TQT 8,0"},{"qtd":"1","nome":"TQT 8,5"},{"qtd":"1","nome":"TQT 9,0"},{"qtd":"1","nome":"Filtro HEPA"},{"qtd":"1","nome":"Filtro HEMF"},{"qtd":"1","nome":"Cadarço 60cm"}]},{"nome":"Soluções e Outros","itens":[{"qtd":"2","nome":"Sonda uretral nº12"},{"qtd":"1","nome":"Sonda foley nº 16 duas vias"},{"qtd":"1","nome":"Coletor de urina fechado"},{"qtd":"1","nome":"Coletor de urina aberto"},{"qtd":"2","nome":"Bicarbonato de sódio 8,4% 250ml"},{"qtd":"4","nome":"Soro fisiológico 0,9% 100 ml"},{"qtd":"4","nome":"Soro fisiológico 0,9% 250 ml"},{"qtd":"3","nome":"Soro fisiológico 0,9% 500 ml"},{"qtd":"1","nome":"Soro glicofisiológico 500 ml"},{"qtd":"2","nome":"Soro glicosado 5% 100 ml"},{"qtd":"2","nome":"Soro glicosado 5% 250 ml"},{"qtd":"1","nome":"Soro glicosada 5% 500 ml"},{"qtd":"1","nome":"Soro de ringer lactato 500 ml"}]},{"nome":"Material Externo","itens":[{"qtd":"1","nome":"Luva estéril 6,5"},{"qtd":"1","nome":"Luva estéril 7,0"},{"qtd":"1","nome":"Luva estéril 7,5"},{"qtd":"1","nome":"Luva estéril 8,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 7,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 7,5"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 8,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 8,5"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 9,0"},{"qtd":"1","nome":"Compressa de gaze 7,5cm x 7,5cm estéril"},{"qtd":"1","nome":"Sonda para aspiração nº12"},{"qtd":"1","nome":"Xilocalina spray"},{"qtd":"1","nome":"Xilocaina gel"},{"qtd":"1","nome":"Fio guia Bougie"},{"qtd":"1","nome":"Lâmina laring. Curva nº 3.0"},{"qtd":"1","nome":"Lâmina laring. Curva nº 4.0"},{"qtd":"1","nome":"Lâmina laring. Curva nº 5.0"},{"qtd":"2","nome":"Cabo de laringoscópio"},{"qtd":"2","nome":"Pilhas de reserva"},{"qtd":"1","nome":"Fluxômetro"},{"qtd":"1","nome":"Cilindro de O2 com válvula fechada"},{"qtd":"1","nome":"Seringa 20 cc"},{"qtd":"1","nome":"Monitor multiparâmetro"},{"qtd":"1","nome":"Desfibrilador"},{"qtd":"10","nome":"Eletrodo Descartável"},{"qtd":"1","nome":"Prancha de compressão toracica"},{"qtd":"2","nome":"Carro com lacre"}]}],"infantil":[{"nome":"Medicamentos","itens":[{"qtd":"03 ampolas","nome":"Adenosina 3mg/ml - 2ml (6mg)"},{"qtd":"10 ampolas","nome":"Água destilada 10 ml"},{"qtd":"02 ampolas","nome":"Amiodarona, cloridrato 50 mg/3mL"},{"qtd":"05 ampolas","nome":"Atropina, sulfato 25 mcg/1mL"},{"qtd":"02 ampolas","nome":"Bicarbonato de sódio 8,4% 10ml"},{"qtd":"05 ampolas","nome":"Cloreto de Sódio 0,9% 10ml"},{"qtd":"02 ampolas","nome":"Cloreto de Potássio 10% 10ml"},{"qtd":"02 ampolas","nome":"Cloreto de Sódio 10% 10ml"},{"qtd":"02 ampolas","nome":"Dexametasona 4 mg/ml 2,5 ml"},{"qtd":"01 ampola","nome":"Dexmedetomidina 100mcg/ml"},{"qtd":"04 ampolas","nome":"Escetamina, cloridrato 50mg/ml (Ketamin)"},{"qtd":"02 ampolas","nome":"Diazepam 5 mg/2mL"},{"qtd":"02 ampolas","nome":"Dopamina, cloridrato 5 mg/10mL"},{"qtd":"02 ampolas","nome":"Dobutamina 250mg 5mg/ml 10ml"},{"qtd":"02 ampolas","nome":"Etilefrina 10mg/1ml"},{"qtd":"10 ampolas","nome":"Epinefrina 1mg/ml (Adrenalina)"},{"qtd":"02 ampolas","nome":"Fenitoína 50 mg/ml 5mL"},{"qtd":"05 frascos","nome":"Fentanila, citrato 0,05mg/mL 10 mL"},{"qtd":"02 ampolas","nome":"Fenobarbital 100 mg/2mL"},{"qtd":"02 ampolas","nome":"Furosemida 10mg/2mL"},{"qtd":"04 ampolas","nome":"Glicose 50% 10 mL"},{"qtd":"02 ampolas","nome":"Gliconato de Cálcio 10% 10mL"},{"qtd":"02 ampolas","nome":"Haloperidol 5mg/ml 1 ml"},{"qtd":"02 frascos","nome":"Hidrocortisona, succinato 100mg"},{"qtd":"02 ampolas","nome":"Lidocaína sem epinefrina 2% 20ml"},{"qtd":"05 ampolas","nome":"Magnésio, sulfato 10% 10 mL"},{"qtd":"03 ampolas","nome":"Midazolan 5 mg/ml 10 ml (50mg)"},{"qtd":"03 ampolas","nome":"Midazolan 5 mg/ml 3 ml (15mg)"},{"qtd":"02 ampolas","nome":"Morfina, sulfato 10 mg/ml 1 ml"},{"qtd":"02 ampolas","nome":"Noradrenalina 2mg/ml 4 ml"},{"qtd":"02 ampolas","nome":"Prometazina 25 mg/ml 2 ml"},{"qtd":"02 ampolas","nome":"Vasopressina 20U/Ml 1ml"}]},{"nome":"Acesso Intravascular","itens":[{"qtd":"3","nome":"Agulha descartável 13x4,5"},{"qtd":"3","nome":"Agulha descartável 25x7,0"},{"qtd":"3","nome":"Agulha descartável 40x12"},{"qtd":"2","nome":"Angiocath nº 20 (jelco)"},{"qtd":"2","nome":"Angiocath nº 22 (jelco)"},{"qtd":"2","nome":"Angiocath nº 24 (jelco)"},{"qtd":"1","nome":"Equipo para bomba de infusão"},{"qtd":"1","nome":"Equipo para sangue"},{"qtd":"1","nome":"Torneirinha 3 vias"},{"qtd":"1","nome":"Extensorfix equipo 2 vias c/ clamp"},{"qtd":"5","nome":"Seringa descartável 01 ml"},{"qtd":"5","nome":"Seringa descartável 03 ml"},{"qtd":"5","nome":"Seringa descartável 05 ml"},{"qtd":"5","nome":"Seringa descartável 10 ml"},{"qtd":"5","nome":"Seringa descartável 20 ml"},{"qtd":"1","nome":"Curativo IVFIX"},{"qtd":"1","nome":"Cateter duplo lúmen pediátrico"}]},{"nome":"Suporte Ventilatório","itens":[{"qtd":"2","nome":"Sonda endot. s/balão nº 2,0"},{"qtd":"2","nome":"Sonda endot. s/balão nº 2,5"},{"qtd":"2","nome":"Sonda endot. s/balão nº 3,0"},{"qtd":"2","nome":"Sonda endot. s/balão nº 3,5"},{"qtd":"2","nome":"Sonda endot. c/balão nº 4,0"},{"qtd":"2","nome":"Sonda endot. c/balão nº 4,5"},{"qtd":"2","nome":"Sonda endot. s/balão nº 4,0"},{"qtd":"2","nome":"Sonda endot. s/balão nº 4,5"},{"qtd":"2","nome":"Sonda endot. s/balão nº 5,0"},{"qtd":"2","nome":"Sonda endot. s/balão nº 5,5"},{"qtd":"2","nome":"Sonda endot. s/balão nº 6,0"},{"qtd":"2","nome":"Sonda endot. c/balão nº 5,0"},{"qtd":"2","nome":"Sonda endot. c/balão nº 5,5"},{"qtd":"2","nome":"Sonda endot. c/balão nº 6,0"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 06"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 08"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 10"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 12"},{"qtd":"3","nome":"Sonda para aspiração traqueal nº 6"},{"qtd":"3","nome":"Sonda para aspiração traqueal nº 8"},{"qtd":"3","nome":"Sonda para aspiração traqueal nº 10"},{"qtd":"1","nome":"Cateter de O2 tipo óculos infantil"}]},{"nome":"Soluções e Outros","itens":[{"qtd":"2","nome":"Sonda uretral nº 4"},{"qtd":"2","nome":"Sonda uretral nº 6"},{"qtd":"2","nome":"Sonda uretral nº 8"},{"qtd":"2","nome":"Sonda uretal nº 10"},{"qtd":"2","nome":"Sonda uretal nº 12"},{"qtd":"1","nome":"Bicarbonato de sódio 8,4% 250ml"},{"qtd":"2","nome":"Água destilada 100ml"},{"qtd":"2","nome":"Água destilada 250ml"},{"qtd":"2","nome":"Soro fisiológico 0,9% 100 ml"},{"qtd":"2","nome":"Soro fisiológico 0,9% 250 ml"},{"qtd":"2","nome":"Soro fisiológico 0,9% 500 ml"},{"qtd":"2","nome":"Soro glicofisiológico 500 ml"},{"qtd":"2","nome":"Soro glicosado 5% 100 ml"},{"qtd":"2","nome":"Soro glicosado 5% 250 ml"},{"qtd":"2","nome":"Soro glicosado 5% 500 ml"}]},{"nome":"Material Externo","itens":[{"qtd":"1","nome":"Luva estéril 6,5"},{"qtd":"1","nome":"Luva estéril 7,0"},{"qtd":"1","nome":"Luva estéril 7,5"},{"qtd":"1","nome":"Luva estéril 8,0"},{"qtd":"1","nome":"Compressa de gaze estéril"},{"qtd":"1","nome":"Latex"},{"qtd":"1","nome":"Sonda para aspiração nº 12"},{"qtd":"1","nome":"Máscara de O2 com reservatório"},{"qtd":"1","nome":"Soro fisiológico 0,9% 10ml"},{"qtd":"1","nome":"Umidificador"},{"qtd":"1","nome":"Cânula orofaríngea (guedel) n°0,1,2,3,7 e 9"},{"qtd":"1","nome":"Cadarço"},{"qtd":"1","nome":"Bougie"},{"qtd":"1","nome":"Lâmina laring. Curva nº 3"},{"qtd":"1","nome":"Lâmina laring. Curva nº 4"},{"qtd":"1","nome":"Lâmina laring. Curva nº 5"},{"qtd":"2","nome":"Cabo de laringoscópio"},{"qtd":"2","nome":"Pilhas de reserva"},{"qtd":"1","nome":"Fluxômetro"},{"qtd":"1","nome":"Cilindro de O2 com válvula fechada"},{"qtd":"1","nome":"Seringa 20cc"},{"qtd":"1","nome":"Monitor multiparâmetro"},{"qtd":"1","nome":"Desfibrilador testado"},{"qtd":"10","nome":"Eletrodo Descartável"},{"qtd":"1","nome":"Prancha de compressão toracica"},{"qtd":"1","nome":"Gel contador"},{"qtd":"1","nome":"Quantidade de litros de O2"}]}],"misto":[{"nome":"Medicamentos","itens":[{"qtd":"03 ampolas","nome":"Ácido tranexâmico 250 mg/5 ml"},{"qtd":"03 ampolas","nome":"Adenosina 3mg/ml/ 2ml"},{"qtd":"10 ampolas","nome":"Água destilada 10 ml"},{"qtd":"03 ampolas","nome":"Amiodarona, cloridrato 50mg/3mL"},{"qtd":"5 comp.","nome":"Ácido Acetilsalicilico 100 mg"},{"qtd":"20 ampolas","nome":"Atropina, sulfato 25 mcg/1mL"},{"qtd":"05 ampolas","nome":"Bicarbonato de sódio 8,4% 10ml"},{"qtd":"01 ampola","nome":"Clonidina, Cloridrato 150 mcg/ml 1 ml"},{"qtd":"05 comp.","nome":"Clopidogrel 75 mg"},{"qtd":"05 ampolas","nome":"Cloreto de Potássio 19,1% 10ml"},{"qtd":"02 ampolas","nome":"Cloreto de Potássio 10% 10ml"},{"qtd":"02 ampolas","nome":"Cloreto de Sódio 10% 10ml"},{"qtd":"01 ampola","nome":"Deslanosídeo 0,2mg/ml"},{"qtd":"02 ampolas","nome":"Dexametasona 4 mg/ml 2,5 ml"},{"qtd":"01 ampola","nome":"Dextrocetamina 50 mg/ml 2ml"},{"qtd":"02 ampolas","nome":"Diazepam 5mg/ml 2ml"},{"qtd":"02 ampolas","nome":"Dopamina, cloridrato 5 mg/10mL"},{"qtd":"05 ampolas","nome":"Dobutamina 250mg 5mg/ml 10ml"},{"qtd":"02 ampolas","nome":"Etomidato 2mg /mL"},{"qtd":"40 ampolas","nome":"Epinefrina 1mg/ml (Adrenalina)"},{"qtd":"02 ampolas","nome":"Fenitoína 50 mg/ml 5mL"},{"qtd":"02 ampolas","nome":"Fenobarbital 100 mg/2mL"},{"qtd":"05 frascos","nome":"Fentanila, citrato 0,05mg/mL 10 mL"},{"qtd":"02 ampolas","nome":"Furosemida 10mg/2mL"},{"qtd":"02 ampolas","nome":"Flumazenil 0,1 mg/ml 5 ml"},{"qtd":"5 ampolas","nome":"Glicose 50% 10 mL"},{"qtd":"04 ampolas","nome":"Gliconato de Cálcio 10% 10mL"},{"qtd":"01 ampolas","nome":"Heparina (IV) 5000UI/ML 5ML"},{"qtd":"02 frascos","nome":"Hidrocortisona, succinato 100mg"},{"qtd":"01 frasco","nome":"Hidrocortisona, succinato 500mg"},{"qtd":"05 comp.","nome":"Isordil ,Isossorbida 5mg (Sublingual)"},{"qtd":"02 ampolas","nome":"Lidocaína sem epinefrina 2% 20ml"},{"qtd":"05 ampolas","nome":"Magnésio, sulfato 10% 10 mL"},{"qtd":"03 ampolas","nome":"Midazolan 5 mg/ml 3 ml (15mg)"},{"qtd":"03 ampolas","nome":"Midazolan 5 mg/ml 10 ml (50mg)"},{"qtd":"01 ampola","nome":"Morfina, sulfato 10 mg/ml 1 ml"},{"qtd":"01 ampola","nome":"Naloxona Cloridrato 0,4 mg/ml 1 ml"},{"qtd":"05 ampolas","nome":"Noradrenalina 2mg/ml 4 ml (norepinefrina)"},{"qtd":"03 ampolas","nome":"Prometazina 25 mg/ml 2 ml"},{"qtd":"02 frascos","nome":"Suxametônio, cloridrato 100 mg"},{"qtd":"03 ampolas","nome":"Tramadol, cloridrato 50 mg/ml 2 ml"},{"qtd":"02 ampolas","nome":"Vasopressina 20U/Ml 1ml"}]},{"nome":"Acesso Intravascular","itens":[{"qtd":"5","nome":"Agulha descartável 13x4,5"},{"qtd":"5","nome":"Agulha descartável 25x7,0"},{"qtd":"5","nome":"Agulha descartável 40x12"},{"qtd":"2","nome":"Angiocath nº 14 (jelco)"},{"qtd":"2","nome":"Angiocath nº 16 (jelco)"},{"qtd":"2","nome":"Angiocath nº 18 (jelco)"},{"qtd":"2","nome":"Angiocath nº 20 (jelco)"},{"qtd":"2","nome":"Angiocath nº 22 (jelco)"},{"qtd":"2","nome":"Angiocath nº 24 (jelco)"},{"qtd":"1","nome":"Cateter duplo - lumen"},{"qtd":"1","nome":"Cateter duplo lúmen pediátrico"},{"qtd":"2","nome":"Equipo para bomba de infusão"},{"qtd":"2","nome":"Equipo macrogotas simples"},{"qtd":"1","nome":"Equipo para sangue"},{"qtd":"1","nome":"Curativo IVFIX"},{"qtd":"2","nome":"Extensorfix equipo 2 vias c/ clamp"},{"qtd":"5","nome":"Seringa descartável 01 ml"},{"qtd":"5","nome":"Seringa descartável 03 ml"},{"qtd":"5","nome":"Seringa descartável 05 ml"},{"qtd":"5","nome":"Seringa descartável 10 ml"},{"qtd":"5","nome":"Seringa descartável 20 ml"},{"qtd":"1","nome":"Seringa descartável 60 ml"}]},{"nome":"Suporte Ventilatório","itens":[{"qtd":"1","nome":"Cateter de O2 tipo óculos infantil"},{"qtd":"1","nome":"Cateter de O2 tipo óculos adulto"},{"qtd":"1","nome":"Sonda endot. s/balão nº 2,0"},{"qtd":"1","nome":"Sonda endot. s/balão nº 2,5"},{"qtd":"1","nome":"Sonda endot. s/balão nº 3,0"},{"qtd":"1","nome":"Sonda endot. s/balão nº 3,5"},{"qtd":"1","nome":"Sonda endot. c/balão nº 4,0"},{"qtd":"1","nome":"Sonda endot. c/balão nº 4,5"},{"qtd":"1","nome":"Sonda endot. s/balão nº 4,0"},{"qtd":"1","nome":"Sonda endot. s/balão nº 4,5"},{"qtd":"1","nome":"Sonda endot. c/balão nº 5,0"},{"qtd":"1","nome":"Sonda endot. c/balão nº 5,5"},{"qtd":"1","nome":"Sonda endot. c/balão nº 6,0"},{"qtd":"1","nome":"Sonda endot. s/balão nº 5,0"},{"qtd":"1","nome":"Sonda endot. s/balão nº 5,5"},{"qtd":"1","nome":"Sonda endot. s/balão nº 6,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 7,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 7,5"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 8,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 8,5"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 9,0"},{"qtd":"1","nome":"Sonda nasogástrica longa nº 16"},{"qtd":"1","nome":"Sonda nasogástrica longa nº 18"},{"qtd":"1","nome":"Sonda nasogastrica longa nº 20"},{"qtd":"3","nome":"Sonda para aspiração traqueal nº 8"},{"qtd":"3","nome":"Sonda para aspiração traqueal nº 10"},{"qtd":"2","nome":"Sonda para aspiração traqueal nº12"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 06"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 08"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 10"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 12"},{"qtd":"1","nome":"Sonda nasogástrica longa nº 16"},{"qtd":"1","nome":"Sonda nasogástrica longa nº 18"},{"qtd":"1","nome":"Sonda nasogástrica longa nº 20"}]},{"nome":"Soluções e Outros","itens":[{"qtd":"1","nome":"Coletor de urina fechado"},{"qtd":"1","nome":"Coletor de urina aberto"},{"qtd":"1","nome":"Sonda foley nº 16 duas vias"},{"qtd":"1","nome":"Cadarço 60cm"},{"qtd":"2","nome":"Sonda uretral nº 4"},{"qtd":"2","nome":"Sonda uretral nº 6"},{"qtd":"2","nome":"Sonda uretral nº 8"},{"qtd":"2","nome":"Sonda uretal nº 10"},{"qtd":"2","nome":"Sonda uretal nº 12"},{"qtd":"2","nome":"Bicarbonato de sódio 8,4% 250ml"},{"qtd":"4","nome":"Soro fisiológico 0,9% 100 ml"},{"qtd":"4","nome":"Soro fisiológico 0,9% 250 ml"},{"qtd":"3","nome":"Soro fisiológico 0,9% 500 ml"},{"qtd":"1","nome":"Soro glicofisiológico 500 ml"},{"qtd":"2","nome":"Soro glicosado 5% 100 ml"},{"qtd":"2","nome":"Soro glicosado 5% 250 ml"},{"qtd":"1","nome":"Soro glicosada 5% 500 ml"},{"qtd":"1","nome":"Soro de ringer lactato 500 ml"}]},{"nome":"Material Externo","itens":[{"qtd":"1","nome":"Luva estéril 6,5"},{"qtd":"1","nome":"Luva estéril 7,0"},{"qtd":"1","nome":"Luva estéril 7,5"},{"qtd":"1","nome":"Luva estéril 8,0"},{"qtd":"1","nome":"Luva estéril 8,5"},{"qtd":"1","nome":"Compressa de gaze 7,5cm x 7,5cm estéril"},{"qtd":"2","nome":"Água para injeção 10ml"},{"qtd":"1","nome":"Sonda para aspiração nº12"},{"qtd":"1","nome":"Xilocalina spray"},{"qtd":"1","nome":"Xilocaina gel"},{"qtd":"1","nome":"Fio guia - Bougie"},{"qtd":"1","nome":"Lâmina laring. Curva nº 3.0"},{"qtd":"1","nome":"Lâmina laring. Curva nº 4.0"},{"qtd":"1","nome":"Lâmina laring. Curva nº 5.0"},{"qtd":"1","nome":"Cânula orofaríngea (guedel) n°0,1,2,3,7 e 9"},{"qtd":"2","nome":"Cabo de laringoscópio"},{"qtd":"2","nome":"Pilhas de reserva"},{"qtd":"1","nome":"Fluxômetro"},{"qtd":"1","nome":"Seringa 20 cc"},{"qtd":"1","nome":"Monitor multiparâmetro"},{"qtd":"1","nome":"Desfibrilador"},{"qtd":"10","nome":"Eletrodos Descartáveis"},{"qtd":"1","nome":"Prancha de compressão toracica"},{"qtd":"1","nome":"Cilindro de O2 com válvula fechada"},{"qtd":"1","nome":"Quantidade de litros de O2"}]}]};
+let CART_PROFILES = {"adulto":[{"nome":"Medicamentos","itens":[{"qtd":"03 ampolas","nome":"Ácido tranexâmico 250 mg/5 ml"},{"qtd":"03 ampolas","nome":"Adenosina 3mg/ml 2ml"},{"qtd":"10 ampolas","nome":"Água destilada 10 ml"},{"qtd":"03 ampolas","nome":"Amiodarona, cloridrato 50mg/3mL"},{"qtd":"5 comp.","nome":"Ácido Acetilsalicilico 100 mg"},{"qtd":"20 ampolas","nome":"Atropina, sulfato 25 mcg/1mL"},{"qtd":"05 ampolas","nome":"Bicarbonato de sódio 8,4% 10ml"},{"qtd":"01 ampola","nome":"Clonidina, Cloridrato 150 mcg/ml 1 ml"},{"qtd":"05 comp.","nome":"Clopidogrel 75 mg"},{"qtd":"01 ampola","nome":"Deslanosídeo 0,2mg/ml"},{"qtd":"02 ampolas","nome":"Dexametasona 4 mg/ml 2,5 ml"},{"qtd":"02 ampolas","nome":"Diazepam 5mg/ml 2ml"},{"qtd":"02 ampolas","nome":"Dopamina, cloridrato 5 mg/10mL"},{"qtd":"05 ampolas","nome":"Dobutamina 250mg 5mg/ml 10ml"},{"qtd":"02 ampolas","nome":"Etomidato 2mg /mL"},{"qtd":"40 ampolas","nome":"Epinefrina 1mg/ml (Adrenalina)"},{"qtd":"02 ampolas","nome":"Fenitoína 50 mg/ml 5mL"},{"qtd":"02 ampolas","nome":"Fenobarbital 100 mg/2mL"},{"qtd":"05 frascos","nome":"Fentanila, citrato 0,05mg/mL 10 mL"},{"qtd":"02 ampolas","nome":"Flumazenil 0,1 mg/ml 5 ml"},{"qtd":"05 ampolas","nome":"Glicose 50% - 10ml"},{"qtd":"04 ampolas","nome":"Gliconato de cálcio 10%"},{"qtd":"01 ampola","nome":"Heparina 5000UI 5ml"},{"qtd":"02 ampolas","nome":"Hidrocortisona 100mg"},{"qtd":"01 ampola","nome":"Hidrocortisona 500mg"},{"qtd":"05 comp.","nome":"Isordil ,Isossorbida 5mg (Sublingual)"},{"qtd":"05 ampolas","nome":"Magnésio, sulfato 10% 10 mL"},{"qtd":"01 ampola","nome":"Morfina, sulfato 10 mg/ml 1 ml"},{"qtd":"03 ampolas","nome":"Midazolan 5 mg/ml 3 ml (15mg)"},{"qtd":"03 ampolas","nome":"Midazolan 5 mg/ml 10 ml (50mg)"},{"qtd":"01 ampola","nome":"Naloxona Cloridrato 0,4 mg/ml 1 ml"},{"qtd":"08 ampolas","nome":"Noradrenalina 2mg/ml 4 ml (norepinefrina)"},{"qtd":"03 ampolas","nome":"Prometazina 25 mg/ml 2 ml"},{"qtd":"02 frascos","nome":"Suxametônio, cloridrato 100 mg"},{"qtd":"03 ampolas","nome":"Tramadol, cloridrato 50 mg/ml 2 ml"},{"qtd":"02 ampolas","nome":"Vasopressina 20U/Ml 1ml"}]},{"nome":"Acesso Intravascular","itens":[{"qtd":"5","nome":"Agulha descartável 13x4,5"},{"qtd":"5","nome":"Agulha descartável 25x7,0"},{"qtd":"5","nome":"Agulha descartável 40x12"},{"qtd":"2","nome":"Angiocath nº 14 (jelco)"},{"qtd":"2","nome":"Angiocath nº 16 (jelco)"},{"qtd":"2","nome":"Angiocath nº 18 (jelco)"},{"qtd":"2","nome":"Angiocath nº 20 (jelco)"},{"qtd":"2","nome":"Angiocath nº 22 (jelco)"},{"qtd":"2","nome":"Angiocath nº 24 (jelco)"},{"qtd":"1","nome":"Cateter duplo - lumen adulto"},{"qtd":"2","nome":"Equipo para bomba infusão parenteral"},{"qtd":"2","nome":"Equipo macrogotas simples"},{"qtd":"1","nome":"Equipo para sangue"},{"qtd":"2","nome":"Extensorfix equipo 2 vias c/ clamp"},{"qtd":"1","nome":"Curativo IVFIX"},{"qtd":"5","nome":"Seringa descartável 01 ml"},{"qtd":"5","nome":"Seringa descartável 03 ml"},{"qtd":"5","nome":"Seringa descartável 05 ml"},{"qtd":"5","nome":"Seringa descartável 10 ml"},{"qtd":"5","nome":"Seringa descartável 20 ml"},{"qtd":"1","nome":"Seringa descartável 60 ml"}]},{"nome":"Suporte Ventilatório","itens":[{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 7,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 7,5"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 8,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 8,5"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 9,0"},{"qtd":"1","nome":"Sonda nasogástrica longa nº 16"},{"qtd":"1","nome":"Sonda nasogástrica longa nº 18"},{"qtd":"1","nome":"Sonda nasogastrica longa nº 20"},{"qtd":"2","nome":"Sonda para aspiração traqueal nº12"},{"qtd":"1","nome":"TQT 7,0"},{"qtd":"1","nome":"TQT 7,5"},{"qtd":"1","nome":"TQT 8,0"},{"qtd":"1","nome":"TQT 8,5"},{"qtd":"1","nome":"TQT 9,0"},{"qtd":"1","nome":"Filtro HEPA"},{"qtd":"1","nome":"Filtro HEMF"},{"qtd":"1","nome":"Cadarço 60cm"}]},{"nome":"Soluções e Outros","itens":[{"qtd":"2","nome":"Sonda uretral nº12"},{"qtd":"1","nome":"Sonda foley nº 16 duas vias"},{"qtd":"1","nome":"Coletor de urina fechado"},{"qtd":"1","nome":"Coletor de urina aberto"},{"qtd":"2","nome":"Bicarbonato de sódio 8,4% 250ml"},{"qtd":"4","nome":"Soro fisiológico 0,9% 100 ml"},{"qtd":"4","nome":"Soro fisiológico 0,9% 250 ml"},{"qtd":"3","nome":"Soro fisiológico 0,9% 500 ml"},{"qtd":"1","nome":"Soro glicofisiológico 500 ml"},{"qtd":"2","nome":"Soro glicosado 5% 100 ml"},{"qtd":"2","nome":"Soro glicosado 5% 250 ml"},{"qtd":"1","nome":"Soro glicosada 5% 500 ml"},{"qtd":"1","nome":"Soro de ringer lactato 500 ml"}]},{"nome":"Material Externo","itens":[{"qtd":"1","nome":"Luva estéril 6,5"},{"qtd":"1","nome":"Luva estéril 7,0"},{"qtd":"1","nome":"Luva estéril 7,5"},{"qtd":"1","nome":"Luva estéril 8,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 7,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 7,5"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 8,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 8,5"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 9,0"},{"qtd":"1","nome":"Compressa de gaze 7,5cm x 7,5cm estéril"},{"qtd":"1","nome":"Sonda para aspiração nº12"},{"qtd":"1","nome":"Xilocalina spray"},{"qtd":"1","nome":"Xilocaina gel"},{"qtd":"1","nome":"Fio guia Bougie"},{"qtd":"1","nome":"Lâmina laring. Curva nº 3.0"},{"qtd":"1","nome":"Lâmina laring. Curva nº 4.0"},{"qtd":"1","nome":"Lâmina laring. Curva nº 5.0"},{"qtd":"2","nome":"Cabo de laringoscópio"},{"qtd":"2","nome":"Pilhas de reserva"},{"qtd":"1","nome":"Fluxômetro"},{"qtd":"1","nome":"Cilindro de O2 com válvula fechada"},{"qtd":"1","nome":"Seringa 20 cc"},{"qtd":"1","nome":"Monitor multiparâmetro"},{"qtd":"1","nome":"Desfibrilador"},{"qtd":"10","nome":"Eletrodo Descartável"},{"qtd":"1","nome":"Prancha de compressão toracica"},{"qtd":"2","nome":"Carro com lacre"}]}],"infantil":[{"nome":"Medicamentos","itens":[{"qtd":"03 ampolas","nome":"Adenosina 3mg/ml - 2ml (6mg)"},{"qtd":"10 ampolas","nome":"Água destilada 10 ml"},{"qtd":"02 ampolas","nome":"Amiodarona, cloridrato 50 mg/3mL"},{"qtd":"05 ampolas","nome":"Atropina, sulfato 25 mcg/1mL"},{"qtd":"02 ampolas","nome":"Bicarbonato de sódio 8,4% 10ml"},{"qtd":"05 ampolas","nome":"Cloreto de Sódio 0,9% 10ml"},{"qtd":"02 ampolas","nome":"Cloreto de Potássio 10% 10ml"},{"qtd":"02 ampolas","nome":"Cloreto de Sódio 10% 10ml"},{"qtd":"02 ampolas","nome":"Dexametasona 4 mg/ml 2,5 ml"},{"qtd":"01 ampola","nome":"Dexmedetomidina 100mcg/ml"},{"qtd":"04 ampolas","nome":"Escetamina, cloridrato 50mg/ml (Ketamin)"},{"qtd":"02 ampolas","nome":"Diazepam 5 mg/2mL"},{"qtd":"02 ampolas","nome":"Dopamina, cloridrato 5 mg/10mL"},{"qtd":"02 ampolas","nome":"Dobutamina 250mg 5mg/ml 10ml"},{"qtd":"02 ampolas","nome":"Etilefrina 10mg/1ml"},{"qtd":"10 ampolas","nome":"Epinefrina 1mg/ml (Adrenalina)"},{"qtd":"02 ampolas","nome":"Fenitoína 50 mg/ml 5mL"},{"qtd":"05 frascos","nome":"Fentanila, citrato 0,05mg/mL 10 mL"},{"qtd":"02 ampolas","nome":"Fenobarbital 100 mg/2mL"},{"qtd":"02 ampolas","nome":"Furosemida 10mg/2mL"},{"qtd":"04 ampolas","nome":"Glicose 50% 10 mL"},{"qtd":"02 ampolas","nome":"Gliconato de Cálcio 10% 10mL"},{"qtd":"02 ampolas","nome":"Haloperidol 5mg/ml 1 ml"},{"qtd":"02 frascos","nome":"Hidrocortisona, succinato 100mg"},{"qtd":"02 ampolas","nome":"Lidocaína sem epinefrina 2% 20ml"},{"qtd":"05 ampolas","nome":"Magnésio, sulfato 10% 10 mL"},{"qtd":"03 ampolas","nome":"Midazolan 5 mg/ml 10 ml (50mg)"},{"qtd":"03 ampolas","nome":"Midazolan 5 mg/ml 3 ml (15mg)"},{"qtd":"02 ampolas","nome":"Morfina, sulfato 10 mg/ml 1 ml"},{"qtd":"02 ampolas","nome":"Noradrenalina 2mg/ml 4 ml"},{"qtd":"02 ampolas","nome":"Prometazina 25 mg/ml 2 ml"},{"qtd":"02 ampolas","nome":"Vasopressina 20U/Ml 1ml"}]},{"nome":"Acesso Intravascular","itens":[{"qtd":"3","nome":"Agulha descartável 13x4,5"},{"qtd":"3","nome":"Agulha descartável 25x7,0"},{"qtd":"3","nome":"Agulha descartável 40x12"},{"qtd":"2","nome":"Angiocath nº 20 (jelco)"},{"qtd":"2","nome":"Angiocath nº 22 (jelco)"},{"qtd":"2","nome":"Angiocath nº 24 (jelco)"},{"qtd":"1","nome":"Equipo para bomba de infusão"},{"qtd":"1","nome":"Equipo para sangue"},{"qtd":"1","nome":"Torneirinha 3 vias"},{"qtd":"1","nome":"Extensorfix equipo 2 vias c/ clamp"},{"qtd":"5","nome":"Seringa descartável 01 ml"},{"qtd":"5","nome":"Seringa descartável 03 ml"},{"qtd":"5","nome":"Seringa descartável 05 ml"},{"qtd":"5","nome":"Seringa descartável 10 ml"},{"qtd":"5","nome":"Seringa descartável 20 ml"},{"qtd":"1","nome":"Curativo IVFIX"},{"qtd":"1","nome":"Cateter duplo lúmen pediátrico"}]},{"nome":"Suporte Ventilatório","itens":[{"qtd":"2","nome":"Sonda endot. s/balão nº 2,0"},{"qtd":"2","nome":"Sonda endot. s/balão nº 2,5"},{"qtd":"2","nome":"Sonda endot. s/balão nº 3,0"},{"qtd":"2","nome":"Sonda endot. s/balão nº 3,5"},{"qtd":"2","nome":"Sonda endot. c/balão nº 4,0"},{"qtd":"2","nome":"Sonda endot. c/balão nº 4,5"},{"qtd":"2","nome":"Sonda endot. s/balão nº 4,0"},{"qtd":"2","nome":"Sonda endot. s/balão nº 4,5"},{"qtd":"2","nome":"Sonda endot. s/balão nº 5,0"},{"qtd":"2","nome":"Sonda endot. s/balão nº 5,5"},{"qtd":"2","nome":"Sonda endot. s/balão nº 6,0"},{"qtd":"2","nome":"Sonda endot. c/balão nº 5,0"},{"qtd":"2","nome":"Sonda endot. c/balão nº 5,5"},{"qtd":"2","nome":"Sonda endot. c/balão nº 6,0"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 06"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 08"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 10"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 12"},{"qtd":"3","nome":"Sonda para aspiração traqueal nº 6"},{"qtd":"3","nome":"Sonda para aspiração traqueal nº 8"},{"qtd":"3","nome":"Sonda para aspiração traqueal nº 10"},{"qtd":"1","nome":"Cateter de O2 tipo óculos infantil"}]},{"nome":"Soluções e Outros","itens":[{"qtd":"2","nome":"Sonda uretral nº 4"},{"qtd":"2","nome":"Sonda uretral nº 6"},{"qtd":"2","nome":"Sonda uretral nº 8"},{"qtd":"2","nome":"Sonda uretal nº 10"},{"qtd":"2","nome":"Sonda uretal nº 12"},{"qtd":"1","nome":"Bicarbonato de sódio 8,4% 250ml"},{"qtd":"2","nome":"Água destilada 100ml"},{"qtd":"2","nome":"Água destilada 250ml"},{"qtd":"2","nome":"Soro fisiológico 0,9% 100 ml"},{"qtd":"2","nome":"Soro fisiológico 0,9% 250 ml"},{"qtd":"2","nome":"Soro fisiológico 0,9% 500 ml"},{"qtd":"2","nome":"Soro glicofisiológico 500 ml"},{"qtd":"2","nome":"Soro glicosado 5% 100 ml"},{"qtd":"2","nome":"Soro glicosado 5% 250 ml"},{"qtd":"2","nome":"Soro glicosado 5% 500 ml"}]},{"nome":"Material Externo","itens":[{"qtd":"1","nome":"Luva estéril 6,5"},{"qtd":"1","nome":"Luva estéril 7,0"},{"qtd":"1","nome":"Luva estéril 7,5"},{"qtd":"1","nome":"Luva estéril 8,0"},{"qtd":"1","nome":"Compressa de gaze estéril"},{"qtd":"1","nome":"Latex"},{"qtd":"1","nome":"Sonda para aspiração nº 12"},{"qtd":"1","nome":"Máscara de O2 com reservatório"},{"qtd":"1","nome":"Soro fisiológico 0,9% 10ml"},{"qtd":"1","nome":"Umidificador"},{"qtd":"1","nome":"Cânula orofaríngea (guedel) n°0,1,2,3,7 e 9"},{"qtd":"1","nome":"Cadarço"},{"qtd":"1","nome":"Bougie"},{"qtd":"1","nome":"Lâmina laring. Curva nº 3"},{"qtd":"1","nome":"Lâmina laring. Curva nº 4"},{"qtd":"1","nome":"Lâmina laring. Curva nº 5"},{"qtd":"2","nome":"Cabo de laringoscópio"},{"qtd":"2","nome":"Pilhas de reserva"},{"qtd":"1","nome":"Fluxômetro"},{"qtd":"1","nome":"Cilindro de O2 com válvula fechada"},{"qtd":"1","nome":"Seringa 20cc"},{"qtd":"1","nome":"Monitor multiparâmetro"},{"qtd":"1","nome":"Desfibrilador testado"},{"qtd":"10","nome":"Eletrodo Descartável"},{"qtd":"1","nome":"Prancha de compressão toracica"},{"qtd":"1","nome":"Gel contador"},{"qtd":"1","nome":"Quantidade de litros de O2"}]}],"misto":[{"nome":"Medicamentos","itens":[{"qtd":"03 ampolas","nome":"Ácido tranexâmico 250 mg/5 ml"},{"qtd":"03 ampolas","nome":"Adenosina 3mg/ml/ 2ml"},{"qtd":"10 ampolas","nome":"Água destilada 10 ml"},{"qtd":"03 ampolas","nome":"Amiodarona, cloridrato 50mg/3mL"},{"qtd":"5 comp.","nome":"Ácido Acetilsalicilico 100 mg"},{"qtd":"20 ampolas","nome":"Atropina, sulfato 25 mcg/1mL"},{"qtd":"05 ampolas","nome":"Bicarbonato de sódio 8,4% 10ml"},{"qtd":"01 ampola","nome":"Clonidina, Cloridrato 150 mcg/ml 1 ml"},{"qtd":"05 comp.","nome":"Clopidogrel 75 mg"},{"qtd":"05 ampolas","nome":"Cloreto de Potássio 19,1% 10ml"},{"qtd":"02 ampolas","nome":"Cloreto de Potássio 10% 10ml"},{"qtd":"02 ampolas","nome":"Cloreto de Sódio 10% 10ml"},{"qtd":"01 ampola","nome":"Deslanosídeo 0,2mg/ml"},{"qtd":"02 ampolas","nome":"Dexametasona 4 mg/ml 2,5 ml"},{"qtd":"01 ampola","nome":"Dextrocetamina 50 mg/ml 2ml"},{"qtd":"02 ampolas","nome":"Diazepam 5mg/ml 2ml"},{"qtd":"02 ampolas","nome":"Dopamina, cloridrato 5 mg/10mL"},{"qtd":"05 ampolas","nome":"Dobutamina 250mg 5mg/ml 10ml"},{"qtd":"02 ampolas","nome":"Etomidato 2mg /mL"},{"qtd":"40 ampolas","nome":"Epinefrina 1mg/ml (Adrenalina)"},{"qtd":"02 ampolas","nome":"Fenitoína 50 mg/ml 5mL"},{"qtd":"02 ampolas","nome":"Fenobarbital 100 mg/2mL"},{"qtd":"05 frascos","nome":"Fentanila, citrato 0,05mg/mL 10 mL"},{"qtd":"02 ampolas","nome":"Furosemida 10mg/2mL"},{"qtd":"02 ampolas","nome":"Flumazenil 0,1 mg/ml 5 ml"},{"qtd":"5 ampolas","nome":"Glicose 50% 10 mL"},{"qtd":"04 ampolas","nome":"Gliconato de Cálcio 10% 10mL"},{"qtd":"01 ampolas","nome":"Heparina (IV) 5000UI/ML 5ML"},{"qtd":"02 frascos","nome":"Hidrocortisona, succinato 100mg"},{"qtd":"01 frasco","nome":"Hidrocortisona, succinato 500mg"},{"qtd":"05 comp.","nome":"Isordil ,Isossorbida 5mg (Sublingual)"},{"qtd":"02 ampolas","nome":"Lidocaína sem epinefrina 2% 20ml"},{"qtd":"05 ampolas","nome":"Magnésio, sulfato 10% 10 mL"},{"qtd":"03 ampolas","nome":"Midazolan 5 mg/ml 3 ml (15mg)"},{"qtd":"03 ampolas","nome":"Midazolan 5 mg/ml 10 ml (50mg)"},{"qtd":"01 ampola","nome":"Morfina, sulfato 10 mg/ml 1 ml"},{"qtd":"01 ampola","nome":"Naloxona Cloridrato 0,4 mg/ml 1 ml"},{"qtd":"05 ampolas","nome":"Noradrenalina 2mg/ml 4 ml (norepinefrina)"},{"qtd":"03 ampolas","nome":"Prometazina 25 mg/ml 2 ml"},{"qtd":"02 frascos","nome":"Suxametônio, cloridrato 100 mg"},{"qtd":"03 ampolas","nome":"Tramadol, cloridrato 50 mg/ml 2 ml"},{"qtd":"02 ampolas","nome":"Vasopressina 20U/Ml 1ml"}]},{"nome":"Acesso Intravascular","itens":[{"qtd":"5","nome":"Agulha descartável 13x4,5"},{"qtd":"5","nome":"Agulha descartável 25x7,0"},{"qtd":"5","nome":"Agulha descartável 40x12"},{"qtd":"2","nome":"Angiocath nº 14 (jelco)"},{"qtd":"2","nome":"Angiocath nº 16 (jelco)"},{"qtd":"2","nome":"Angiocath nº 18 (jelco)"},{"qtd":"2","nome":"Angiocath nº 20 (jelco)"},{"qtd":"2","nome":"Angiocath nº 22 (jelco)"},{"qtd":"2","nome":"Angiocath nº 24 (jelco)"},{"qtd":"1","nome":"Cateter duplo - lumen"},{"qtd":"1","nome":"Cateter duplo lúmen pediátrico"},{"qtd":"2","nome":"Equipo para bomba de infusão"},{"qtd":"2","nome":"Equipo macrogotas simples"},{"qtd":"1","nome":"Equipo para sangue"},{"qtd":"1","nome":"Curativo IVFIX"},{"qtd":"2","nome":"Extensorfix equipo 2 vias c/ clamp"},{"qtd":"5","nome":"Seringa descartável 01 ml"},{"qtd":"5","nome":"Seringa descartável 03 ml"},{"qtd":"5","nome":"Seringa descartável 05 ml"},{"qtd":"5","nome":"Seringa descartável 10 ml"},{"qtd":"5","nome":"Seringa descartável 20 ml"},{"qtd":"1","nome":"Seringa descartável 60 ml"}]},{"nome":"Suporte Ventilatório","itens":[{"qtd":"1","nome":"Cateter de O2 tipo óculos infantil"},{"qtd":"1","nome":"Cateter de O2 tipo óculos adulto"},{"qtd":"1","nome":"Sonda endot. s/balão nº 2,0"},{"qtd":"1","nome":"Sonda endot. s/balão nº 2,5"},{"qtd":"1","nome":"Sonda endot. s/balão nº 3,0"},{"qtd":"1","nome":"Sonda endot. s/balão nº 3,5"},{"qtd":"1","nome":"Sonda endot. c/balão nº 4,0"},{"qtd":"1","nome":"Sonda endot. c/balão nº 4,5"},{"qtd":"1","nome":"Sonda endot. s/balão nº 4,0"},{"qtd":"1","nome":"Sonda endot. s/balão nº 4,5"},{"qtd":"1","nome":"Sonda endot. c/balão nº 5,0"},{"qtd":"1","nome":"Sonda endot. c/balão nº 5,5"},{"qtd":"1","nome":"Sonda endot. c/balão nº 6,0"},{"qtd":"1","nome":"Sonda endot. s/balão nº 5,0"},{"qtd":"1","nome":"Sonda endot. s/balão nº 5,5"},{"qtd":"1","nome":"Sonda endot. s/balão nº 6,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 7,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 7,5"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 8,0"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 8,5"},{"qtd":"1","nome":"Sonda endotraqueal c/ balão nº 9,0"},{"qtd":"1","nome":"Sonda nasogástrica longa nº 16"},{"qtd":"1","nome":"Sonda nasogástrica longa nº 18"},{"qtd":"1","nome":"Sonda nasogastrica longa nº 20"},{"qtd":"3","nome":"Sonda para aspiração traqueal nº 8"},{"qtd":"3","nome":"Sonda para aspiração traqueal nº 10"},{"qtd":"2","nome":"Sonda para aspiração traqueal nº12"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 06"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 08"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 10"},{"qtd":"2","nome":"Sonda nasogástrica longa nº 12"},{"qtd":"1","nome":"Sonda nasogástrica longa nº 16"},{"qtd":"1","nome":"Sonda nasogástrica longa nº 18"},{"qtd":"1","nome":"Sonda nasogástrica longa nº 20"}]},{"nome":"Soluções e Outros","itens":[{"qtd":"1","nome":"Coletor de urina fechado"},{"qtd":"1","nome":"Coletor de urina aberto"},{"qtd":"1","nome":"Sonda foley nº 16 duas vias"},{"qtd":"1","nome":"Cadarço 60cm"},{"qtd":"2","nome":"Sonda uretral nº 4"},{"qtd":"2","nome":"Sonda uretral nº 6"},{"qtd":"2","nome":"Sonda uretral nº 8"},{"qtd":"2","nome":"Sonda uretal nº 10"},{"qtd":"2","nome":"Sonda uretal nº 12"},{"qtd":"2","nome":"Bicarbonato de sódio 8,4% 250ml"},{"qtd":"4","nome":"Soro fisiológico 0,9% 100 ml"},{"qtd":"4","nome":"Soro fisiológico 0,9% 250 ml"},{"qtd":"3","nome":"Soro fisiológico 0,9% 500 ml"},{"qtd":"1","nome":"Soro glicofisiológico 500 ml"},{"qtd":"2","nome":"Soro glicosado 5% 100 ml"},{"qtd":"2","nome":"Soro glicosado 5% 250 ml"},{"qtd":"1","nome":"Soro glicosada 5% 500 ml"},{"qtd":"1","nome":"Soro de ringer lactato 500 ml"}]},{"nome":"Material Externo","itens":[{"qtd":"1","nome":"Luva estéril 6,5"},{"qtd":"1","nome":"Luva estéril 7,0"},{"qtd":"1","nome":"Luva estéril 7,5"},{"qtd":"1","nome":"Luva estéril 8,0"},{"qtd":"1","nome":"Luva estéril 8,5"},{"qtd":"1","nome":"Compressa de gaze 7,5cm x 7,5cm estéril"},{"qtd":"2","nome":"Água para injeção 10ml"},{"qtd":"1","nome":"Sonda para aspiração nº12"},{"qtd":"1","nome":"Xilocalina spray"},{"qtd":"1","nome":"Xilocaina gel"},{"qtd":"1","nome":"Fio guia - Bougie"},{"qtd":"1","nome":"Lâmina laring. Curva nº 3.0"},{"qtd":"1","nome":"Lâmina laring. Curva nº 4.0"},{"qtd":"1","nome":"Lâmina laring. Curva nº 5.0"},{"qtd":"1","nome":"Cânula orofaríngea (guedel) n°0,1,2,3,7 e 9"},{"qtd":"2","nome":"Cabo de laringoscópio"},{"qtd":"2","nome":"Pilhas de reserva"},{"qtd":"1","nome":"Fluxômetro"},{"qtd":"1","nome":"Seringa 20 cc"},{"qtd":"1","nome":"Monitor multiparâmetro"},{"qtd":"1","nome":"Desfibrilador"},{"qtd":"10","nome":"Eletrodos Descartáveis"},{"qtd":"1","nome":"Prancha de compressão toracica"},{"qtd":"1","nome":"Cilindro de O2 com válvula fechada"},{"qtd":"1","nome":"Quantidade de litros de O2"}]}]};
 
-const ITEMS = [
+let ITEMS = [
  {id:1,cat:'acesso',texto:'Carro com fácil acesso, sem obstruções.'},
  {id:2,cat:'acesso',texto:'Ausência de materiais desnecessários ou itens pessoais.'},
  {id:3,cat:'acesso',texto:'Carro limpo e em bom estado de conservação.'},
@@ -789,18 +837,132 @@ const ITEMS = [
  {id:25,cat:'medicamentos',texto:'Quantidade de medicamentos em conformidade com o estoque definido (sem faltas ou sobras).'},
 ];
 
-const SETORES_PLANILHA = ['Bloco 1','Bloco 2','Bloco 4','Bloco 5','Oncologia Ala A','Bloco III (Pediatria)','Hemodinâmica','Hospital Dia','Centro Cirúrgico','RPA','CCMI','UTI Adulto 1','UTI Adulto 2','UTI Ped.','UTI Neo 1','UTI Neo 2','Maternidade Ala A','Maternidade Ala B','UCINCO','UCINCA','Traumatologia','Radioterapia','Quimioterapia','Ressonância Magnética','Centro de Imagem e Diagnóstico','Ambulatório Oncológico','Endoscopia','Ambulatório Oncologia Pediátrica','Internação Oncologia Pediaátrica','Pronto Socorro Adulto','Pronto Socorro Infantil'];
+/* Itens da auditoria dos Carros de Medicação (módulo separado, ver TIPOS
+   mais abaixo). Não usam a conferência de validade por perfil (medCheck)
+   dos carros de parada — a validade dos medicamentos entra como item comum. */
+const ITEMS_MED = [
+ {id:1,cat:'seguranca',texto:'Todas as gavetas encontram-se trancadas quando o carrinho não está sob supervisão direta (medicamentos estão protegidos contra acesso de pessoas não autorizadas)'},
+ {id:2,cat:'seguranca',texto:'Fechaduras das gavetas estão funcionando adequadamente e chave do carrinho em boas condições de uso'},
+ {id:3,cat:'seguranca',texto:'Chave permanece em posse do profissional responsável durante o uso'},
+ {id:4,cat:'identificacao',texto:'Medicamentos estão armazenados na gaveta correspondente ao paciente (não existem medicamentos de pacientes diferentes armazenados juntos)'},
+ {id:5,cat:'identificacao',texto:'Medicamentos encontram-se dentro das embalagens originais e devidamente identificados'},
+ {id:6,cat:'identificacao',texto:'Insumos encontram-se organizados e sem uso de elástico/liga'},
+ {id:7,cat:'identificacao',texto:'Todas as gavetas possuem identificação correta dos leitos conforme dimensionamento'},
+ {id:8,cat:'identificacao',texto:'Medicamentos e insumos do paciente estão organizados dentro da sua respectiva gaveta'},
+ {id:9,cat:'identificacao',texto:'Medicamentos de alta vigilância estão identificados conforme padronização institucional'},
+ {id:10,cat:'identificacao',texto:'Não existem medicamentos vencidos no carrinho'},
+ {id:11,cat:'limpeza',texto:'Gavetas e compartimentos internos encontram-se limpos'},
+ {id:12,cat:'limpeza',texto:'Gavetas encontram-se organizadas, sem excesso de materiais ou itens desnecessários'},
+ {id:13,cat:'limpeza',texto:'Carrinho encontra-se em boas condições de conservação (testar mobilidade, rodinhas)'},
+ {id:14,cat:'limpeza',texto:'Carrinho apresenta limpeza adequada'},
+ {id:15,cat:'limpeza',texto:'Não há presença de materiais alheios ao uso do carrinho'},
+ {id:16,cat:'residuos',texto:'Caixa perfurocortante não apresenta violação, danos ou deformidades'},
+ {id:17,cat:'residuos',texto:'Nível de preenchimento da caixa perfurocortante está dentro do limite permitido (até a linha de segurança)'},
+ {id:18,cat:'residuos',texto:'Lixeiras possuem identificação conforme classificação do resíduo'},
+ {id:19,cat:'residuos',texto:'Lixeiras possuem saco plástico compatível com o tipo de resíduo'},
+ {id:20,cat:'residuos',texto:'Saco plástico da lixeira está corretamente acondicionado, sem transbordamento'},
+ {id:21,cat:'residuos',texto:'Lixeira encontra-se limpa, íntegra e em boas condições de conservação'},
+ {id:22,cat:'residuos',texto:'Não há mistura inadequada de resíduos (comum, infectante, reciclável, químico etc.)'},
+];
+
+let SETORES_PLANILHA = ['Bloco 1','Bloco 2','Bloco 4','Bloco 5','Oncologia Ala A','Bloco III (Pediatria)','Hemodinâmica','Hospital Dia','Centro Cirúrgico','RPA','CCMI','UTI Adulto 1','UTI Adulto 2','UTI Ped.','UTI Neo 1','UTI Neo 2','Maternidade Ala A','Maternidade Ala B','UCINCO','UCINCA','Traumatologia','Radioterapia','Quimioterapia','Ressonância Magnética','Centro de Imagem e Diagnóstico','Ambulatório Oncológico','Endoscopia','Ambulatório Oncologia Pediátrica','Internação Oncologia Pediaátrica','Pronto Socorro Adulto','Pronto Socorro Infantil'];
+const SETORES_MED = ['Bloco 1','Bloco 2','Bloco 4','Bloco 5','Oncologia Ala A','Maternidade Ala A','Maternidade Ala B','Bloco 3','Oncologia Pediátrica'];
 const SETOR_OUTRO = 'Outro';
 /* Semente inicial de setores com mais de um carro de emergência (ex.: UTIs).
    Persistida em Supabase (chave "sector_carts") na primeira carga, e depois
    editável pelos usuários através de "Adicionar carro" na Nova Auditoria. */
-const DEFAULT_SECTOR_CARTS = {
+let DEFAULT_SECTOR_CARTS = {
   'UTI Adulto 1': ['Carro 1','Carro 2'],
   'UTI Adulto 2': ['Carro 1','Carro 2'],
   'UTI Ped.': ['Carro 1','Carro 2'],
   'UTI Neo 1': ['Carro 1','Carro 2'],
   'UTI Neo 2': ['Carro 1','Carro 2'],
 };
+const DEFAULT_SECTOR_CARTS_MED = {};
+
+/* =========================================================================
+   TIPOS DE AUDITORIA (Carro de Emergência / Carro de Medicação)
+   Cada tipo é um módulo independente: checklist, setores e dados
+   (kv_store) próprios. Trocar de tipo apenas reatribui as variáveis
+   "ativas" abaixo (CATEGORIES/ITEMS/SETORES_PLANILHA/...) e recarrega o
+   estado correspondente do Supabase — o restante do app já lê essas
+   variáveis, então nenhuma outra função precisa saber qual tipo está ativo.
+   ========================================================================= */
+const TIPOS = {
+  emergencia: {
+    key:'emergencia', label:'Carro de Emergência', labelPlural:'Carros de Emergência', icon:'heart',
+    categories: CATEGORIES, items: ITEMS, setores: SETORES_PLANILHA,
+    cartProfiles: CART_PROFILES, defaultSectorCarts: DEFAULT_SECTOR_CARTS,
+    storagePrefix: '',
+  },
+  medicacao: {
+    key:'medicacao', label:'Carro de Medicação', labelPlural:'Carros de Medicação', icon:'pill',
+    categories: CATEGORIES_MED, items: ITEMS_MED, setores: SETORES_MED,
+    cartProfiles: {}, defaultSectorCarts: DEFAULT_SECTOR_CARTS_MED,
+    storagePrefix: 'med_',
+  },
+};
+let currentTipo = localStorage.getItem('auditoria_tipo') || 'emergencia';
+if(!TIPOS[currentTipo]) currentTipo = 'emergencia';
+
+/* Namespacia as chaves do kv_store por tipo, preservando as chaves
+   originais (sem prefixo) para "emergencia" — os dados já existentes dos
+   carros de emergência não precisam de nenhuma migração. */
+function skey(base){ const p = TIPOS[currentTipo].storagePrefix; return p ? p+base : base; }
+
+function applyTipo(tipo){
+  currentTipo = tipo;
+  localStorage.setItem('auditoria_tipo', tipo);
+  const cfg = TIPOS[tipo];
+  CATEGORIES = cfg.categories;
+  ITEMS = cfg.items;
+  SETORES_PLANILHA = cfg.setores;
+  CART_PROFILES = cfg.cartProfiles;
+  DEFAULT_SECTOR_CARTS = cfg.defaultSectorCarts;
+  updateTipoUI();
+}
+
+function updateTipoUI(){
+  const cfg = TIPOS[currentTipo];
+  document.querySelectorAll('.tipo-btn').forEach(b=> b.classList.toggle('active', b.dataset.tipo===currentTipo));
+  const brandSub = document.getElementById('brandSubtitle');
+  if(brandSub) brandSub.textContent = 'Auditoria de '+cfg.labelPlural;
+  const footerTipo = document.getElementById('sidebarFooterTipo');
+  if(footerTipo) footerTipo.textContent = 'Auditoria de '+cfg.labelPlural+' v1.0';
+  const heroSub = document.getElementById('dashHeroSubtitle');
+  if(heroSub) heroSub.textContent = 'Painel de Conformidade — Auditoria de '+cfg.labelPlural;
+  const lblIndisp = document.getElementById('lblCarroIndisponivel');
+  if(lblIndisp) lblIndisp.textContent = cfg.label+' não disponível no setor';
+  if(typeof VIEW_TITLES!=='undefined') VIEW_TITLES['new-audit'][1] = 'Preencha o checklist do '+cfg.label.toLowerCase();
+  document.title = 'Auditoria de '+cfg.labelPlural;
+}
+
+/* Troca de módulo: recarrega do Supabase (chaves do tipo escolhido) em vez
+   de unir com o que já está em memória — são conjuntos de dados totalmente
+   independentes, não um merge. Se houver uma auditoria em preenchimento
+   (view "new-audit" ativa), confirma antes, já que trocar de módulo troca
+   o checklist/setores e descartaria as respostas não salvas. */
+async function switchTipo(tipo){
+  if(tipo===currentTipo){ return; }
+  const activeEl = document.querySelector('.view.active');
+  const activeViewName = activeEl ? activeEl.id.replace('view-','') : null;
+  if(activeViewName==='new-audit'){
+    openConfirm('Trocar módulo', 'Você está preenchendo uma auditoria. Trocar de módulo agora descarta as respostas não salvas desta auditoria. Deseja continuar?', ()=> performSwitchTipo(tipo));
+    return;
+  }
+  await performSwitchTipo(tipo);
+}
+async function performSwitchTipo(tipo){
+  applyTipo(tipo);
+  await loadInactiveSectors();
+  await loadSectorCarts();
+  const fetched = await fetchIndexSafe();
+  allAudits = fetched===undefined ? [] : fetched;
+  await ensureCurrentCycle();
+  const activeEl = document.querySelector('.view.active');
+  const viewName = activeEl ? activeEl.id.replace('view-','') : 'dashboard';
+  showView(['dashboard','history','sectors','cycles'].includes(viewName) ? viewName : 'dashboard');
+}
 
 const STATUS_META = {
   'conforme':{label:'Conforme', cls:'sel-ok', color:'#12876F', bg:'#E4F6F1'},
@@ -1043,7 +1205,7 @@ async function storageDelete(key){
 /* Busca o índice com segurança. Retorna [] se de fato não existir ainda,
    ou undefined se a leitura falhou (sinal para os chamadores NÃO sobrescreverem). */
 async function fetchIndexSafe(){
-  const idx = await storageGet('audit_index');
+  const idx = await storageGet(skey('audit_index'));
   if(idx===undefined) return undefined;
   return idx || [];
 }
@@ -1064,7 +1226,7 @@ async function updateIndex(mutatorFn, opts){
     base = unionById(fetched, allAudits);
   }
   const newIdx = mutatorFn(base);
-  const ok = await storageSet('audit_index', newIdx);
+  const ok = await storageSet(skey('audit_index'), newIdx);
   if(!ok){
     toast('Erro ao salvar. Tente novamente em instantes.','bad');
     return false;
@@ -1088,7 +1250,7 @@ async function refreshAuditsFromStorage(){
   if(merged.length !== fetched.length){
     // Havia auditorias na memória que não estavam no servidor (ex.: uma
     // gravação anterior falhou parcialmente) — regrava a união para curar.
-    await storageSet('audit_index', merged);
+    await storageSet(skey('audit_index'), merged);
   }
   allAudits = merged;
 }
@@ -1110,7 +1272,7 @@ function trackKey(setor, carro){ return carro ? `${setor} · ${carro}` : setor; 
 function trackKeyBaseSetor(key){ return key.split(' · ')[0]; }
 
 async function fetchSectorCartsSafe(){
-  const s = await storageGet('sector_carts');
+  const s = await storageGet(skey('sector_carts'));
   if(s===undefined) return undefined;
   return s;
 }
@@ -1119,7 +1281,7 @@ async function loadSectorCarts(){
   if(fetched===undefined){ sectorCarts = {...DEFAULT_SECTOR_CARTS}; return; }
   if(fetched===null){
     sectorCarts = {...DEFAULT_SECTOR_CARTS};
-    await storageSet('sector_carts', sectorCarts);
+    await storageSet(skey('sector_carts'), sectorCarts);
     return;
   }
   sectorCarts = fetched;
@@ -1139,7 +1301,7 @@ async function addCartToSector(setor, carro){
   if(existing.includes(carro)) return true;
   const wasFirstCart = existing.length===0;
   const updatedCarts = { ...sectorCarts, [setor]: [...existing, carro] };
-  const ok = await storageSet('sector_carts', updatedCarts);
+  const ok = await storageSet(skey('sector_carts'), updatedCarts);
   if(!ok){ toast('Erro ao adicionar o carro. Tente novamente.','bad'); return false; }
   sectorCarts = updatedCarts;
 
@@ -1150,7 +1312,7 @@ async function addCartToSector(setor, carro){
     const newKey = trackKey(setor, carro);
     if(!setores.includes(newKey)) setores = [...setores, newKey];
     const updatedCycles = allCycles.map(c=> c.id===current.id ? {...c, setores} : c);
-    const okCycle = await storageSet('cycles', updatedCycles);
+    const okCycle = await storageSet(skey('cycles'), updatedCycles);
     if(okCycle) allCycles = updatedCycles;
   }
   return true;
@@ -1184,7 +1346,7 @@ function requiredTrackKeys(){
 }
 
 async function fetchCyclesSafe(){
-  const c = await storageGet('cycles');
+  const c = await storageGet(skey('cycles'));
   if(c===undefined) return undefined; // falha real de leitura
   return c || [];
 }
@@ -1193,7 +1355,7 @@ async function fetchCyclesSafe(){
    ciclos novos nem contam nos indicadores, mas o histórico de auditorias
    já feitas para eles é preservado. */
 async function fetchInactiveSectorsSafe(){
-  const s = await storageGet('inactive_sectors');
+  const s = await storageGet(skey('inactive_sectors'));
   if(s===undefined) return undefined;
   return s || [];
 }
@@ -1209,26 +1371,26 @@ async function refreshInactiveSectorsFromStorage(){
 async function deactivateSector(setorName){
   if(inactiveSectors.includes(setorName)) return true;
   const updatedInactive = [...inactiveSectors, setorName];
-  const ok = await storageSet('inactive_sectors', updatedInactive);
+  const ok = await storageSet(skey('inactive_sectors'), updatedInactive);
   if(!ok){ toast('Erro ao desativar o setor. Tente novamente.','bad'); return false; }
   inactiveSectors = updatedInactive;
   const current = getCurrentCycle();
   if(current && current.setores.includes(setorName)){
     const updatedCycles = allCycles.map(c=> c.id===current.id ? {...c, setores:c.setores.filter(s=>s!==setorName)} : c);
-    const okCycle = await storageSet('cycles', updatedCycles);
+    const okCycle = await storageSet(skey('cycles'), updatedCycles);
     if(okCycle) allCycles = updatedCycles;
   }
   return true;
 }
 async function reactivateSector(setorName){
   const updatedInactive = inactiveSectors.filter(s=>s!==setorName);
-  const ok = await storageSet('inactive_sectors', updatedInactive);
+  const ok = await storageSet(skey('inactive_sectors'), updatedInactive);
   if(!ok){ toast('Erro ao reativar o setor. Tente novamente.','bad'); return false; }
   inactiveSectors = updatedInactive;
   const current = getCurrentCycle();
   if(current && !current.setores.includes(setorName)){
     const updatedCycles = allCycles.map(c=> c.id===current.id ? {...c, setores:[...c.setores, setorName]} : c);
-    const okCycle = await storageSet('cycles', updatedCycles);
+    const okCycle = await storageSet(skey('cycles'), updatedCycles);
     if(okCycle) allCycles = updatedCycles;
   }
   return true;
@@ -1249,7 +1411,7 @@ async function ensureCurrentCycle(){
       setores: requiredTrackKeys(),
     };
     cycles = [...cycles, current];
-    await storageSet('cycles', cycles);
+    await storageSet(skey('cycles'), cycles);
   }
   allCycles = cycles;
   return current;
@@ -1293,7 +1455,7 @@ async function closeCycleAndStartNew(){
     concluidoEm: null, status:'aberto', setores: requiredTrackKeys(),
   };
   const updated = allCycles.map(c=> c.id===current.id ? closed : c).concat([novo]);
-  const ok = await storageSet('cycles', updated);
+  const ok = await storageSet(skey('cycles'), updated);
   if(!ok){ toast('Erro ao concluir o ciclo. Tente novamente.','bad'); return false; }
   allCycles = updated;
   return true;
@@ -1308,7 +1470,7 @@ async function ensureSectorInCycle(cycleId, key){
   const cycle = allCycles.find(c=>c.id===cycleId);
   if(!cycle || cycle.setores.includes(key)) return;
   const updated = allCycles.map(c=> c.id===cycleId ? {...c, setores:[...c.setores, key]} : c);
-  const ok = await storageSet('cycles', updated);
+  const ok = await storageSet(skey('cycles'), updated);
   if(ok) allCycles = updated;
 }
 
@@ -1553,7 +1715,27 @@ function openLightbox(src){ document.getElementById('lightboxImg').src=src; docu
 /* =========================================================================
    NOVA AUDITORIA — build form
    ========================================================================= */
-async function startNewAudit(){
+/* Antes de abrir o formulário, pergunta qual tipo de carro será auditado
+   (Emergência ou Medicação) — cada um tem checklist e setores próprios. */
+function startNewAudit(){
+  document.getElementById('modalTipoSelect').classList.add('open');
+}
+document.getElementById('tipoSelectCancel').addEventListener('click', ()=>{
+  document.getElementById('modalTipoSelect').classList.remove('open');
+});
+document.querySelectorAll('.tipo-select-card').forEach(card=>{
+  card.addEventListener('click', async ()=>{
+    document.getElementById('modalTipoSelect').classList.remove('open');
+    const tipo = card.dataset.tipo;
+    if(tipo!==currentTipo) await switchTipo(tipo);
+    startNewAuditForm();
+  });
+});
+document.querySelectorAll('.tipo-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=> switchTipo(btn.dataset.tipo));
+});
+
+async function startNewAuditForm(){
   editingAuditId = null;
   await refreshInactiveSectorsFromStorage();
   await refreshSectorCartsFromStorage();
@@ -2070,7 +2252,7 @@ function renderDashboard(){
   if(fin.length===0){
     kpiGrid.innerHTML = `<div class="card card-pad" style="grid-column:1/-1;"><div class="empty-state">
       ${''}
-      <h3>Nenhuma auditoria finalizada ainda</h3><p>Crie sua primeira auditoria para começar a acompanhar a conformidade dos carros de emergência.</p>
+      <h3>Nenhuma auditoria finalizada ainda</h3><p>Crie sua primeira auditoria para começar a acompanhar a conformidade dos ${TIPOS[currentTipo].labelPlural.toLowerCase()}.</p>
       <button class="btn btn-primary" style="margin-top:14px;" onclick="startNewAudit()">Criar nova auditoria</button>
     </div></div>`;
     if(charts.trend) charts.trend.destroy();
@@ -2380,7 +2562,7 @@ document.getElementById('btnExportAudit').addEventListener('click', async ()=>{
   const full = await storageGet('audit_'+currentDetailId);
   if(!full) return;
   const doc = new jsPDF();
-  pdfHeader(doc, 'Auditoria de Carro de Emergência', `${full.header.setor} · ${fmtDate(full.header.data)}`);
+  pdfHeader(doc, 'Auditoria de '+TIPOS[currentTipo].label, `${full.header.setor} · ${fmtDate(full.header.data)}`);
   doc.setFontSize(10);
   let y = 34;
   doc.setFont('helvetica','bold'); doc.text('Auditor:', 14, y); doc.setFont('helvetica','normal'); doc.text(full.header.auditor||'—', 34, y);
@@ -2420,7 +2602,7 @@ document.getElementById('btnExportAudit').addEventListener('click', async ()=>{
 function generateDashboardPdf(){
   const fin = finalizedAudits();
   const doc = new jsPDF();
-  pdfHeader(doc,'Dashboard Geral — Auditoria de Carros de Emergência', `${fin.length} auditorias finalizadas`);
+  pdfHeader(doc,'Dashboard Geral — Auditoria de '+TIPOS[currentTipo].labelPlural, `${fin.length} auditorias finalizadas`);
   let y=36;
   const avg = fin.length? fin.reduce((s,a)=>s+a.score,0)/fin.length : 0;
   doc.setFontSize(11); doc.setFont('helvetica','bold');
@@ -2479,7 +2661,7 @@ function buildDashboardReportText(){
   })() : '  Nenhum ciclo em andamento.';
 
   return [
-    'RELATÓRIO — AUDITORIA DE CARROS DE EMERGÊNCIA',
+    'RELATÓRIO — AUDITORIA DE '+TIPOS[currentTipo].labelPlural.toUpperCase(),
     'Hospital Maternidade São Vicente de Paulo',
     `Gerado em ${new Date().toLocaleString('pt-BR')}`,
     '',
@@ -2573,6 +2755,7 @@ document.getElementById('btnExportSector').addEventListener('click', async ()=>{
    INIT
    ========================================================================= */
 async function init(){
+  applyTipo(currentTipo);
   const fetched = await fetchIndexSafe();
   allAudits = fetched===undefined ? [] : fetched;
   await loadInactiveSectors();
