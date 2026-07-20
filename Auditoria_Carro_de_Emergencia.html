@@ -108,11 +108,12 @@ input,select,textarea{font-family:inherit;}
 .brand-logo-plate img{display:block;width:100%;height:auto;filter:brightness(0) invert(1);}
 .brand-subtitle{color:#9FC1E3;font-size:11px;font-weight:600;letter-spacing:.3px;text-align:center;margin-top:10px;text-transform:uppercase;}
 
-.tipo-switcher{display:flex;gap:6px;background:rgba(255,255,255,.06);border-radius:11px;padding:4px;margin:0 4px 16px;}
-.tipo-btn{flex:1;background:none;border:none;color:#C9DEF2;font-size:11.5px;font-weight:700;padding:9px 6px;border-radius:8px;cursor:pointer;transition:.15s;text-align:center;}
+.tipo-switcher{display:flex;flex-direction:column;gap:4px;background:rgba(255,255,255,.06);border-radius:11px;padding:4px;margin:0 4px 16px;}
+.tipo-btn{background:none;border:none;color:#C9DEF2;font-size:12px;font-weight:700;padding:10px 10px;border-radius:8px;cursor:pointer;transition:.15s;text-align:left;}
 .tipo-btn:hover{background:rgba(255,255,255,.1);color:#fff;}
 .tipo-btn.active{background:rgba(46,139,255,.28);color:#fff;}
-.tipo-select-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
+.tipo-select-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;}
+@media (max-width:520px){ .tipo-select-grid{grid-template-columns:1fr;} }
 .tipo-select-card{display:flex;flex-direction:column;align-items:center;gap:10px;padding:22px 14px;border:1.5px solid var(--line);border-radius:14px;background:#fff;cursor:pointer;transition:.15s;}
 .tipo-select-card:hover{border-color:var(--blue-500);background:var(--blue-50);transform:translateY(-1px);}
 .tipo-select-icon{width:42px;height:42px;border-radius:12px;background:var(--blue-100);color:var(--blue-600);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -279,7 +280,9 @@ input,select,textarea{font-family:inherit;}
 .status-btn.sel-ok{background:var(--ok-bg);border-color:var(--ok);color:var(--ok);}
 .status-btn.sel-warn{background:var(--warn-bg);border-color:var(--warn);color:var(--warn);}
 .status-btn.sel-bad{background:var(--bad-bg);border-color:var(--bad);color:var(--bad);}
+.status-btn.sel-na{background:#51697E;border-color:#51697E;color:#fff;}
 .item-extra{margin-top:12px;margin-left:38px;display:flex;flex-direction:column;gap:10px;}
+.item-extra-obs{display:flex;flex-direction:column;gap:10px;}
 .item-extra textarea{width:100%;}
 .med-alert{display:flex;flex-direction:column;gap:6px;background:var(--warn-bg);border:1px solid #F0DBAA;padding:10px 12px;border-radius:10px;}
 .med-alert label{font-size:11px;font-weight:700;color:var(--warn);text-transform:uppercase;}
@@ -323,7 +326,7 @@ input,select,textarea{font-family:inherit;}
 
 /* ---------- DETAIL ---------- */
 .detail-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
-.detail-meta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+.detail-meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:22px;}
 .mini-stat{background:var(--blue-50);border-radius:12px;padding:12px 14px;}
 .mini-stat .l{font-size:10.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;}
 .mini-stat .v{font-size:16px;font-weight:800;color:var(--navy-900);margin-top:3px;}
@@ -420,8 +423,9 @@ input,select,textarea{font-family:inherit;}
       <div class="brand-subtitle" id="brandSubtitle">Auditorias do Serviço de Qualidade Hospitalar</div>
     </div>
     <div class="tipo-switcher" id="tipoSwitcher">
-      <button type="button" class="tipo-btn active" data-tipo="emergencia">🚑 Emergência</button>
-      <button type="button" class="tipo-btn" data-tipo="medicacao">💊 Medicação</button>
+      <button type="button" class="tipo-btn active" data-tipo="emergencia">🚑 Carro de Emergência</button>
+      <button type="button" class="tipo-btn" data-tipo="engenharia">🔧 Engenharia Clínica</button>
+      <button type="button" class="tipo-btn" data-tipo="medicacao">💊 Carro de Medicação</button>
     </div>
     <nav>
       <div class="nav-group">
@@ -538,8 +542,11 @@ input,select,textarea{font-family:inherit;}
               <input type="text" id="fSetorOutro" placeholder="Digite o nome do setor">
             </div>
             <div class="field" id="fCarroWrap" style="display:none;">
-              <label>Carro</label>
-              <select id="fCarro"></select>
+              <label id="lblCarroField">Carro</label>
+              <div style="display:flex;gap:6px;">
+                <select id="fCarro" style="flex:1;min-width:0;"></select>
+                <button type="button" class="btn btn-danger btn-sm" id="btnRemoveCart" style="display:none;padding:10px 12px;" title="Remover">✕</button>
+              </div>
             </div>
             <div class="field"><label>Auditor *</label><input type="text" id="fAuditor" placeholder="Nome do auditor"></div>
             <div class="field"><label>Enfermeiro Responsável *</label><input type="text" id="fEnfermeiro" placeholder="Nome do enfermeiro"></div>
@@ -553,6 +560,10 @@ input,select,textarea{font-family:inherit;}
 
         <div class="card card-pad" id="carroIndisponivelBanner" style="display:none;margin-bottom:18px;background:var(--bad-bg);border-color:var(--bad);">
           <strong style="color:var(--bad);">Carro não disponível.</strong> Esta auditoria será registrada como não conformidade total do setor — não é necessário preencher o checklist item a item.
+        </div>
+
+        <div class="card card-pad" id="carroGatingHint" style="display:none;margin-bottom:18px;background:var(--blue-50);">
+          Selecione o equipamento acima para abrir os itens de auditoria.
         </div>
 
         <div class="progress-wrap" id="progressWrap">
@@ -588,7 +599,7 @@ input,select,textarea{font-family:inherit;}
         </div>
         <div class="card" style="overflow:auto;">
           <table class="audit-table" id="historyTable">
-            <thead><tr><th>Data</th><th>Setor</th><th>Carro</th><th>Ciclo</th><th>Auditor</th><th>Conformidade</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Data</th><th>Setor</th><th id="thCarroHistory">Carro</th><th>Ciclo</th><th>Auditor</th><th>Conformidade</th><th>Status</th><th></th></tr></thead>
             <tbody id="historyBody"></tbody>
           </table>
           <div class="empty-state" id="historyEmpty" style="display:none;">
@@ -679,7 +690,7 @@ input,select,textarea{font-family:inherit;}
         </div>
         <div class="section-title"><h2>Auditorias do setor</h2></div>
         <div class="card" style="overflow:auto;">
-          <table class="audit-table"><thead><tr><th>Data</th><th>Carro</th><th>Auditor</th><th>Conformidade</th><th>Status</th><th></th></tr></thead>
+          <table class="audit-table"><thead><tr><th>Data</th><th id="thCarroSector">Carro</th><th>Auditor</th><th>Conformidade</th><th>Status</th><th></th></tr></thead>
           <tbody id="secHistoryBody"></tbody></table>
         </div>
       </section>
@@ -691,15 +702,21 @@ input,select,textarea{font-family:inherit;}
 <div class="lightbox" id="lightbox"><button class="close-lb" id="closeLb">✕</button><img id="lightboxImg" src=""></div>
 
 <div class="modal-backdrop" id="modalTipoSelect">
-  <div class="modal" style="max-width:460px;">
+  <div class="modal" style="max-width:620px;">
     <h3>Nova Auditoria</h3>
-    <p>Qual tipo de carro será auditado?</p>
+    <p>Qual auditoria você quer iniciar?</p>
     <div class="tipo-select-grid">
       <button type="button" class="tipo-select-card" data-tipo="emergencia">
         <div class="tipo-select-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12.5l-8 8-8-8a5 5 0 0 1 7-7.2l1 1 1-1a5 5 0 0 1 7 7.2z"/><path d="M4 12.5h4l1.5-3 2 5 1.5-2.5h6.5"/></svg>
         </div>
         <div class="tipo-select-label">Carro de Emergência</div>
+      </button>
+      <button type="button" class="tipo-select-card" data-tipo="engenharia">
+        <div class="tipo-select-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 4.4l-6.6 6.6a1.7 1.7 0 0 0 2.4 2.4l6.6-6.6a4 4 0 0 0 5.5-3.9l-3 3-2.4-2.4z"/></svg>
+        </div>
+        <div class="tipo-select-label">Equipamento da Engenharia Clínica</div>
       </button>
       <button type="button" class="tipo-select-card" data-tipo="medicacao">
         <div class="tipo-select-icon">
@@ -742,9 +759,9 @@ input,select,textarea{font-family:inherit;}
 
 <div class="modal-backdrop" id="modalAddCart">
   <div class="modal" style="max-width:380px;">
-    <h3>Adicionar carro</h3>
+    <h3 id="addCartTitle">Adicionar carro</h3>
     <p id="addCartSub">Informe um nome para identificar o novo carro deste setor (ex.: "Carro 1", "Carro 2").</p>
-    <div class="profile-field"><label>Nome do carro</label><input type="text" id="addCartInput" placeholder="Carro 1"></div>
+    <div class="profile-field"><label id="addCartFieldLabel">Nome do carro</label><input type="text" id="addCartInput" placeholder="Carro 1"></div>
     <div class="actions">
       <button class="btn btn-ghost" id="addCartCancel">Cancelar</button>
       <button class="btn btn-primary" id="addCartConfirm">Adicionar</button>
@@ -790,6 +807,22 @@ const CATEGORIES_MED = [
   {id:'residuos', nome:'Descarte de Perfurocortantes e Resíduos', icon:'trash'},
 ];
 
+/* Categoria e itens da auditoria dos Equipamentos da Engenharia Clínica
+   (módulo separado, ver TIPOS mais abaixo). Auditada por equipamento
+   individual (Setor -> Equipamento -> checklist), não por setor genérico. */
+const CATEGORIES_ENG = [
+  {id:'conferencia', nome:'Conferência do Equipamento', icon:'wrench'},
+];
+const ITEMS_ENG = [
+ {id:1,cat:'conferencia',texto:'Calibração realizada dentro do prazo previsto no cronograma.'},
+ {id:2,cat:'conferencia',texto:'Manutenção preventiva realizada dentro do prazo previsto no cronograma.'},
+ {id:3,cat:'conferencia',texto:'Equipamento conectado à rede elétrica, quando aplicável.'},
+ {id:4,cat:'conferencia',texto:'Equipamento funcionando corretamente.'},
+ {id:5,cat:'conferencia',texto:'Equipamento em boas condições de higiene.'},
+ {id:6,cat:'conferencia',texto:'Equipamento armazenado de forma adequada.'},
+ {id:7,cat:'conferencia',texto:'Controle do equipamento devidamente registrado.'},
+];
+
 const ICONS = {
   cart:'<path d="M3 4h2l2.4 12.4a2 2 0 0 0 2 1.6h7.2a2 2 0 0 0 2-1.6L20 8H6"/><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/>',
   lock:'<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
@@ -801,6 +834,7 @@ const ICONS = {
   refresh:'<path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 4v4h-4M6 20v-4h4"/>',
   pin:'<path d="M12 21s7-6.6 7-12a7 7 0 1 0-14 0c0 5.4 7 12 7 12z"/><circle cx="12" cy="9" r="2.4"/>',
   trash:'<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
+  wrench:'<path d="M14.7 6.3a4 4 0 0 0-5.4 4.4l-6.6 6.6a1.7 1.7 0 0 0 2.4 2.4l6.6-6.6a4 4 0 0 0 5.5-3.9l-3 3-2.4-2.4z"/>',
 };
 
 /* Listas de medicamentos e insumos por perfil de carro (Adulto/Infantil/Misto),
@@ -880,6 +914,47 @@ let DEFAULT_SECTOR_CARTS = {
 };
 const DEFAULT_SECTOR_CARTS_MED = {};
 
+/* Setores auditados pela Engenharia Clínica — extraídos dos planos de
+   manutenção (Preventiva/Calibração) de 2026 da Neovero. */
+const SETORES_ENGENHARIA = [
+ 'Ambulatório 1','Ambulatório 2','Banco de Leite','Banco de Sangue','Bloco 1','Bloco 2','Bloco 3','Bloco 4','Bloco 5','CCMI','Centro Cirúrgico','Centro de Imagem','CME','Engenharia Clínica','Laboratório','Maternidade Infantil','Medicina Nuclear','Oncologia Ala A','Oncologia Pediátrica','P.S Infantil','Patologia','Pequenas Cirurgias','Pronto Socorro Adulto','Quimioterapia','Radioterapia','Sala de Hemodinâmica','Traumatologia','UCINCO','UTI Adulto Ala A','UTI Adulto Ala B','UTI Móvel','UTI Neonatal A/1','UTI Neonatal B/2','UTI Pediátrica'
+];
+/* Catálogo inicial de equipamentos por setor (reaproveita o mecanismo de
+   "Carro" — aqui cada "carro" é um equipamento individual, identificado por
+   nome + nº de patrimônio ou tag). Extraído dos planos de manutenção 2026;
+   alguns setores não tinham equipamento listado nesses dois planos
+   específicos e por isso começam vazios — dá para cadastrar depois pela
+   tela de Nova Auditoria, igual às outras auditorias. */
+const DEFAULT_SECTOR_EQUIPAMENTOS = {
+  "Ambulatório 1": ["BALANÇA DIGITAL - PORTÁTIL BK 200F (BALMAK) — Pat. 68817", "BALANÇA MECÂNICA ANTROPOMÉTRICA 111 (BALMAK) — Pat. 65687", "BALANÇA MECÂNICA ANTROPOMÉTRICA R 110 (WELMY) — Pat. 75411", "DESFIBRILADOR APOLUS — Pat. 75674"],
+  "Ambulatório 2": ["BALANÇA DIGITAL - PORTÁTIL BK 200F (BALMAK) — Pat. 70419", "BALANÇA DIGITAL - PORTÁTIL BK 200F (BALMAK) — Pat. 70421", "BALANÇA DIGITAL - PORTÁTIL BK 200F (BALMAK) — Pat. 70420", "BALANÇA ELETRÔNICA ANTROPOMÉTRICA R/I - W200 (WELMY) — Pat. 71836", "BALANÇA ELETRÔNICA PLATAFORMA BK-50 (BALMAK) — Pat. 70050", "BALANÇA ELETRÔNICA RI-W 200 (WELMY) — Pat. 71223", "BALANÇA MECÂNICA — Pat. 094", "BALANÇA MECÂNICA ANTROPOMÉTRICA 111 (BALMAK) — Pat. 59499", "BALANÇA MECÂNICA ANTROPOMÉTRICA 111 (BALMAK) — Pat. 66054", "BALANÇA MECÂNICA ANTROPOMÉTRICA 111 (BALMAK) — Pat. 66055", "BALANÇA MECÂNICA ANTROPOMÉTRICA 30 (MECÂNICA) (FILIZOLA) — Pat. 22447", "BALANÇA MECÂNICA ANTROPOMÉTRICA 31 (MECÂNICA) (FILIZOLA) — Pat. 60388"],
+  "Banco de Leite": ["BALANÇA ANALÍTICA M214AI (BEL ENGINEERING) — Pat. 75727", "BALANÇA ELETRÔNICA PEDIÁTRICA BP BABY (FILIZOLA) — Pat. 66139", "BANHO MARIA 146 (FANEM LTDA) — Pat. 67796", "BANHO MARIA ABL-65 (EME) — HSVP-EC-00709", "CENTRÍFUGA DHM_6 (BENFER) — Pat. 71225", "ESTUFA - AQUECEDORA 150L (SOLIDSTEEL) — Pat. 75760"],
+  "Bloco 1": ["BOMBA DE INFUSÃO BENEFUSION VP3 (MINDRAY) — Pat. 72790", "BOMBA DE INFUSÃO BENEFUSION VP3 (MINDRAY) — Pat. 72789", "BOMBA DE INFUSÃO BENEFUSION VP3 (MINDRAY) — Pat. 72788", "BOMBA DE INFUSÃO BENEFUSION VP3 (MINDRAY) — Pat. 72787", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72204", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72203", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72206", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72205", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72208", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72207", "DESFIBRILADOR APOLUS — Pat. 71023"],
+  "Bloco 2": ["BALANÇA ELETRÔNICA PLATAFORMA BK-50 (BALMAK) — Pat. 070066", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71594", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71622", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72219", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72213", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72211", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72216", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72209", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72220", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72786", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72785", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72784", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72783", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72782", "DESFIBRILADOR APOLUS — Pat. 71024"],
+  "Bloco 3": ["BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72781", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72779", "CARDIOVERSOR CARDIOMAX 8 — HSVP-EC-00354"],
+  "Bloco 4": ["BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72769", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72770", "DESFIBRILADOR APOLUS — Pat. 71028"],
+  "Bloco 5": ["BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72234", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72235", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72236", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72237", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72238", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72239", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72240", "DESFIBRILADOR APOLUS — Pat. 71027"],
+  "CCMI": ["BALANÇA ELETRÔNICA PEDIÁTRICA 109 E (WELMY) — HSVP-EC-00652", "BALANÇA ELETRÔNICA PEDIÁTRICA 109 E (WELMY) — Pat. 70695", "BANHO MARIA BM-02 (KACIL) — Pat. 070464", "BANHO MARIA BM-02 (KACIL) — Pat. 070456", "BERÇO AQUECIDO 2051-LDR (FANEM LTDA) — Pat. 67814", "BERÇO AQUECIDO 2085 (FANEM LTDA) — Pat. 75640", "BERÇO AQUECIDO AMPLA 2085 — Pat. 75639", "BISTURI - ELÉTRICO — Pat. 70787", "BISTURI - ELÉTRICO BP 400 (EMAI - TRANSMAI) — HSVP-EC-00314", "BISTURI - ELÉTRICO SS 501 SX — Pat. 71098", "BISTURI - ELÉTRICO SS 501LX — Pat. 69870", "BOMBA DE INFUSÃO VP3 — Pat. 72233", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72232", "CARDIOVERSOR CARDIOMAX 8 — Pat. 70166"],
+  "Centro Cirúrgico": ["BALANÇA ELETRÔNICA BK-200F (BALMAK) — Pat. 72354", "BISTURI - ARGÔNIO ARGON 2 (WEM) — HSVP-EC-00413", "BISTURI - ARGÔNIO ARGON 4 (WEM) — Pat. 69872", "BISTURI - ELÉTRICO — Pat. 75683", "BISTURI - ELÉTRICO — Pat. 70062", "BISTURI - ELÉTRICO C-20 — Pat. 66246", "BISTURI - ELÉTRICO SS 501 SX — Pat. 69871", "BISTURI - ELÉTRICO SS 501 SX — Pat. 71097", "BISTURI - ELÉTRICO SS 501 SX — Pat. 71256", "BISTURI - ELÉTRICO SS 501 SX — Pat. 71555", "BISTURI - ELÉTRICO SS 501 SX — Pat. 71556", "BISTURI - ELÉTRICO SS 501 SX — Pat. 72511", "BISTURI - ELÉTRICO SS 501 SX — Pat. 72526", "BISTURI - ELÉTRICO SS 501 SX — Pat. 72586", "BISTURI - ELÉTRICO SS 501 SX — Pat. 72630", "BOMBA DE INFUSÃO - SERINGA — Pat. 71644", "BOMBA DE INFUSÃO - SERINGA — HSVP-EC-01401", "BOMBA DE INFUSÃO - SERINGA — HSVP-EC-01402", "BOMBA DE INFUSÃO - SERINGA — HSVP-EC-01403", "BOMBA DE INFUSÃO - SERINGA — HSVP-EC-01507", "BOMBA DE INFUSÃO - SERINGA — HSVP-EC-01508", "BOMBA DE INFUSÃO - SERINGA — HSVP-EC-01509", "BOMBA DE INFUSÃO - SERINGA — HSVP-EC-01510", "BOMBA DE INFUSÃO BENEFUSION VP3 (MINDRAY) — Pat. 72778", "BOMBA INJETORA DE CONTRASTE VHU600 MEDRAD CT (BAYER) — HSVP-EC-00319", "CARDIOVERSOR CARDIOMAX 8 — Pat. 70167", "CARDIOVERSOR CARDIOMAX 8 — Pat. 70165", "DESFIBRILADOR UMED 20 (MINDRAY) — Pat. 72245", "ESTUFA - AQUECEDORA AMSCO (STERIS) — Pat. 71568", "FOCO CIRÚRGICO DE TETO LED SKY LED 160 (UM BRAÇO) (KSS) — Pat. 69356", "FOCO CIRÚRGICO DE TETO LED SKY LED 160 (UM BRAÇO) (KSS) — Pat. 70557", "FOCO CIRÚRGICO DE TETO LED SKY LED 160 (UM BRAÇO) (KSS) — Pat. 70558", "FOCO CIRÚRGICO DE TETO LED SKY LED 160 (UM BRAÇO) (KSS) — Pat. 70559", "FOCO CIRÚRGICO DE TETO LED SKY LED 160 (UM BRAÇO) (KSS) — Pat. 70560", "FOCO CIRÚRGICO DE TETO LED SKY LED 160 (UM BRAÇO) (KSS) — Pat. 70561"],
+  "Centro de Imagem": ["APARELHO DE RAIO X - MÓVEL 300 (AGUILLA PLUS) — Pat. 67425", "APARELHO DE RAIO X - MÓVEL AQUILA S (VMI) — Pat. 70200", "APARELHO DE RAIO X - MÓVEL AQUILA S (VMI) — Pat. 70201", "APARELHO DE RAIO X - MÓVEL BR-100 (MEDITRONIX) — Pat. 63857", "APARELHO DE RAIO X - MÓVEL PEGASO (LOTUS) — Pat. 75722", "CARDIOVERSOR CARDIOMAX 8 — HSVP-EC-00877", "DESFIBRILADOR UMED 20 (MINDRAY) — Pat. 72569", "MONITOR - MULTIPARÂMETROS — Pat. 70268"],
+  "CME": ["AUTOCLAVE HORIZONTAL 103 (FABBE PRIMAR) — Pat. 67183", "AUTOCLAVE HORIZONTAL AC 365 (ORTOSINTESE) — HSVP-EC-01193", "AUTOCLAVE HORIZONTAL AC523 (ORTOSINTESE) — Pat. 69328", "INCUBADORA BIOLÓGICA 390CAUTO (3M) — HSVP-EC-00369", "LAVADORA ULTRASSÔNICA CRP115 (STERIS) — Pat. 72079", "SELADORA - AUTOMÁTICA BR 10VS (BRASMEDICAL) — HSVP-EC-01296"],
+  "Engenharia Clínica": ["BALANÇA ANALÍTICA S2202 (BEL ENGINEERING) — Pat. 72320", "BALANÇA ELETRÔNICA ANTROPOMÉTRICA 2096 PP (TOLEDO) — HSVP-EC-00003", "BALANÇA ELETRÔNICA PLATAFORMA 104A (WELMY) — Pat. 068767", "BALANÇA MECÂNICA — Pat. 67163", "BALANÇA MECÂNICA ANTROPOMÉTRICA SEM MODELO (WELMY) — Pat. 64417", "BANHO MARIA 015 (EVLAB) — Pat. 22416", "BOMBA DE INFUSÃO - SERINGA AGILIA MC (FRESENIUS KABI) — Pat. 75243", "BOMBA DE INFUSÃO BENEFUSION VP3 (MINDRAY) — Pat. 72762", "BOMBA DE INFUSÃO BENEFUSION VP3 (MINDRAY) — Pat. 72763", "BOMBA DE INFUSÃO VOLUMÉTRICA VOLUMAT AGILIA (FRESENIUS KABI) — HSVP-EC-00006", "BOMBA DE INFUSÃO VOLUMÉTRICA VOLUMAT AGILIA (FRESENIUS KABI) — HSVP-EC-00010", "BOMBA DE INFUSÃO VOLUMÉTRICA VOLUMAT AGILIA (FRESENIUS KABI) — HSVP-EC-00011", "BOMBA DE INFUSÃO VOLUMÉTRICA VOLUMAT AGILIA (FRESENIUS KABI) — HSVP-EC-01180", "CENTRÍFUGA FUGE12S2 (DIAMED) — HSVP-EC-00687", "ESTUFA - AQUECEDORA 117 — Pat. 3406", "ESTUFA - AQUECEDORA LINEA (OLIDEF CZ) — Pat. 65302", "ESTUFA - AQUECEDORA ST200 (ICAMO) — Pat. 2233", "FOCO CIRÚRGICO PEDESTAL — Pat. 65290", "INCUBADORA BIOLÓGICA ID INCUBATOR 37 SI (BIO RAD) — Pat. 10314", "MESA CIRÚRGICA - ELÉTRICA — Pat. 3633", "MESA CIRÚRGICA - ELÉTRICA 083MID (BARRFAB) — HSVP-EC-00390", "MESA CIRÚRGICA - ELÉTRICA 686 (BARRFAB) — Pat. 67319", "MESA CIRÚRGICA - ELÉTRICA OS300 (ORTOSINTESE) — Pat. 67803", "MONITOR - MULTIPARÂMETROS — Pat. 70144", "MONITOR - MULTIPARÂMETROS — Pat. 66625", "MONITOR - MULTIPARÂMETROS — Pat. 73620", "MONITOR - MULTIPARÂMETROS — Pat. 70272", "MONITOR - MULTIPARÂMETROS — Pat. 68824", "MONITOR - MULTIPARÂMETROS INFINITY DELTA XL (DRAGER) — HSVP-EC-00083"],
+  "Maternidade Infantil": ["INCUBADORA NEONATAL — Pat. 75582", "MONITOR - MULTIPARÂMETROS — Pat. 70142"],
+  "Oncologia Ala A": ["BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72222", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72223", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72224", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72225", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72226", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72227", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72228", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72229", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72230", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72231", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72221", "DESFIBRILADOR APOLUS — Pat. 71025"],
+  "Patologia": ["BALANÇA ANALÍTICA Q-520-400 — Pat. 65957", "BANHO MARIA SEM MODELO (LUPE) — Pat. 65393", "ESTUFA - AQUECEDORA LINEA (OLIDEF CZ) — Pat. 65208"],
+  "Pequenas Cirurgias": ["BISTURI - ELÉTRICO — Pat. 75684", "BISTURI - ELÉTRICO B6600 SM — Pat. 67276", "BISTURI - ELÉTRICO BP 400 PLUS (EMAI - TRANSMAI) — Pat. 65116", "DESFIBRILADOR UMED 20 — Pat. 72796", "FOCO CIRÚRGICO PEDESTAL - LED FL 2000 ALP3 (MEDPEJ) — Pat. 75765", "FOCO CIRÚRGICO PEDESTAL - LED FL 2000 ALP3 (MEDPEJ) — Pat. 75766", "FOCO CLÍNICO AUXILIAR PARABOLICA (SISMATEC) — Pat. 64990", "MESA CIRÚRGICA - ELÉTRICA BF 683ST (BARRFAB) — Pat. 69699", "MESA CIRÚRGICA - ELÉTRICA SEM MODELO (BARRFAB) — Pat. 68072", "MONITOR - MULTIPARÂMETROS — Pat. 72795"],
+  "Pronto Socorro Adulto": ["BALANÇA ELETRÔNICA W200/100A (WELMY) — Pat. 72063", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71629", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71585", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72217", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72214", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 72215", "DESFIBRILADOR UMED 20 — Pat. 72804", "FOCO CIRÚRGICO PEDESTAL — Pat. 75764", "MONITOR - MULTIPARÂMETROS — Pat. 72801", "MONITOR - MULTIPARÂMETROS — Pat. 72802", "MONITOR - MULTIPARÂMETROS — Pat. 72803"],
+  "Quimioterapia": ["BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71591", "DESFIBRILADOR APOLUS (INSTRAMED) — Pat. 69735", "MONITOR - MULTIPARÂMETROS — HSVP-EC-00516"],
+  "Radioterapia": ["DESFIBRILADOR APOLUS — Pat. 71026", "FOCO CIRÚRGICO DE TETO LED SEM MODELO (KSS) — Pat. 64366", "MESA CIRÚRGICA - ELÉTRICA ARCOEMC (KSS) — Pat. 63335", "MONITOR - MULTIPARÂMETROS — Pat. 070139"],
+  "Traumatologia": ["APARELHO DE RAIO X - FIXO XR6000 (GE) — HSVP-EC-00671", "BALANÇA ELETRÔNICA — HSVP-EC-01718", "DESFIBRILADOR UMED 20 — Pat. 72793", "FOCO CIRÚRGICO PEDESTAL - LED HYLED 200M (MINDRAY) — Pat. 72249", "MONITOR - MULTIPARÂMETROS — Pat. 72794"],
+  "UCINCO": ["BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71579", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71580", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71606", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71610", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71595", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71612", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71590", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71592", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71599", "FOCO CIRÚRGICO AUXILIAR FL — HSVP-EC-00456", "INCUBADORA NEONATAL 1186 A — HSVP-EC-00462", "INCUBADORA NEONATAL 1186 A (FANEM LTDA) — HSVP-EC-00460", "INCUBADORA NEONATAL 1186 A (FANEM LTDA) — Pat. 75519"],
+  "UTI Adulto Ala A": ["MONITOR - MULTIPARÂMETROS — Pat. 069409", "MONITOR - MULTIPARÂMETROS — Pat. 70099", "MONITOR - MULTIPARÂMETROS — Pat. 70100", "MONITOR - MULTIPARÂMETROS — Pat. 71218", "MONITOR - MULTIPARÂMETROS — Pat. 71215", "MONITOR - MULTIPARÂMETROS — Pat. 71310", "MONITOR - MULTIPARÂMETROS — Pat. 71319", "MONITOR - MULTIPARÂMETROS — Pat. 71323", "MONITOR - MULTIPARÂMETROS — Pat. 71322"],
+  "UTI Adulto Ala B": ["BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71627", "MONITOR - MULTIPARÂMETROS — Pat. 71214", "MONITOR - MULTIPARÂMETROS — Pat. 71217"],
+  "UTI Neonatal A/1": ["BALANÇA ELETRÔNICA — HSVP-EC-01764", "BERÇO AQUECIDO AMPLA 2085 — Pat. 70900", "BERÇO AQUECIDO AMPLA 2085 — Pat. 70901", "BOMBA DE INFUSÃO - SERINGA BENEFUSION ESP (MINDRAY) — Pat. 71189", "BOMBA DE INFUSÃO - SERINGA BENEFUSION ESP (MINDRAY) — Pat. 71190", "BOMBA DE INFUSÃO - SERINGA BENEFUSION ESP (MINDRAY) — Pat. 71191", "BOMBA DE INFUSÃO - SERINGA BENEFUSION ESP (MINDRAY) — Pat. 71192", "BOMBA DE INFUSÃO - SERINGA BENEFUSION ESP (MINDRAY) — Pat. 71193", "BOMBA DE INFUSÃO - SERINGA BENEFUSION SP5 (MINDRAY) — Pat. 70952", "BOMBA DE INFUSÃO - SERINGA BENEFUSION SP5 (MINDRAY) — Pat. 70953", "BOMBA DE INFUSÃO - SERINGA BENEFUSION SP5 (MINDRAY) — Pat. 70954", "BOMBA DE INFUSÃO - SERINGA BENEFUSION SP5 (MINDRAY) — Pat. 70955", "INCUBADORA NEONATAL 1186 C (FANEM LTDA) — Pat. 70887", "INCUBADORA NEONATAL 1186 C (FANEM LTDA) — Pat. 70888", "INCUBADORA NEONATAL TRANSPORTE IT158 (FANEM LTDA) — Pat. 70889", "MONITOR - MULTIPARÂMETROS — Pat. 70707", "MONITOR - MULTIPARÂMETROS — Pat. 70716", "MONITOR - MULTIPARÂMETROS — Pat. 70721", "MONITOR - MULTIPARÂMETROS — Pat. 70725", "MONITOR - MULTIPARÂMETROS — Pat. 70724", "MONITOR - MULTIPARÂMETROS — Pat. 70720", "MONITOR - MULTIPARÂMETROS — Pat. 70715", "MONITOR - MULTIPARÂMETROS — Pat. 70718", "MONITOR - MULTIPARÂMETROS — Pat. 70719", "MONITOR - MULTIPARÂMETROS — Pat. 70722"],
+  "UTI Neonatal B/2": ["BALANÇA ELETRÔNICA PEDIÁTRICA BABY (FILIZOLA) — HSVP-EC-00128", "BALANÇA ELETRÔNICA PEDIÁTRICA ELP-25BB (BALMAK) — Pat. 75219", "BERÇO AQUECIDO 2085 (FANEM LTDA) — Pat. 070013", "BERÇO AQUECIDO 2085 (FANEM LTDA) — Pat. 71841", "BERÇO AQUECIDO AQ-50 (FANEM LTDA) — Pat. 63203", "BOMBA DE INFUSÃO - SERINGA — Pat. 71201", "BOMBA DE INFUSÃO - SERINGA BENEFUSION ESP (MINDRAY) — Pat. 71194", "BOMBA DE INFUSÃO - SERINGA BENEFUSION ESP (MINDRAY) — Pat. 71195", "BOMBA DE INFUSÃO - SERINGA BENEFUSION ESP (MINDRAY) — Pat. 71196", "BOMBA DE INFUSÃO - SERINGA BENEFUSION ESP (MINDRAY) — Pat. 71197", "BOMBA DE INFUSÃO - SERINGA BENEFUSION ESP (MINDRAY) — Pat. 71199", "BOMBA DE INFUSÃO - SERINGA BENEFUSION ESP (MINDRAY) — Pat. 71200", "BOMBA DE INFUSÃO - SERINGA BENEFUSION ESP (MINDRAY) — Pat. 71202", "BOMBA DE INFUSÃO - SERINGA BENEFUSION ESP (MINDRAY) — Pat. 71203", "BOMBA DE INFUSÃO - SERINGA BENEFUSION ESP (MINDRAY) — Pat. 71204", "BOMBA DE INFUSÃO - SERINGA BENEFUSION ESP (MINDRAY) — Pat. 71205", "BOMBA DE INFUSÃO - SERINGA BENEFUSION ESP (MINDRAY) — Pat. 71206", "BOMBA DE INFUSÃO - SERINGA BENEFUSION ESP (MINDRAY) — Pat. 71207", "BOMBA DE INFUSÃO - SERINGA BENEFUSION ESP (MINDRAY) — Pat. 71208", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71119", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71120", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71121", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71122", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71133", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71134", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71135", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71136", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71137", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71138", "INCUBADORA NEONATAL — Pat. 70015", "INCUBADORA NEONATAL 1186 (FANEM LTDA) — Pat. 71838", "INCUBADORA NEONATAL 1186 (FANEM LTDA) — Pat. 71839", "INCUBADORA NEONATAL 1186 A (FANEM LTDA) — Pat. 75260", "INCUBADORA NEONATAL 1186 A (FANEM LTDA) — Pat. 75257", "INCUBADORA NEONATAL 1186 A (FANEM LTDA) — Pat. 75259", "INCUBADORA NEONATAL C180TS (FANEM LTDA) — Pat. 66210", "INCUBADORA NEONATAL C186TS (FANEM LTDA) — Pat. 66939", "INCUBADORA NEONATAL C186TS (FANEM LTDA) — Pat. 65100", "INCUBADORA NEONATAL VISION 2286 (FANEM LTDA) — Pat. 070014", "MONITOR - MULTIPARÂMETROS — Pat. 71210", "MONITOR - MULTIPARÂMETROS — Pat. 71211", "MONITOR - MULTIPARÂMETROS — Pat. 71294", "MONITOR - MULTIPARÂMETROS — Pat. 71295", "MONITOR - MULTIPARÂMETROS — Pat. 71296", "MONITOR - MULTIPARÂMETROS — Pat. 71297", "MONITOR - MULTIPARÂMETROS — Pat. 71299", "MONITOR - MULTIPARÂMETROS — Pat. 71300", "MONITOR - MULTIPARÂMETROS — Pat. 71301", "MONITOR - MULTIPARÂMETROS — Pat. 71302"],
+  "UTI Pediátrica": ["BALANÇA ELETRÔNICA — Pat. 070049", "BALANÇA ELETRÔNICA PEDIÁTRICA BABY (FILIZOLA) — Pat. 64262", "BERÇO AQUECIDO 2085 (FANEM LTDA) — Pat. 71840", "BOMBA DE INFUSÃO - SERINGA AGILIA MC (FRESENIUS KABI) — HSVP-EC-00122", "BOMBA DE INFUSÃO - SERINGA AGILIA MC (FRESENIUS KABI) — HSVP-EC-00123", "BOMBA DE INFUSÃO - SERINGA AGILIA MC (FRESENIUS KABI) — HSVP-EC-00124", "BOMBA DE INFUSÃO - SERINGA AGILIA MC (FRESENIUS KABI) — HSVP-EC-00125", "BOMBA DE INFUSÃO - SERINGA AGILIA MC (FRESENIUS KABI) — HSVP-EC-00189", "BOMBA DE INFUSÃO - SERINGA AGILIA MC (FRESENIUS KABI) — HSVP-EC-00190", "BOMBA DE INFUSÃO - SERINGA AGILIA MC (FRESENIUS KABI) — HSVP-EC-00191", "BOMBA DE INFUSÃO - SERINGA AGILIA MC (FRESENIUS KABI) — Pat. 69820", "BOMBA DE INFUSÃO - SERINGA AGILIA MC (FRESENIUS KABI) — HSVP-EC-00193", "BOMBA DE INFUSÃO - SERINGA AGILIA MC (FRESENIUS KABI) — HSVP-EC-00194", "BOMBA DE INFUSÃO - SERINGA AGILIA MC (FRESENIUS KABI) — Pat. 75694", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71572", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71573", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71574", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71575", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71576", "BOMBA DE INFUSÃO VP3 (MINDRAY) — Pat. 71577", "DEA - DESFIBRILADOR EXTERNO AUTOMÁTICO ISIS PRO (INSTRAMED) — Pat. 69240", "FOCO CIRÚRGICO PEDESTAL — HSVP-EC-00508", "FOCO CIRÚRGICO PEDESTAL - LED HYLED 200M (MINDRAY) — Pat. 72251", "MONITOR - MULTIPARÂMETROS — Pat. 71212", "MONITOR - MULTIPARÂMETROS — Pat. 71213", "MONITOR - MULTIPARÂMETROS — Pat. 71298", "MONITOR - MULTIPARÂMETROS — Pat. 71303", "MONITOR - MULTIPARÂMETROS — Pat. 71304", "MONITOR - MULTIPARÂMETROS — Pat. 71305", "MONITOR - MULTIPARÂMETROS — Pat. 71306", "MONITOR - MULTIPARÂMETROS — Pat. 71307", "MONITOR - MULTIPARÂMETROS — Pat. 71308", "MONITOR - MULTIPARÂMETROS — Pat. 71309", "OXÍMETRO DE PULSO PORTÁTIL UT 100 (MD) — Pat. 75629"],
+};
+
 /* =========================================================================
    TIPOS DE AUDITORIA (Carro de Emergência / Carro de Medicação)
    Cada tipo é um módulo independente: checklist, setores e dados
@@ -898,13 +973,19 @@ const TIPOS = {
     key:'emergencia', label:'Carro de Emergência', labelPlural:'Carros de Emergência', icon:'heart',
     categories: CATEGORIES, items: ITEMS, setores: SETORES_PLANILHA,
     cartProfiles: CART_PROFILES, defaultSectorCarts: DEFAULT_SECTOR_CARTS,
-    storagePrefix: '',
+    storagePrefix: '', carroLabel: 'Carro', requireCarroSelection: false,
   },
   medicacao: {
     key:'medicacao', label:'Carro de Medicação', labelPlural:'Carros de Medicação', icon:'pill',
     categories: CATEGORIES_MED, items: ITEMS_MED, setores: SETORES_MED,
     cartProfiles: {}, defaultSectorCarts: DEFAULT_SECTOR_CARTS_MED,
-    storagePrefix: 'med_',
+    storagePrefix: 'med_', carroLabel: 'Carro', requireCarroSelection: false,
+  },
+  engenharia: {
+    key:'engenharia', label:'Equipamento da Engenharia Clínica', labelPlural:'Equipamentos da Engenharia Clínica', icon:'wrench',
+    categories: CATEGORIES_ENG, items: ITEMS_ENG, setores: SETORES_ENGENHARIA,
+    cartProfiles: {}, defaultSectorCarts: DEFAULT_SECTOR_EQUIPAMENTOS,
+    storagePrefix: 'eng_', carroLabel: 'Equipamento', requireCarroSelection: true, allowNaoAplica: true,
   },
 };
 let currentTipo = localStorage.getItem('auditoria_tipo') || 'emergencia';
@@ -940,6 +1021,19 @@ function updateTipoUI(){
   if(lblIndisp) lblIndisp.textContent = cfg.label+' não disponível no setor';
   if(typeof VIEW_TITLES!=='undefined') VIEW_TITLES['new-audit'][1] = 'Preencha o checklist do '+cfg.label.toLowerCase();
   document.title = APP_TITLE;
+
+  // rótulos do campo "Carro" (reaproveitado como "Equipamento" na Engenharia Clínica)
+  const carroLabel = cfg.carroLabel || 'Carro';
+  const setId = (id,txt)=>{ const el=document.getElementById(id); if(el) el.textContent = txt; };
+  setId('lblCarroField', carroLabel);
+  setId('thCarroHistory', carroLabel);
+  setId('thCarroSector', carroLabel);
+  setId('addCartTitle', 'Adicionar '+carroLabel.toLowerCase());
+  setId('addCartFieldLabel', 'Nome do '+carroLabel.toLowerCase());
+  const btnAddCart = document.getElementById('btnAddCart');
+  if(btnAddCart) btnAddCart.textContent = cfg.requireCarroSelection
+    ? ('+ Cadastrar novo '+carroLabel.toLowerCase()+' neste setor')
+    : ('+ Este setor tem mais de um '+carroLabel.toLowerCase()+'? Adicionar '+carroLabel.toLowerCase());
 }
 
 /* Troca de módulo: recarrega do Supabase (chaves do tipo escolhido) em vez
@@ -973,6 +1067,7 @@ const STATUS_META = {
   'conforme':{label:'Conforme', cls:'sel-ok', color:'#12876F', bg:'#E4F6F1'},
   'parcial':{label:'Parcial Conforme', cls:'sel-warn', color:'#B5760A', bg:'#FCF1DD'},
   'nao-conforme':{label:'Não Conforme', cls:'sel-bad', color:'#C13B2C', bg:'#FCE8E5'},
+  'nao-aplica':{label:'Não se Aplica', cls:'sel-na', color:'#51697E', bg:'#EEF2F5'},
 };
 const SCORE_VALUE = {'conforme':1,'parcial':0.5,'nao-conforme':0};
 
@@ -1316,6 +1411,32 @@ async function addCartToSector(setor, carro){
     if(wasFirstCart) setores = setores.filter(s=>s!==setor);
     const newKey = trackKey(setor, carro);
     if(!setores.includes(newKey)) setores = [...setores, newKey];
+    const updatedCycles = allCycles.map(c=> c.id===current.id ? {...c, setores} : c);
+    const okCycle = await storageSet(skey('cycles'), updatedCycles);
+    if(okCycle) allCycles = updatedCycles;
+  }
+  return true;
+}
+/* Remove um carro/equipamento de um setor (espelha addCartToSector). O
+   histórico de auditorias já feitas para ele é preservado — só deixa de
+   aparecer no seletor de novas auditorias e no progresso dos ciclos. Se
+   era o último carro do setor, volta a rastrear o ciclo pelo nome do
+   setor (mesmo comportamento de antes do primeiro carro ser cadastrado). */
+async function removeCartFromSector(setor, carro){
+  const existing = cartsForSector(setor);
+  if(!existing.includes(carro)) return true;
+  const updatedList = existing.filter(c=>c!==carro);
+  const wasLastCart = updatedList.length===0;
+  const updatedCarts = { ...sectorCarts, [setor]: updatedList };
+  const ok = await storageSet(skey('sector_carts'), updatedCarts);
+  if(!ok){ toast('Erro ao remover. Tente novamente.','bad'); return false; }
+  sectorCarts = updatedCarts;
+
+  const current = getCurrentCycle();
+  if(current){
+    const removedKey = trackKey(setor, carro);
+    let setores = current.setores.filter(s=>s!==removedKey);
+    if(wasLastCart && !setores.includes(setor)) setores = [...setores, setor];
     const updatedCycles = allCycles.map(c=> c.id===current.id ? {...c, setores} : c);
     const okCycle = await storageSet(skey('cycles'), updatedCycles);
     if(okCycle) allCycles = updatedCycles;
@@ -1766,6 +1887,7 @@ async function startNewAuditForm(){
   setCarroIndisponivelUI(false);
   buildCategoriesUI();
   updateProgress();
+  updateCategoriesGating();
   showView('new-audit');
 }
 
@@ -1820,6 +1942,7 @@ async function editAudit(id){
     if(originalCarro){
       document.getElementById('fCarro').value = originalCarro;
       currentAudit.header.carro = originalCarro;
+      document.getElementById('btnRemoveCart').style.display = 'flex';
     }
   } else {
     sel.value = SETOR_OUTRO;
@@ -1836,6 +1959,7 @@ async function editAudit(id){
   buildCategoriesUI();
   restoreAuditUI();
   updateProgress();
+  updateCategoriesGating();
   showView('new-audit');
   document.getElementById('topTitle').textContent = 'Editar Auditoria';
   document.getElementById('topSub').textContent = `${currentAudit.header.setor}${currentAudit.header.carro? ' · '+currentAudit.header.carro:''} — ${fmtDate(currentAudit.header.data)}`;
@@ -1855,8 +1979,13 @@ function restoreAuditUI(){
       if(btn) btn.classList.add(meta.cls);
       const check = document.getElementById('itemcheck-'+item.id);
       if(check) check.classList.add('done');
+      const hasObsPhotos = !!item.obs || !!(item.photos && item.photos.length);
+      const isObsExempt = item.status==='conforme' || item.status==='nao-aplica';
+      const showExtra = itDef.medCheck || !isObsExempt || hasObsPhotos;
       const extra = document.getElementById('itemextra-'+item.id);
-      if(extra) extra.style.display = 'flex';
+      if(extra) extra.style.display = showExtra ? 'flex' : 'none';
+      const obsPhotos = document.getElementById('obsPhotos-'+item.id);
+      if(obsPhotos) obsPhotos.style.display = (!isObsExempt || hasObsPhotos) ? 'flex' : 'none';
     }
     if(item.obs){
       const ta = document.querySelector(`#itemextra-${item.id} textarea`);
@@ -1877,6 +2006,7 @@ function setCarroIndisponivelUI(indisponivel){
   document.getElementById('carroIndisponivelBanner').style.display = indisponivel ? 'block' : 'none';
   document.getElementById('progressWrap').style.display = indisponivel ? 'none' : '';
   document.getElementById('categoriesWrap').style.display = indisponivel ? 'none' : '';
+  if(!indisponivel) updateCategoriesGating();
 }
 document.getElementById('fCarroIndisponivel').addEventListener('change', (e)=>{
   if(!currentAudit) return;
@@ -1887,6 +2017,19 @@ document.getElementById('fCarroIndisponivel').addEventListener('change', (e)=>{
   updateProgress();
   setCarroIndisponivelUI(checked);
 });
+/* Em auditorias por equipamento (ex.: Engenharia Clínica), o checklist só
+   aparece depois que um equipamento é escolhido no setor — evita registrar
+   respostas sem saber a qual equipamento elas pertencem. */
+function updateCategoriesGating(){
+  if(!currentAudit || currentAudit.header.carroIndisponivel) return;
+  const cfg = TIPOS[currentTipo];
+  const needsCarro = !!cfg.requireCarroSelection && cartsForSector(currentAudit.header.setor).length > 0;
+  const hide = needsCarro && !currentAudit.header.carro;
+  document.getElementById('progressWrap').style.display = hide ? 'none' : '';
+  document.getElementById('categoriesWrap').style.display = hide ? 'none' : '';
+  const hint = document.getElementById('carroGatingHint');
+  if(hint) hint.style.display = hide ? 'block' : 'none';
+}
 function populateSetorSelect(){
   const sel = document.getElementById('fSetor');
   sel.innerHTML = '<option value="" disabled selected>Selecione o setor...</option>'
@@ -1899,15 +2042,19 @@ function populateCarroSelect(setor){
   const carts = cartsForSector(setor).filter(c=>!inactiveSectors.includes(trackKey(setor,c)));
   const wrap = document.getElementById('fCarroWrap');
   const sel = document.getElementById('fCarro');
+  document.getElementById('btnRemoveCart').style.display = 'none';
   if(!carts.length){
     wrap.style.display = 'none';
     currentAudit.header.carro = '';
+    updateCategoriesGating();
     return;
   }
   wrap.style.display = 'flex';
-  sel.innerHTML = '<option value="" disabled selected>Selecione o carro...</option>'
+  const carroLabel = (TIPOS[currentTipo].carroLabel || 'carro').toLowerCase();
+  sel.innerHTML = `<option value="" disabled selected>Selecione o ${carroLabel}...</option>`
     + carts.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
   currentAudit.header.carro = '';
+  updateCategoriesGating();
 }
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
@@ -1926,6 +2073,7 @@ document.getElementById('fSetor').addEventListener('change', (e)=>{
     document.getElementById('btnAddCart').style.display='none';
     currentAudit.header.setor = document.getElementById('fSetorOutro').value.trim();
     currentAudit.header.carro = '';
+    updateCategoriesGating();
     document.getElementById('fSetorOutro').focus();
   } else {
     document.getElementById('fSetorOutroWrap').style.display='none';
@@ -1941,10 +2089,25 @@ document.getElementById('fSetorOutro').addEventListener('input', (e)=>{
 document.getElementById('fCarro').addEventListener('change', (e)=>{
   if(!currentAudit) return;
   currentAudit.header.carro = e.target.value;
+  updateCategoriesGating();
+  document.getElementById('btnRemoveCart').style.display = e.target.value ? 'flex' : 'none';
+});
+document.getElementById('btnRemoveCart').addEventListener('click', ()=>{
+  if(!currentAudit || !currentAudit.header.setor || !currentAudit.header.carro) return;
+  const setor = currentAudit.header.setor;
+  const carro = currentAudit.header.carro;
+  const carroLabel = (TIPOS[currentTipo].carroLabel || 'carro').toLowerCase();
+  openConfirm(`Remover ${carroLabel}`, `Remover "${carro}" de "${setor}"? O histórico de auditorias já feitas para ele é mantido, mas ele deixará de aparecer para novas auditorias.`, async ()=>{
+    const ok = await removeCartFromSector(setor, carro);
+    if(!ok) return;
+    toast(`"${carro}" removido de "${setor}".`,'ok');
+    populateCarroSelect(setor);
+  });
 });
 document.getElementById('btnAddCart').addEventListener('click', ()=>{
   if(!currentAudit || !currentAudit.header.setor || currentAudit.header.setor===SETOR_OUTRO) return;
-  document.getElementById('addCartSub').textContent = `Informe um nome para identificar o novo carro de "${currentAudit.header.setor}" (ex.: "Carro 1", "Carro 2").`;
+  const carroLabel = (TIPOS[currentTipo].carroLabel || 'carro').toLowerCase();
+  document.getElementById('addCartSub').textContent = `Informe um nome para identificar o novo ${carroLabel} de "${currentAudit.header.setor}".`;
   document.getElementById('addCartInput').value = '';
   document.getElementById('modalAddCart').classList.add('open');
   setTimeout(()=>document.getElementById('addCartInput').focus(), 50);
@@ -1954,7 +2117,8 @@ document.getElementById('addCartCancel').addEventListener('click', ()=>{
 });
 document.getElementById('addCartConfirm').addEventListener('click', async ()=>{
   const label = document.getElementById('addCartInput').value.trim();
-  if(!label){ toast('Informe um nome para o carro.','bad'); return; }
+  const carroLabel = (TIPOS[currentTipo].carroLabel || 'carro').toLowerCase();
+  if(!label){ toast(`Informe um nome para o ${carroLabel}.`,'bad'); return; }
   if(!currentAudit || !currentAudit.header.setor) return;
   const setor = currentAudit.header.setor;
   const btn = document.getElementById('addCartConfirm');
@@ -1966,7 +2130,8 @@ document.getElementById('addCartConfirm').addEventListener('click', async ()=>{
   populateCarroSelect(setor);
   document.getElementById('fCarro').value = label;
   currentAudit.header.carro = label;
-  toast(`Carro "${label}" adicionado a "${setor}".`,'ok');
+  updateCategoriesGating();
+  toast(`"${label}" adicionado a "${setor}".`,'ok');
 });
 
 function buildCategoriesUI(){
@@ -2007,6 +2172,7 @@ function itemRowHtml(it){
         <button class="status-btn" data-item="${it.id}" data-status="conforme" onclick="setStatus(${it.id},'conforme')">✓ Conforme</button>
         <button class="status-btn" data-item="${it.id}" data-status="parcial" onclick="setStatus(${it.id},'parcial')">◐ Parcial</button>
         <button class="status-btn" data-item="${it.id}" data-status="nao-conforme" onclick="setStatus(${it.id},'nao-conforme')">✕ Não Conforme</button>
+        ${TIPOS[currentTipo].allowNaoAplica ? `<button class="status-btn" data-item="${it.id}" data-status="nao-aplica" onclick="setStatus(${it.id},'nao-aplica')">— Não se Aplica</button>` : ``}
       </div>
     </div>
     <div class="item-extra" id="itemextra-${it.id}" style="display:none;">
@@ -2021,13 +2187,15 @@ function itemRowHtml(it){
         </select>
         <div id="cartChecklist-${it.id}"></div>
       </div>` : ``}
-      <textarea placeholder="Observações (opcional)" onchange="setObs(${it.id}, this.value)"></textarea>
-      <div class="photo-row" id="photorow-${it.id}">
-        <label class="photo-add">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          <span>Foto</span>
-          <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addPhoto(${it.id}, this)">
-        </label>
+      <div class="item-extra-obs" id="obsPhotos-${it.id}">
+        <textarea placeholder="Observações (opcional)" onchange="setObs(${it.id}, this.value)"></textarea>
+        <div class="photo-row" id="photorow-${it.id}">
+          <label class="photo-add">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <span>Foto</span>
+            <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addPhoto(${it.id}, this)">
+          </label>
+        </div>
       </div>
     </div>
   </div>`;
@@ -2036,14 +2204,19 @@ function setStatus(itemId, status){
   const item = currentAudit.items.find(i=>i.id===itemId);
   item.status = status;
   document.querySelectorAll(`.status-btn[data-item="${itemId}"]`).forEach(b=>{
-    b.classList.remove('sel-ok','sel-warn','sel-bad');
+    b.classList.remove('sel-ok','sel-warn','sel-bad','sel-na');
   });
   const meta = STATUS_META[status];
   const btn = document.querySelector(`.status-btn[data-item="${itemId}"][data-status="${status}"]`);
   btn.classList.add(meta.cls);
   const check = document.getElementById('itemcheck-'+itemId);
   if(check) check.classList.add('done');
-  document.getElementById('itemextra-'+itemId).style.display='flex';
+  const itDef = ITEMS.find(i=>i.id===itemId);
+  const isObsExempt = status==='conforme' || status==='nao-aplica';
+  const showExtra = (itDef && itDef.medCheck) || !isObsExempt;
+  document.getElementById('itemextra-'+itemId).style.display = showExtra ? 'flex' : 'none';
+  const obsPhotos = document.getElementById('obsPhotos-'+itemId);
+  if(obsPhotos) obsPhotos.style.display = isObsExempt ? 'none' : 'flex';
   updateProgress();
 }
 function setObs(itemId, val){ const item = currentAudit.items.find(i=>i.id===itemId); item.obs = val; }
@@ -2182,14 +2355,17 @@ function updateProgress(){
   });
 }
 
+/* Itens marcados "Não se Aplica" (Engenharia Clínica) são excluídos tanto
+   do numerador quanto do denominador — não contam como conformidade nem
+   como não conformidade, para não distorcer a taxa final. */
 function computeScore(audit){
-  const answered = audit.items.filter(i=>i.status);
-  if(answered.length===0) return 0;
-  const sum = answered.reduce((s,i)=> s+SCORE_VALUE[i.status], 0);
-  return sum/audit.items.length; // usa total de itens do checklist como base
+  const applicable = audit.items.filter(i=>i.status && i.status!=='nao-aplica');
+  if(applicable.length===0) return 0;
+  const sum = applicable.reduce((s,i)=> s+SCORE_VALUE[i.status], 0);
+  return sum/applicable.length;
 }
 function computeCounts(audit){
-  const c = {conforme:0,parcial:0,'nao-conforme':0, pendente:0};
+  const c = {conforme:0,parcial:0,'nao-conforme':0,'nao-aplica':0, pendente:0};
   audit.items.forEach(i=>{ if(i.status) c[i.status]++; else c.pendente++; });
   return c;
 }
@@ -2198,7 +2374,7 @@ async function persistAudit(finalize){
   const h = currentAudit.header;
   if(!h.data){ toast('Informe a data da auditoria.','bad'); document.getElementById('fData').focus(); return false; }
   if(!h.setor){ toast('Informe o setor da auditoria.','bad'); document.getElementById('fSetor').focus(); return false; }
-  if(cartsForSector(h.setor).length && !h.carro){ toast('Selecione o carro deste setor.','bad'); document.getElementById('fCarro').focus(); return false; }
+  if(cartsForSector(h.setor).length && !h.carro){ toast(`Selecione o ${(TIPOS[currentTipo].carroLabel||'carro').toLowerCase()} deste setor.`,'bad'); document.getElementById('fCarro').focus(); return false; }
   if(!h.auditor || !h.auditor.trim()){ toast('Informe o nome do auditor.','bad'); document.getElementById('fAuditor').focus(); return false; }
   if(!h.enfermeiro || !h.enfermeiro.trim()){ toast('Informe o nome do enfermeiro responsável.','bad'); document.getElementById('fEnfermeiro').focus(); return false; }
   if(finalize){
@@ -2427,6 +2603,7 @@ async function openAuditDetail(id){
     <div class="mini-stat"><div class="l">Conforme</div><div class="v">${full.counts?full.counts.conforme:0}</div></div>
     <div class="mini-stat"><div class="l">Parcial</div><div class="v">${full.counts?full.counts.parcial:0}</div></div>
     <div class="mini-stat"><div class="l">Não Conforme</div><div class="v">${full.counts?full.counts['nao-conforme']:0}</div></div>
+    ${full.counts && full.counts['nao-aplica'] ? `<div class="mini-stat"><div class="l">Não se Aplica</div><div class="v">${full.counts['nao-aplica']}</div></div>` : ``}
   `;
 
   const wrap = document.getElementById('detItemsWrap');
@@ -2596,6 +2773,7 @@ document.getElementById('btnExportAudit').addEventListener('click', async ()=>{
         if(v==='Conforme') data.cell.styles.textColor=[18,135,111];
         else if(v==='Parcial Conforme') data.cell.styles.textColor=[181,118,10];
         else if(v==='Não Conforme') data.cell.styles.textColor=[193,59,44];
+        else if(v==='Não se Aplica') data.cell.styles.textColor=[81,105,126];
       }
     }
   });
