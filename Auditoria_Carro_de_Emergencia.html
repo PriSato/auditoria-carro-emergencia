@@ -109,7 +109,8 @@ input,select,textarea{font-family:inherit;}
 .brand-subtitle{color:#9FC1E3;font-size:11px;font-weight:600;letter-spacing:.3px;text-align:center;margin-top:10px;text-transform:uppercase;}
 
 .tipo-switcher{display:flex;flex-direction:column;gap:4px;background:rgba(255,255,255,.06);border-radius:11px;padding:4px;margin:0 4px 16px;}
-.tipo-btn{background:none;border:none;color:#C9DEF2;font-size:12px;font-weight:700;padding:10px 10px;border-radius:8px;cursor:pointer;transition:.15s;text-align:left;}
+.tipo-btn{display:flex;align-items:center;gap:9px;background:none;border:none;color:#C9DEF2;font-size:12px;font-weight:700;padding:10px 10px;border-radius:8px;cursor:pointer;transition:.15s;text-align:left;}
+.tipo-btn svg{width:16px;height:16px;flex-shrink:0;opacity:.9;}
 .tipo-btn:hover{background:rgba(255,255,255,.1);color:#fff;}
 .tipo-btn.active{background:rgba(46,139,255,.28);color:#fff;}
 .tipo-select-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;}
@@ -128,7 +129,7 @@ input,select,textarea{font-family:inherit;}
 .nav-item:hover{background:rgba(255,255,255,.06);color:#fff;}
 .nav-item.active{background:rgba(46,139,255,.16);color:#fff;border-color:rgba(46,139,255,.35);}
 .nav-item.active svg{opacity:1;}
-.nav-cta{margin-top:10px;background:linear-gradient(135deg,var(--blue-500),var(--blue-600));color:#fff;
+.nav-cta{margin:10px 0 18px;background:linear-gradient(135deg,var(--blue-500),var(--blue-600));color:#fff;
   border-radius:10px;padding:8px 11px;font-weight:700;font-size:12px;display:flex;align-items:center;gap:7px;box-shadow:0 8px 20px -6px rgba(46,139,255,.6);}
 .nav-cta:hover{filter:brightness(1.06);}
 .nav-cta svg{width:15px;height:15px;flex-shrink:0;}
@@ -423,9 +424,18 @@ input,select,textarea{font-family:inherit;}
       <div class="brand-subtitle" id="brandSubtitle">Auditorias do Serviço de Qualidade Hospitalar</div>
     </div>
     <div class="tipo-switcher" id="tipoSwitcher">
-      <button type="button" class="tipo-btn active" data-tipo="emergencia">🚑 Carro de Emergência</button>
-      <button type="button" class="tipo-btn" data-tipo="engenharia">🔧 Engenharia Clínica</button>
-      <button type="button" class="tipo-btn" data-tipo="medicacao">💊 Carro de Medicação</button>
+      <button type="button" class="tipo-btn active" data-tipo="emergencia">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12.5l-8 8-8-8a5 5 0 0 1 7-7.2l1 1 1-1a5 5 0 0 1 7 7.2z"/><path d="M4 12.5h4l1.5-3 2 5 1.5-2.5h6.5"/></svg>
+        <span>Carro de Emergência</span>
+      </button>
+      <button type="button" class="tipo-btn" data-tipo="engenharia">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 4.4l-6.6 6.6a1.7 1.7 0 0 0 2.4 2.4l6.6-6.6a4 4 0 0 0 5.5-3.9l-3 3-2.4-2.4z"/></svg>
+        <span>Engenharia Clínica</span>
+      </button>
+      <button type="button" class="tipo-btn" data-tipo="medicacao">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="9.5" width="17" height="7" rx="3.5" transform="rotate(-35 12 13)"/><path d="M11 10l3 6" stroke-width="1.6"/></svg>
+        <span>Carro de Medicação</span>
+      </button>
     </div>
     <nav>
       <div class="nav-group">
@@ -652,10 +662,16 @@ input,select,textarea{font-family:inherit;}
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                 Editar
               </button>
-              <button class="btn btn-secondary btn-sm" id="btnExportAudit">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 10l5 5 5-5"/><path d="M20 21H4"/></svg>
-                PDF
-              </button>
+              <div class="report-menu-wrap" id="exportAuditMenuWrap">
+                <button class="btn btn-secondary btn-sm" id="btnExportAudit">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 10l5 5 5-5"/><path d="M20 21H4"/></svg>
+                  PDF
+                </button>
+                <div class="report-menu" id="exportAuditMenu">
+                  <button id="exportAuditSummary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 11h6"/></svg>Resumo (sem observações/fotos)</button>
+                  <button id="exportAuditFull"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 11h6M9 19h3"/></svg>Completo (com observações e fotos)</button>
+                </div>
+              </div>
               <button class="btn btn-danger btn-sm" id="btnDeleteAudit">Excluir</button>
             </div>
           </div>
@@ -2740,7 +2756,10 @@ function pdfFooter(doc){
   }
 }
 
-document.getElementById('btnExportAudit').addEventListener('click', async ()=>{
+/* Relatório da auditoria em duas versões: "Resumo" (só status, rápido de
+   ler) e "Completo" (inclui o texto das observações e as fotos anexadas
+   de cada item, em uma seção própria ao final). */
+async function generateAuditPdf(detailed){
   const full = await storageGet('audit_'+currentDetailId);
   if(!full) return;
   const doc = new jsPDF();
@@ -2753,20 +2772,24 @@ document.getElementById('btnExportAudit').addEventListener('click', async ()=>{
   doc.setFont('helvetica','bold'); doc.text('Conformidade geral:', 14, y); doc.setFont('helvetica','normal'); doc.text(pct(full.score||0), 55, y);
 
   const rows = [];
+  const itemsWithPhotos = [];
   CATEGORIES.forEach(cat=>{
     ITEMS.filter(i=>i.cat===cat.id).forEach(it=>{
       const resp = full.items.find(i=>i.id===it.id)||{};
       const label = resp.status ? STATUS_META[resp.status].label : 'Pendente';
-      rows.push([it.id, cat.nome, it.texto, label, resp.obs||'']);
+      rows.push(detailed ? [it.id, cat.nome, it.texto, label, resp.obs||''] : [it.id, cat.nome, it.texto, label]);
+      if(resp.photos && resp.photos.length) itemsWithPhotos.push({it, resp});
     });
   });
   doc.autoTable({
     startY: y+6,
-    head:[['#','Categoria','Item','Status','Observações']],
+    head: detailed ? [['#','Categoria','Item','Status','Observações']] : [['#','Categoria','Item','Status']],
     body: rows,
     styles:{fontSize:8, cellPadding:2.4, overflow:'linebreak'},
     headStyles:{fillColor:[11,61,102], textColor:255, fontStyle:'bold'},
-    columnStyles:{0:{cellWidth:8},1:{cellWidth:30},2:{cellWidth:70},3:{cellWidth:24},4:{cellWidth:'auto'}},
+    columnStyles: detailed
+      ? {0:{cellWidth:8},1:{cellWidth:30},2:{cellWidth:70},3:{cellWidth:24},4:{cellWidth:'auto'}}
+      : {0:{cellWidth:8},1:{cellWidth:32},2:{cellWidth:'auto'},3:{cellWidth:28}},
     didParseCell: (data)=>{
       if(data.section==='body' && data.column.index===3){
         const v = data.cell.raw;
@@ -2777,9 +2800,50 @@ document.getElementById('btnExportAudit').addEventListener('click', async ()=>{
       }
     }
   });
+
+  if(detailed && itemsWithPhotos.length){
+    doc.addPage();
+    let py = 20;
+    doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.setTextColor(20,20,20);
+    doc.text('Fotos anexadas', 14, py); py += 9;
+    itemsWithPhotos.forEach(({it,resp})=>{
+      const rowsNeeded = Math.ceil(resp.photos.length/3);
+      const blockHeight = 8 + rowsNeeded*57;
+      if(py + blockHeight > 285){ doc.addPage(); py = 20; }
+      doc.setFontSize(9.5); doc.setFont('helvetica','bold'); doc.setTextColor(20,20,20);
+      doc.text(doc.splitTextToSize(`#${it.id} — ${it.texto}`, 182), 14, py);
+      py += 6;
+      let px = 14;
+      resp.photos.forEach((p,idx)=>{
+        if(idx>0 && idx%3===0){ px = 14; py += 57; }
+        try{ doc.addImage(p, 'JPEG', px, py, 52, 52); }catch(e){}
+        px += 58;
+      });
+      py += 62;
+    });
+  }
+
   pdfFooter(doc);
-  doc.save(`Auditoria_${full.header.setor.replace(/\s+/g,'_')}_${full.header.data}.pdf`);
+  const suffix = detailed ? '_completo' : '_resumo';
+  doc.save(`Auditoria_${full.header.setor.replace(/\s+/g,'_')}_${full.header.data}${suffix}.pdf`);
   toast('PDF exportado.','ok');
+}
+const exportAuditMenuWrap = document.getElementById('exportAuditMenuWrap');
+const exportAuditMenu = document.getElementById('exportAuditMenu');
+document.getElementById('btnExportAudit').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  exportAuditMenu.classList.toggle('open');
+});
+document.addEventListener('click', (e)=>{
+  if(!exportAuditMenuWrap.contains(e.target)) exportAuditMenu.classList.remove('open');
+});
+document.getElementById('exportAuditSummary').addEventListener('click', ()=>{
+  exportAuditMenu.classList.remove('open');
+  generateAuditPdf(false);
+});
+document.getElementById('exportAuditFull').addEventListener('click', ()=>{
+  exportAuditMenu.classList.remove('open');
+  generateAuditPdf(true);
 });
 
 function generateDashboardPdf(){
