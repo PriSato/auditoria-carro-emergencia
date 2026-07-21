@@ -359,7 +359,8 @@ input,select,textarea{font-family:inherit;}
 .modal .actions{display:flex;justify-content:flex-end;gap:10px;}
 
 .report-menu-wrap{position:relative;}
-.report-menu{position:absolute;top:calc(100% + 6px);right:0;background:#fff;border-radius:12px;box-shadow:var(--shadow-lg);border:1px solid var(--line);padding:6px;min-width:190px;display:none;flex-direction:column;z-index:60;}
+.report-menu{position:absolute;top:calc(100% + 6px);right:0;background:#fff;border-radius:12px;box-shadow:var(--shadow-lg);border:1px solid var(--line);padding:6px;min-width:250px;display:none;flex-direction:column;z-index:60;}
+.report-menu-divider{border-top:1px solid var(--line);margin:5px 4px;}
 .report-menu.open{display:flex;}
 .report-menu button{display:flex;align-items:center;gap:9px;width:100%;padding:9px 10px;border:none;background:none;border-radius:8px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;text-align:left;}
 .report-menu button:hover{background:var(--blue-50);color:var(--blue-600);}
@@ -496,8 +497,11 @@ input,select,textarea{font-family:inherit;}
             Gerar Relatório
           </button>
           <div class="report-menu" id="reportMenu">
-            <button id="reportMenuPdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 10l5 5 5-5"/><path d="M20 21H4"/></svg>Baixar em PDF</button>
-            <button id="reportMenuCopy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar relatório</button>
+            <button id="reportMenuPdfResumo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 10l5 5 5-5"/><path d="M20 21H4"/></svg>Baixar em PDF — Resumo</button>
+            <button id="reportMenuPdfCompleto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 10l5 5 5-5"/><path d="M20 21H4"/></svg>Baixar em PDF — Completo (obs. e fotos)</button>
+            <div class="report-menu-divider"></div>
+            <button id="reportMenuCopyResumo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar relatório — Resumo</button>
+            <button id="reportMenuCopyCompleto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar relatório — Completo (com observações)</button>
           </div>
         </div>
         <button class="btn btn-primary btn-sm" id="btnNovaAuditoriaTop">
@@ -2759,18 +2763,11 @@ function pdfFooter(doc){
 /* Relatório da auditoria em duas versões: "Resumo" (só status, rápido de
    ler) e "Completo" (inclui o texto das observações e as fotos anexadas
    de cada item, em uma seção própria ao final). */
-async function generateAuditPdf(detailed){
-  const full = await storageGet('audit_'+currentDetailId);
-  if(!full) return;
-  const doc = new jsPDF();
-  pdfHeader(doc, 'Auditoria de '+TIPOS[currentTipo].label, `${full.header.setor} · ${fmtDate(full.header.data)}`);
-  doc.setFontSize(10);
-  let y = 34;
-  doc.setFont('helvetica','bold'); doc.text('Auditor:', 14, y); doc.setFont('helvetica','normal'); doc.text(full.header.auditor||'—', 34, y);
-  doc.setFont('helvetica','bold'); doc.text('Enfermeiro:', 110, y); doc.setFont('helvetica','normal'); doc.text(full.header.enfermeiro||'—', 138, y);
-  y+=6;
-  doc.setFont('helvetica','bold'); doc.text('Conformidade geral:', 14, y); doc.setFont('helvetica','normal'); doc.text(pct(full.score||0), 55, y);
-
+/* Tabela de itens (status + opcionalmente observações) e, na versão
+   detalhada, a seção de fotos anexadas — usada tanto no PDF de uma
+   auditoria quanto no PDF completo do dashboard (que repete isso por
+   auditoria). */
+function renderAuditItemsSection(doc, full, startY, detailed){
   const rows = [];
   const itemsWithPhotos = [];
   CATEGORIES.forEach(cat=>{
@@ -2778,11 +2775,11 @@ async function generateAuditPdf(detailed){
       const resp = full.items.find(i=>i.id===it.id)||{};
       const label = resp.status ? STATUS_META[resp.status].label : 'Pendente';
       rows.push(detailed ? [it.id, cat.nome, it.texto, label, resp.obs||''] : [it.id, cat.nome, it.texto, label]);
-      if(resp.photos && resp.photos.length) itemsWithPhotos.push({it, resp});
+      if(detailed && resp.photos && resp.photos.length) itemsWithPhotos.push({it, resp});
     });
   });
   doc.autoTable({
-    startY: y+6,
+    startY,
     head: detailed ? [['#','Categoria','Item','Status','Observações']] : [['#','Categoria','Item','Status']],
     body: rows,
     styles:{fontSize:8, cellPadding:2.4, overflow:'linebreak'},
@@ -2822,6 +2819,21 @@ async function generateAuditPdf(detailed){
       py += 62;
     });
   }
+}
+
+async function generateAuditPdf(detailed){
+  const full = await storageGet('audit_'+currentDetailId);
+  if(!full) return;
+  const doc = new jsPDF();
+  pdfHeader(doc, 'Auditoria de '+TIPOS[currentTipo].label, `${full.header.setor} · ${fmtDate(full.header.data)}`);
+  doc.setFontSize(10);
+  let y = 34;
+  doc.setFont('helvetica','bold'); doc.text('Auditor:', 14, y); doc.setFont('helvetica','normal'); doc.text(full.header.auditor||'—', 34, y);
+  doc.setFont('helvetica','bold'); doc.text('Enfermeiro:', 110, y); doc.setFont('helvetica','normal'); doc.text(full.header.enfermeiro||'—', 138, y);
+  y+=6;
+  doc.setFont('helvetica','bold'); doc.text('Conformidade geral:', 14, y); doc.setFont('helvetica','normal'); doc.text(pct(full.score||0), 55, y);
+
+  renderAuditItemsSection(doc, full, y+6, detailed);
 
   pdfFooter(doc);
   const suffix = detailed ? '_completo' : '_resumo';
@@ -2846,7 +2858,7 @@ document.getElementById('exportAuditFull').addEventListener('click', ()=>{
   generateAuditPdf(true);
 });
 
-function generateDashboardPdf(){
+async function generateDashboardPdf(detailed){
   const fin = finalizedAudits();
   const doc = new jsPDF();
   pdfHeader(doc,'Dashboard Geral — Auditoria de '+TIPOS[currentTipo].labelPlural, `${fin.length} auditorias finalizadas`);
@@ -2867,15 +2879,29 @@ function generateDashboardPdf(){
     doc.addImage(img2,'PNG',14,y,182,70); y+=78;
   }
   doc.addPage();
-  const rows = fin.sort((a,b)=>b.data.localeCompare(a.data)).map(a=>[fmtDate(a.data), a.setor, a.auditor, pct(a.score)]);
+  const sorted = [...fin].sort((a,b)=>b.data.localeCompare(a.data));
+  const rows = sorted.map(a=>[fmtDate(a.data), a.setor, a.auditor, pct(a.score)]);
   doc.autoTable({ startY:20, head:[['Data','Setor','Auditor','Conformidade']], body: rows,
     styles:{fontSize:9,cellPadding:3}, headStyles:{fillColor:[11,61,102], textColor:255} });
+
+  if(detailed && sorted.length){
+    for(const summary of sorted){
+      const full = await storageGet('audit_'+summary.id);
+      if(!full) continue;
+      doc.addPage();
+      pdfHeader(doc, `${full.header.setor}${full.header.carro?' · '+full.header.carro:''}`,
+        `${fmtDate(full.header.data)} · Auditor: ${full.header.auditor||'—'} · Conformidade: ${pct(full.score||0)}`);
+      renderAuditItemsSection(doc, full, 34, true);
+    }
+  }
+
   pdfFooter(doc);
-  doc.save(`Dashboard_Geral_${todayISO()}.pdf`);
+  const suffix = detailed ? '_completo' : '_resumo';
+  doc.save(`Dashboard_Geral_${todayISO()}${suffix}.pdf`);
   toast('PDF exportado.','ok');
 }
 
-function buildDashboardReportText(){
+async function buildDashboardReportText(detailed){
   const fin = finalizedAudits();
   const avg = fin.length? fin.reduce((s,a)=>s+a.score,0)/fin.length : 0;
   const setores = new Set(fin.map(a=>a.setor));
@@ -2907,7 +2933,7 @@ function buildDashboardReportText(){
     return `  Ciclo atual: Nº ${currentCycle.numero} — ${p.done} de ${p.total} setores auditados (${Math.round(p.pct*100)}%)`;
   })() : '  Nenhum ciclo em andamento.';
 
-  return [
+  const lines = [
     'RELATÓRIO — AUDITORIA DE '+TIPOS[currentTipo].labelPlural.toUpperCase(),
     'Hospital Maternidade São Vicente de Paulo',
     `Gerado em ${new Date().toLocaleString('pt-BR')}`,
@@ -2927,7 +2953,29 @@ function buildDashboardReportText(){
     '',
     'ÚLTIMAS AUDITORIAS',
     ...(recent.length? recent : ['  Nenhuma auditoria finalizada ainda.']),
-  ].join('\n');
+  ];
+
+  if(detailed && fin.length){
+    lines.push('', 'DETALHAMENTO POR AUDITORIA (itens, observações e fotos)');
+    const sorted = [...fin].sort((a,b)=> new Date(b.data)-new Date(a.data));
+    for(const summary of sorted){
+      const full = await storageGet('audit_'+summary.id);
+      if(!full) continue;
+      lines.push('', `— ${full.header.setor}${full.header.carro?' · '+full.header.carro:''} — ${fmtDate(full.header.data)} — Auditor: ${full.header.auditor||'—'} — Conformidade: ${pct(full.score||0)}`);
+      CATEGORIES.forEach(cat=>{
+        ITEMS.filter(i=>i.cat===cat.id).forEach(it=>{
+          const resp = full.items.find(i=>i.id===it.id)||{};
+          const label = resp.status ? STATUS_META[resp.status].label : 'Pendente';
+          let line = `    ${it.id}. ${it.texto} — ${label}`;
+          if(resp.obs) line += ` | Obs.: ${resp.obs}`;
+          if(resp.photos && resp.photos.length) line += ` | ${resp.photos.length} foto(s) anexada(s) (ver PDF completo)`;
+          lines.push(line);
+        });
+      });
+    }
+  }
+
+  return lines.join('\n');
 }
 
 const reportMenuWrap = document.getElementById('reportMenuWrap');
@@ -2939,9 +2987,13 @@ document.getElementById('btnGerarRelatorio').addEventListener('click', (e)=>{
 document.addEventListener('click', (e)=>{
   if(!reportMenuWrap.contains(e.target)) reportMenu.classList.remove('open');
 });
-document.getElementById('reportMenuPdf').addEventListener('click', ()=>{
+document.getElementById('reportMenuPdfResumo').addEventListener('click', ()=>{
   reportMenu.classList.remove('open');
-  generateDashboardPdf();
+  generateDashboardPdf(false);
+});
+document.getElementById('reportMenuPdfCompleto').addEventListener('click', ()=>{
+  reportMenu.classList.remove('open');
+  generateDashboardPdf(true);
 });
 async function copyTextToClipboard(text){
   try{
@@ -2962,9 +3014,9 @@ async function copyTextToClipboard(text){
   }catch(e){}
   return false;
 }
-document.getElementById('reportMenuCopy').addEventListener('click', async ()=>{
+async function copyDashboardReport(detailed){
   reportMenu.classList.remove('open');
-  const text = buildDashboardReportText();
+  const text = await buildDashboardReportText(detailed);
   const copied = await copyTextToClipboard(text);
   if(copied){
     toast('Relatório copiado para a área de transferência.','ok');
@@ -2974,7 +3026,9 @@ document.getElementById('reportMenuCopy').addEventListener('click', async ()=>{
     document.getElementById('modalReportText').classList.add('open');
     setTimeout(()=>{ ta.focus(); ta.select(); }, 50);
   }
-});
+}
+document.getElementById('reportMenuCopyResumo').addEventListener('click', ()=> copyDashboardReport(false));
+document.getElementById('reportMenuCopyCompleto').addEventListener('click', ()=> copyDashboardReport(true));
 document.getElementById('reportTextClose').addEventListener('click', ()=>{
   document.getElementById('modalReportText').classList.remove('open');
 });
