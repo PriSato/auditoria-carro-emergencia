@@ -113,7 +113,7 @@ input,select,textarea{font-family:inherit;}
 .tipo-btn svg{width:16px;height:16px;flex-shrink:0;opacity:.9;}
 .tipo-btn:hover{background:rgba(255,255,255,.1);color:#fff;}
 .tipo-btn.active{background:rgba(46,139,255,.28);color:#fff;}
-.tipo-select-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;}
+.tipo-select-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px;}
 @media (max-width:520px){ .tipo-select-grid{grid-template-columns:1fr;} }
 .tipo-select-card{display:flex;flex-direction:column;align-items:center;gap:10px;padding:22px 14px;border:1.5px solid var(--line);border-radius:14px;background:#fff;cursor:pointer;transition:.15s;}
 .tipo-select-card:hover{border-color:var(--blue-500);background:var(--blue-50);transform:translateY(-1px);}
@@ -437,6 +437,10 @@ input,select,textarea{font-family:inherit;}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="9.5" width="17" height="7" rx="3.5" transform="rotate(-35 12 13)"/><path d="M11 10l3 6" stroke-width="1.6"/></svg>
         <span>Carro de Medicação</span>
       </button>
+      <button type="button" class="tipo-btn" data-tipo="meta2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/></svg>
+        <span>Meta 2 (SBAR)</span>
+      </button>
     </div>
     <nav>
       <div class="nav-group">
@@ -548,12 +552,20 @@ input,select,textarea{font-family:inherit;}
           <div class="section-title" style="margin-top:0;"><h2>Dados da Auditoria</h2></div>
           <div class="header-form">
             <div class="field"><label>Data</label><input type="date" id="fData"></div>
-            <div class="field"><label>Setor</label>
+            <div class="field"><label id="lblSetorField">Setor</label>
               <select id="fSetor"></select>
             </div>
             <div class="field" id="fSetorOutroWrap" style="display:none;">
               <label>Especifique o setor</label>
               <input type="text" id="fSetorOutro" placeholder="Digite o nome do setor">
+            </div>
+            <div class="field" id="fSetorDestinoWrap" style="display:none;">
+              <label>Setor de Destino</label>
+              <select id="fSetorDestino"></select>
+            </div>
+            <div class="field" id="fSetorDestinoOutroWrap" style="display:none;">
+              <label>Especifique o setor de destino</label>
+              <input type="text" id="fSetorDestinoOutro" placeholder="Digite o nome do setor de destino">
             </div>
             <div class="field" id="fCarroWrap" style="display:none;">
               <label id="lblCarroField">Carro</label>
@@ -563,7 +575,9 @@ input,select,textarea{font-family:inherit;}
               </div>
             </div>
             <div class="field"><label>Auditor *</label><input type="text" id="fAuditor" placeholder="Nome do auditor"></div>
-            <div class="field"><label>Enfermeiro Responsável *</label><input type="text" id="fEnfermeiro" placeholder="Nome do enfermeiro"></div>
+            <div class="field" id="fEnfermeiroWrap"><label>Enfermeiro Responsável *</label><input type="text" id="fEnfermeiro" placeholder="Nome do enfermeiro"></div>
+            <div class="field" id="fEnfermeiroOrigemWrap" style="display:none;"><label>Enfermeiro do Setor de Origem *</label><input type="text" id="fEnfermeiroOrigem" placeholder="Nome do enfermeiro"></div>
+            <div class="field" id="fEnfermeiroDestinoWrap" style="display:none;"><label>Enfermeiro do Setor de Destino *</label><input type="text" id="fEnfermeiroDestino" placeholder="Nome do enfermeiro"></div>
           </div>
           <button type="button" class="link-btn" id="btnAddCart" style="display:none;">+ Este setor tem mais de um carro? Adicionar carro</button>
           <label class="checkbox-label">
@@ -744,6 +758,12 @@ input,select,textarea{font-family:inherit;}
         </div>
         <div class="tipo-select-label">Carro de Medicação</div>
       </button>
+      <button type="button" class="tipo-select-card" data-tipo="meta2">
+        <div class="tipo-select-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/></svg>
+        </div>
+        <div class="tipo-select-label">Meta 2 (SBAR)</div>
+      </button>
     </div>
     <div class="actions" style="margin-top:16px;">
       <button class="btn btn-ghost" id="tipoSelectCancel">Cancelar</button>
@@ -841,6 +861,19 @@ const ITEMS_ENG = [
  {id:5,cat:'conferencia',texto:'Equipamento em boas condições de higiene.'},
  {id:6,cat:'conferencia',texto:'Equipamento armazenado de forma adequada.'},
  {id:7,cat:'conferencia',texto:'Controle do equipamento devidamente registrado.'},
+];
+
+/* Categorias e itens da auditoria da Meta 2 (SBAR) — módulo separado, ver
+   TIPOS mais abaixo. Cada auditoria avalia a passagem de caso entre dois
+   setores: o preenchimento no setor de origem e a validação no setor de
+   destino. O item de validação não tem opção "Parcial" (statusOptions). */
+const CATEGORIES_META2 = [
+  {id:'origem', nome:'Setor de Origem', icon:'clipboard'},
+  {id:'destino', nome:'Setor de Destino', icon:'pin'},
+];
+const ITEMS_META2 = [
+ {id:1,cat:'origem',texto:'Preenchimento adequado'},
+ {id:2,cat:'destino',texto:'Validação com carimbo e assinatura', statusOptions:['conforme','nao-conforme']},
 ];
 
 const ICONS = {
@@ -1007,6 +1040,12 @@ const TIPOS = {
     cartProfiles: {}, defaultSectorCarts: DEFAULT_SECTOR_EQUIPAMENTOS,
     storagePrefix: 'eng_', carroLabel: 'Equipamento', requireCarroSelection: true, allowNaoAplica: true,
   },
+  meta2: {
+    key:'meta2', label:'Meta 2 (SBAR)', labelPlural:'Meta 2 (SBAR)', icon:'clipboard',
+    categories: CATEGORIES_META2, items: ITEMS_META2, setores: SETORES_PLANILHA,
+    cartProfiles: {}, defaultSectorCarts: {},
+    storagePrefix: 'meta2_', carroLabel: 'Carro', requireCarroSelection: false, hasSetorDestino: true,
+  },
 };
 let currentTipo = localStorage.getItem('auditoria_tipo') || 'emergencia';
 if(!TIPOS[currentTipo]) currentTipo = 'emergencia';
@@ -1054,6 +1093,9 @@ function updateTipoUI(){
   if(btnAddCart) btnAddCart.textContent = cfg.requireCarroSelection
     ? ('+ Cadastrar novo '+carroLabel.toLowerCase()+' neste setor')
     : ('+ Este setor tem mais de um '+carroLabel.toLowerCase()+'? Adicionar '+carroLabel.toLowerCase());
+
+  // rótulo do campo "Setor" vira "Setor de Origem" quando há Setor de Destino (Meta 2/SBAR)
+  setId('lblSetorField', cfg.hasSetorDestino ? 'Setor de Origem' : 'Setor');
 }
 
 /* Troca de módulo: recarrega do Supabase (chaves do tipo escolhido) em vez
@@ -1090,6 +1132,19 @@ const STATUS_META = {
   'nao-aplica':{label:'Não se Aplica', cls:'sel-na', color:'#51697E', bg:'#EEF2F5'},
 };
 const SCORE_VALUE = {'conforme':1,'parcial':0.5,'nao-conforme':0};
+const STATUS_BTN_LABEL = {
+  'conforme':'✓ Conforme', 'parcial':'◐ Parcial', 'nao-conforme':'✕ Não Conforme', 'nao-aplica':'— Não se Aplica',
+};
+/* Opções de status exibidas para um item: por padrão as 3 usuais (+ "Não
+   se Aplica" se o tipo permitir), mas um item pode restringir via
+   `statusOptions` (ex.: Meta 2/SBAR, cujo item de validação não tem
+   opção "Parcial"). */
+function itemStatusOptions(it){
+  if(it.statusOptions) return it.statusOptions;
+  const base = ['conforme','parcial','nao-conforme'];
+  if(TIPOS[currentTipo].allowNaoAplica) base.push('nao-aplica');
+  return base;
+}
 
 /* =========================================================================
    STORAGE HELPERS
@@ -1889,7 +1944,7 @@ async function startNewAuditForm(){
   currentAudit = {
     id: uid(),
     cicloId: cycle ? cycle.id : null,
-    header:{ data: todayISO(), setor:'', carro:'', auditor:'', enfermeiro:'', carroIndisponivel:false },
+    header:{ data: todayISO(), setor:'', carro:'', setorDestino:'', auditor:'', enfermeiro:'', enfermeiroOrigem:'', enfermeiroDestino:'', carroIndisponivel:false },
     items: ITEMS.map(it=>({ id:it.id, status:null, obs:'', photos:[], medExtra:'', cartPerfil:null, cartRespostas:{} })),
     status:'rascunho',
     createdAt: Date.now(),
@@ -1897,10 +1952,20 @@ async function startNewAuditForm(){
   document.getElementById('fData').value = currentAudit.header.data;
   document.getElementById('fAuditor').value = '';
   document.getElementById('fEnfermeiro').value = '';
+  document.getElementById('fEnfermeiroOrigem').value = '';
+  document.getElementById('fEnfermeiroDestino').value = '';
   populateSetorSelect();
   document.getElementById('fSetor').value = '';
   document.getElementById('fSetorOutroWrap').style.display = 'none';
   document.getElementById('fSetorOutro').value = '';
+  const hasDestino = !!TIPOS[currentTipo].hasSetorDestino;
+  document.getElementById('fSetorDestinoWrap').style.display = hasDestino ? 'flex' : 'none';
+  document.getElementById('fSetorDestinoOutroWrap').style.display = 'none';
+  document.getElementById('fSetorDestinoOutro').value = '';
+  document.getElementById('fEnfermeiroWrap').style.display = hasDestino ? 'none' : '';
+  document.getElementById('fEnfermeiroOrigemWrap').style.display = hasDestino ? '' : 'none';
+  document.getElementById('fEnfermeiroDestinoWrap').style.display = hasDestino ? '' : 'none';
+  if(hasDestino){ populateSetorDestinoSelect(); document.getElementById('fSetorDestino').value = ''; }
   document.getElementById('fCarroWrap').style.display = 'none';
   document.getElementById('btnAddCart').style.display = 'none';
   document.getElementById('fCarroIndisponivel').checked = false;
@@ -1940,6 +2005,12 @@ async function editAudit(id){
   document.getElementById('fData').value = currentAudit.header.data || todayISO();
   document.getElementById('fAuditor').value = currentAudit.header.auditor || '';
   document.getElementById('fEnfermeiro').value = currentAudit.header.enfermeiro || '';
+  document.getElementById('fEnfermeiroOrigem').value = currentAudit.header.enfermeiroOrigem || '';
+  document.getElementById('fEnfermeiroDestino').value = currentAudit.header.enfermeiroDestino || '';
+  const hasDestinoEnf = !!TIPOS[currentTipo].hasSetorDestino;
+  document.getElementById('fEnfermeiroWrap').style.display = hasDestinoEnf ? 'none' : '';
+  document.getElementById('fEnfermeiroOrigemWrap').style.display = hasDestinoEnf ? '' : 'none';
+  document.getElementById('fEnfermeiroDestinoWrap').style.display = hasDestinoEnf ? '' : 'none';
 
   populateSetorSelect();
   const sel = document.getElementById('fSetor');
@@ -1973,6 +2044,27 @@ async function editAudit(id){
     currentAudit.header.setor = originalSetor;
   }
 
+  const hasDestino = !!TIPOS[currentTipo].hasSetorDestino;
+  document.getElementById('fSetorDestinoWrap').style.display = hasDestino ? 'flex' : 'none';
+  document.getElementById('fSetorDestinoOutroWrap').style.display = 'none';
+  document.getElementById('fSetorDestinoOutro').value = '';
+  if(hasDestino){
+    populateSetorDestinoSelect();
+    const originalDestino = currentAudit.header.setorDestino || '';
+    const destSel = document.getElementById('fSetorDestino');
+    const isKnownDestino = SETORES_PLANILHA.includes(originalDestino);
+    if(isKnownDestino){
+      destSel.value = originalDestino;
+    } else if(originalDestino){
+      destSel.value = SETOR_OUTRO;
+      document.getElementById('fSetorDestinoOutroWrap').style.display = 'flex';
+      document.getElementById('fSetorDestinoOutro').value = originalDestino;
+    } else {
+      destSel.value = '';
+    }
+    currentAudit.header.setorDestino = originalDestino;
+  }
+
   document.getElementById('fCarroIndisponivel').checked = !!currentAudit.header.carroIndisponivel;
   setCarroIndisponivelUI(!!currentAudit.header.carroIndisponivel);
 
@@ -1982,7 +2074,7 @@ async function editAudit(id){
   updateCategoriesGating();
   showView('new-audit');
   document.getElementById('topTitle').textContent = 'Editar Auditoria';
-  document.getElementById('topSub').textContent = `${currentAudit.header.setor}${currentAudit.header.carro? ' · '+currentAudit.header.carro:''} — ${fmtDate(currentAudit.header.data)}`;
+  document.getElementById('topSub').textContent = `${currentAudit.header.setor}${currentAudit.header.carro? ' · '+currentAudit.header.carro:''}${currentAudit.header.setorDestino? ' → '+currentAudit.header.setorDestino:''} — ${fmtDate(currentAudit.header.data)}`;
 }
 /* Restaura na tela (botões de status, observações, fotos, e a conferência
    de validade do item 16) o que já estava salvo em currentAudit.items —
@@ -2056,6 +2148,14 @@ function populateSetorSelect(){
     + activeBaseSectors().map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('')
     + `<option value="${SETOR_OUTRO}">Outro</option>`;
 }
+/* Segundo campo de setor (Meta 2/SBAR): mesma lista de setores + Outro,
+   usado para registrar o setor de destino da passagem de caso. */
+function populateSetorDestinoSelect(){
+  const sel = document.getElementById('fSetorDestino');
+  sel.innerHTML = '<option value="" disabled selected>Selecione o setor de destino...</option>'
+    + activeBaseSectors().map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('')
+    + `<option value="${SETOR_OUTRO}">Outro</option>`;
+}
 /* Preenche o seletor de Carro com os carros ativos do setor escolhido.
    Só é exibido quando o setor tem pelo menos um carro cadastrado. */
 function populateCarroSelect(setor){
@@ -2078,10 +2178,10 @@ function populateCarroSelect(setor){
 }
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-['fData','fAuditor','fEnfermeiro'].forEach(id=>{
+['fData','fAuditor','fEnfermeiro','fEnfermeiroOrigem','fEnfermeiroDestino'].forEach(id=>{
   document.getElementById(id).addEventListener('input', (e)=>{
     if(!currentAudit) return;
-    const map={fData:'data',fAuditor:'auditor',fEnfermeiro:'enfermeiro'};
+    const map={fData:'data',fAuditor:'auditor',fEnfermeiro:'enfermeiro',fEnfermeiroOrigem:'enfermeiroOrigem',fEnfermeiroDestino:'enfermeiroDestino'};
     currentAudit.header[map[id]] = e.target.value;
   });
 });
@@ -2105,6 +2205,21 @@ document.getElementById('fSetor').addEventListener('change', (e)=>{
 document.getElementById('fSetorOutro').addEventListener('input', (e)=>{
   if(!currentAudit) return;
   currentAudit.header.setor = e.target.value.trim();
+});
+document.getElementById('fSetorDestino').addEventListener('change', (e)=>{
+  if(!currentAudit) return;
+  if(e.target.value===SETOR_OUTRO){
+    document.getElementById('fSetorDestinoOutroWrap').style.display='flex';
+    currentAudit.header.setorDestino = document.getElementById('fSetorDestinoOutro').value.trim();
+    document.getElementById('fSetorDestinoOutro').focus();
+  } else {
+    document.getElementById('fSetorDestinoOutroWrap').style.display='none';
+    currentAudit.header.setorDestino = e.target.value;
+  }
+});
+document.getElementById('fSetorDestinoOutro').addEventListener('input', (e)=>{
+  if(!currentAudit) return;
+  currentAudit.header.setorDestino = e.target.value.trim();
 });
 document.getElementById('fCarro').addEventListener('change', (e)=>{
   if(!currentAudit) return;
@@ -2189,10 +2304,7 @@ function itemRowHtml(it){
       </div>
       <div class="item-txt">${escapeHtml(it.texto)}</div>
       <div class="status-group">
-        <button class="status-btn" data-item="${it.id}" data-status="conforme" onclick="setStatus(${it.id},'conforme')">✓ Conforme</button>
-        <button class="status-btn" data-item="${it.id}" data-status="parcial" onclick="setStatus(${it.id},'parcial')">◐ Parcial</button>
-        <button class="status-btn" data-item="${it.id}" data-status="nao-conforme" onclick="setStatus(${it.id},'nao-conforme')">✕ Não Conforme</button>
-        ${TIPOS[currentTipo].allowNaoAplica ? `<button class="status-btn" data-item="${it.id}" data-status="nao-aplica" onclick="setStatus(${it.id},'nao-aplica')">— Não se Aplica</button>` : ``}
+        ${itemStatusOptions(it).map(s=>`<button class="status-btn" data-item="${it.id}" data-status="${s}" onclick="setStatus(${it.id},'${s}')">${STATUS_BTN_LABEL[s]}</button>`).join('')}
       </div>
     </div>
     <div class="item-extra" id="itemextra-${it.id}" style="display:none;">
@@ -2389,14 +2501,29 @@ function computeCounts(audit){
   audit.items.forEach(i=>{ if(i.status) c[i.status]++; else c.pendente++; });
   return c;
 }
+/* Conformidade de uma categoria específica (usado na Meta 2/SBAR para os
+   indicadores separados de Origem e Destino no dashboard). */
+function computeCategoryScore(audit, catId){
+  const catItemIds = new Set(ITEMS.filter(i=>i.cat===catId).map(i=>i.id));
+  const applicable = audit.items.filter(i=> catItemIds.has(i.id) && i.status && i.status!=='nao-aplica');
+  if(applicable.length===0) return 0;
+  const sum = applicable.reduce((s,i)=> s+SCORE_VALUE[i.status], 0);
+  return sum/applicable.length;
+}
 
 async function persistAudit(finalize){
   const h = currentAudit.header;
   if(!h.data){ toast('Informe a data da auditoria.','bad'); document.getElementById('fData').focus(); return false; }
   if(!h.setor){ toast('Informe o setor da auditoria.','bad'); document.getElementById('fSetor').focus(); return false; }
   if(cartsForSector(h.setor).length && !h.carro){ toast(`Selecione o ${(TIPOS[currentTipo].carroLabel||'carro').toLowerCase()} deste setor.`,'bad'); document.getElementById('fCarro').focus(); return false; }
+  if(TIPOS[currentTipo].hasSetorDestino && !h.setorDestino){ toast('Informe o setor de destino.','bad'); document.getElementById('fSetorDestino').focus(); return false; }
   if(!h.auditor || !h.auditor.trim()){ toast('Informe o nome do auditor.','bad'); document.getElementById('fAuditor').focus(); return false; }
-  if(!h.enfermeiro || !h.enfermeiro.trim()){ toast('Informe o nome do enfermeiro responsável.','bad'); document.getElementById('fEnfermeiro').focus(); return false; }
+  if(TIPOS[currentTipo].hasSetorDestino){
+    if(!h.enfermeiroOrigem || !h.enfermeiroOrigem.trim()){ toast('Informe o nome do enfermeiro do setor de origem.','bad'); document.getElementById('fEnfermeiroOrigem').focus(); return false; }
+    if(!h.enfermeiroDestino || !h.enfermeiroDestino.trim()){ toast('Informe o nome do enfermeiro do setor de destino.','bad'); document.getElementById('fEnfermeiroDestino').focus(); return false; }
+  } else {
+    if(!h.enfermeiro || !h.enfermeiro.trim()){ toast('Informe o nome do enfermeiro responsável.','bad'); document.getElementById('fEnfermeiro').focus(); return false; }
+  }
   if(finalize){
     const answered = currentAudit.items.filter(i=>i.status).length;
     if(answered < currentAudit.items.length){
@@ -2407,6 +2534,10 @@ async function persistAudit(finalize){
   currentAudit.status = finalize ? 'finalizada' : 'rascunho';
   currentAudit.score = computeScore(currentAudit);
   currentAudit.counts = computeCounts(currentAudit);
+  if(TIPOS[currentTipo].hasSetorDestino){
+    currentAudit.scoreOrigem = computeCategoryScore(currentAudit, 'origem');
+    currentAudit.scoreDestino = computeCategoryScore(currentAudit, 'destino');
+  }
   currentAudit.updatedAt = Date.now();
 
   await ensureSectorInCycle(currentAudit.cicloId, trackKey(h.setor, h.carro));
@@ -2421,9 +2552,13 @@ async function persistAudit(finalize){
     id: currentAudit.id,
     cicloId: currentAudit.cicloId || null,
     carroIndisponivel: !!h.carroIndisponivel,
-    setor: h.setor, carro: h.carro || null, auditor: h.auditor, enfermeiro: h.enfermeiro, data: h.data,
+    setor: h.setor, carro: h.carro || null, setorDestino: h.setorDestino || null,
+    auditor: h.auditor, enfermeiro: h.enfermeiro,
+    enfermeiroOrigem: h.enfermeiroOrigem || null, enfermeiroDestino: h.enfermeiroDestino || null,
+    data: h.data,
     createdAt: currentAudit.createdAt, updatedAt: currentAudit.updatedAt,
     status: currentAudit.status, score: currentAudit.score, counts: currentAudit.counts,
+    scoreOrigem: currentAudit.scoreOrigem, scoreDestino: currentAudit.scoreDestino,
     itemStatus: currentAudit.items.map(i=>({id:i.id, status:i.status})),
   };
   const ok = await updateIndex(idx=>{
@@ -2467,12 +2602,23 @@ function renderDashboard(){
   const thisMonth = fin.filter(a=>{ const d=new Date(a.data); return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear(); }).length;
   const criticos = fin.filter(a=>a.score<0.7).length;
 
-  kpiGrid.innerHTML = `
-    ${kpiCard('Total de Auditorias', fin.length, `${setores.size} setores avaliados`)}
-    ${kpiCard('Conformidade Média', pct(avgScore), avgScore>=0.85?'Bom desempenho geral':'Atenção necessária')}
-    ${kpiCard('Auditorias este mês', thisMonth, now.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}))}
-    ${kpiCard('Auditorias Críticas', criticos, 'Conformidade abaixo de 70%')}
-  `;
+  if(TIPOS[currentTipo].hasSetorDestino){
+    const avgOrigem = fin.reduce((s,a)=>s+(a.scoreOrigem||0),0)/fin.length;
+    const avgDestino = fin.reduce((s,a)=>s+(a.scoreDestino||0),0)/fin.length;
+    kpiGrid.innerHTML = `
+      ${kpiCard('Total de Auditorias', fin.length, `${setores.size} setores avaliados`)}
+      ${kpiCard('Conformidade — Origem', pct(avgOrigem), avgOrigem>=0.85?'Bom desempenho geral':'Atenção necessária')}
+      ${kpiCard('Conformidade — Destino', pct(avgDestino), avgDestino>=0.85?'Bom desempenho geral':'Atenção necessária')}
+      ${kpiCard('Auditorias este mês', thisMonth, now.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}))}
+    `;
+  } else {
+    kpiGrid.innerHTML = `
+      ${kpiCard('Total de Auditorias', fin.length, `${setores.size} setores avaliados`)}
+      ${kpiCard('Conformidade Média', pct(avgScore), avgScore>=0.85?'Bom desempenho geral':'Atenção necessária')}
+      ${kpiCard('Auditorias este mês', thisMonth, now.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}))}
+      ${kpiCard('Auditorias Críticas', criticos, 'Conformidade abaixo de 70%')}
+    `;
+  }
 
   // trend chart - last 12 sorted by date
   const sorted = [...fin].sort((a,b)=> new Date(a.data)-new Date(b.data)).slice(-12);
@@ -2488,20 +2634,44 @@ function renderDashboard(){
   });
 
   // sector bar chart
-  const bySector = {};
-  fin.forEach(a=>{ (bySector[a.setor]=bySector[a.setor]||[]).push(a.score); });
-  const sectorNames = Object.keys(bySector);
-  const sectorAvgs = sectorNames.map(s=> bySector[s].reduce((x,y)=>x+y,0)/bySector[s].length );
   const ctxS = document.getElementById('chartSector').getContext('2d');
   if(charts.sector) charts.sector.destroy();
-  charts.sector = new Chart(ctxS, {
-    type:'bar',
-    data:{ labels: sectorNames, datasets:[{ label:'Conformidade média', data: sectorAvgs.map(v=>Math.round(v*100)),
-      backgroundColor: sectorAvgs.map(v=> v>=0.85?'#22C55E': v>=0.7?'#FACC15':'#EF4444'), borderRadius:8, maxBarThickness:46 }] },
-    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
-      scales:{ y:{min:0,max:100, ticks:{callback:v=>v+'%'}, grid:{color:'#EEF4FA'} }, x:{grid:{display:false}} },
-      onClick:(evt,els)=>{ if(els.length){ const idx=els[0].index; openSectorDetail(sectorNames[idx]); } } }
-  });
+  if(TIPOS[currentTipo].hasSetorDestino){
+    // Meta 2 (SBAR): conformidade média por setor, separada por papel — um
+    // setor pode ser origem em uma auditoria e destino em outra, então cada
+    // papel é calculado com sua própria conformidade (scoreOrigem/scoreDestino)
+    // agrupada pelo setor correspondente àquele papel.
+    const origemBy = {};
+    fin.forEach(a=>{ (origemBy[a.setor]=origemBy[a.setor]||[]).push(a.scoreOrigem||0); });
+    const destinoBy = {};
+    fin.forEach(a=>{ if(a.setorDestino) (destinoBy[a.setorDestino]=destinoBy[a.setorDestino]||[]).push(a.scoreDestino||0); });
+    const sectorNames = [...new Set([...Object.keys(origemBy), ...Object.keys(destinoBy)])].sort();
+    const avg = arr=> arr && arr.length ? arr.reduce((x,y)=>x+y,0)/arr.length : null;
+    const origemAvgs = sectorNames.map(s=> avg(origemBy[s]));
+    const destinoAvgs = sectorNames.map(s=> avg(destinoBy[s]));
+    charts.sector = new Chart(ctxS, {
+      type:'bar',
+      data:{ labels: sectorNames, datasets:[
+        { label:'Origem', data: origemAvgs.map(v=>v==null?null:Math.round(v*100)), backgroundColor:'#1670C9', borderRadius:6, maxBarThickness:28 },
+        { label:'Destino', data: destinoAvgs.map(v=>v==null?null:Math.round(v*100)), backgroundColor:'#F0B429', borderRadius:6, maxBarThickness:28 },
+      ]},
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true, position:'top', align:'end'}},
+        scales:{ y:{min:0,max:100, ticks:{callback:v=>v+'%'}, grid:{color:'#EEF4FA'} }, x:{grid:{display:false}} } }
+    });
+  } else {
+    const bySector = {};
+    fin.forEach(a=>{ (bySector[a.setor]=bySector[a.setor]||[]).push(a.score); });
+    const sectorNames = Object.keys(bySector);
+    const sectorAvgs = sectorNames.map(s=> bySector[s].reduce((x,y)=>x+y,0)/bySector[s].length );
+    charts.sector = new Chart(ctxS, {
+      type:'bar',
+      data:{ labels: sectorNames, datasets:[{ label:'Conformidade média', data: sectorAvgs.map(v=>Math.round(v*100)),
+        backgroundColor: sectorAvgs.map(v=> v>=0.85?'#22C55E': v>=0.7?'#FACC15':'#EF4444'), borderRadius:8, maxBarThickness:46 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+        scales:{ y:{min:0,max:100, ticks:{callback:v=>v+'%'}, grid:{color:'#EEF4FA'} }, x:{grid:{display:false}} },
+        onClick:(evt,els)=>{ if(els.length){ const idx=els[0].index; openSectorDetail(sectorNames[idx]); } } }
+    });
+  }
 
   // ranking of most non-conforming items
   const itemFailCount = {};
@@ -2614,11 +2784,18 @@ async function openAuditDetail(id){
   const full = await storageGet('audit_'+id);
   if(!full){ toast('Auditoria não encontrada.','bad'); return; }
   currentDetailId = id;
-  document.getElementById('detTitle').textContent = full.header.setor + (full.header.carro? ' · '+full.header.carro:'') + ' — ' + fmtDate(full.header.data);
-  document.getElementById('detSub').innerHTML = `Auditor: ${escapeHtml(full.header.auditor)}${full.header.enfermeiro? ' · Enfermeiro: '+escapeHtml(full.header.enfermeiro):''}${full.header.carroIndisponivel? ' <span class="tag tag-bad">Carro não disponível</span>':''}`;
+  document.getElementById('detTitle').textContent = full.header.setor + (full.header.carro? ' · '+full.header.carro:'') + (full.header.setorDestino? ' → '+full.header.setorDestino:'') + ' — ' + fmtDate(full.header.data);
+  const enfermeiroLine = TIPOS[currentTipo].hasSetorDestino
+    ? `${full.header.enfermeiroOrigem? ' · Enf. Origem: '+escapeHtml(full.header.enfermeiroOrigem):''}${full.header.enfermeiroDestino? ' · Enf. Destino: '+escapeHtml(full.header.enfermeiroDestino):''}`
+    : (full.header.enfermeiro? ' · Enfermeiro: '+escapeHtml(full.header.enfermeiro):'');
+  document.getElementById('detSub').innerHTML = `Auditor: ${escapeHtml(full.header.auditor)}${enfermeiroLine}${full.header.carroIndisponivel? ' <span class="tag tag-bad">Carro não disponível</span>':''}`;
 
   const sc = scoreColor(full.score||0);
-  document.getElementById('detMetaGrid').innerHTML = `
+  document.getElementById('detMetaGrid').innerHTML = TIPOS[currentTipo].hasSetorDestino ? `
+    <div class="mini-stat"><div class="l">Conformidade Geral</div><div class="v" style="color:${sc.c}">${pct(full.score||0)}</div></div>
+    <div class="mini-stat"><div class="l">Conformidade Origem</div><div class="v">${pct(full.scoreOrigem||0)}</div></div>
+    <div class="mini-stat"><div class="l">Conformidade Destino</div><div class="v">${pct(full.scoreDestino||0)}</div></div>
+  ` : `
     <div class="mini-stat"><div class="l">Conformidade</div><div class="v" style="color:${sc.c}">${pct(full.score||0)}</div></div>
     <div class="mini-stat"><div class="l">Conforme</div><div class="v">${full.counts?full.counts.conforme:0}</div></div>
     <div class="mini-stat"><div class="l">Parcial</div><div class="v">${full.counts?full.counts.parcial:0}</div></div>
@@ -2825,13 +3002,22 @@ async function generateAuditPdf(detailed){
   const full = await storageGet('audit_'+currentDetailId);
   if(!full) return;
   const doc = new jsPDF();
-  pdfHeader(doc, 'Auditoria de '+TIPOS[currentTipo].label, `${full.header.setor} · ${fmtDate(full.header.data)}`);
+  pdfHeader(doc, 'Auditoria de '+TIPOS[currentTipo].label, `${full.header.setor}${full.header.setorDestino?' → '+full.header.setorDestino:''} · ${fmtDate(full.header.data)}`);
   doc.setFontSize(10);
   let y = 34;
   doc.setFont('helvetica','bold'); doc.text('Auditor:', 14, y); doc.setFont('helvetica','normal'); doc.text(full.header.auditor||'—', 34, y);
-  doc.setFont('helvetica','bold'); doc.text('Enfermeiro:', 110, y); doc.setFont('helvetica','normal'); doc.text(full.header.enfermeiro||'—', 138, y);
-  y+=6;
-  doc.setFont('helvetica','bold'); doc.text('Conformidade geral:', 14, y); doc.setFont('helvetica','normal'); doc.text(pct(full.score||0), 55, y);
+  if(TIPOS[currentTipo].hasSetorDestino){
+    doc.setFont('helvetica','bold'); doc.text('Enf. Origem:', 110, y); doc.setFont('helvetica','normal'); doc.text(full.header.enfermeiroOrigem||'—', 138, y);
+    y+=6;
+    doc.setFont('helvetica','bold'); doc.text('Enf. Destino:', 14, y); doc.setFont('helvetica','normal'); doc.text(full.header.enfermeiroDestino||'—', 38, y);
+    y+=6;
+    doc.setFont('helvetica','bold'); doc.text('Conformidade geral:', 14, y); doc.setFont('helvetica','normal'); doc.text(pct(full.score||0), 55, y);
+    doc.setFont('helvetica','bold'); doc.text('Origem/Destino:', 110, y); doc.setFont('helvetica','normal'); doc.text(`${pct(full.scoreOrigem||0)} / ${pct(full.scoreDestino||0)}`, 145, y);
+  } else {
+    doc.setFont('helvetica','bold'); doc.text('Enfermeiro:', 110, y); doc.setFont('helvetica','normal'); doc.text(full.header.enfermeiro||'—', 138, y);
+    y+=6;
+    doc.setFont('helvetica','bold'); doc.text('Conformidade geral:', 14, y); doc.setFont('helvetica','normal'); doc.text(pct(full.score||0), 55, y);
+  }
 
   renderAuditItemsSection(doc, full, y+6, detailed);
 
