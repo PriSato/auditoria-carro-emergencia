@@ -113,7 +113,7 @@ input,select,textarea{font-family:inherit;}
 .tipo-btn svg{width:16px;height:16px;flex-shrink:0;opacity:.9;}
 .tipo-btn:hover{background:rgba(255,255,255,.1);color:#fff;}
 .tipo-btn.active{background:rgba(46,139,255,.28);color:#fff;}
-.tipo-select-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px;}
+.tipo-select-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;}
 @media (max-width:520px){ .tipo-select-grid{grid-template-columns:1fr;} }
 .tipo-select-card{display:flex;flex-direction:column;align-items:center;gap:10px;padding:22px 14px;border:1.5px solid var(--line);border-radius:14px;background:#fff;cursor:pointer;transition:.15s;}
 .tipo-select-card:hover{border-color:var(--blue-500);background:var(--blue-50);transform:translateY(-1px);}
@@ -441,6 +441,10 @@ input,select,textarea{font-family:inherit;}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/></svg>
         <span>Meta 2 (SBAR)</span>
       </button>
+      <button type="button" class="tipo-btn" data-tipo="meta1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.6 7-12a7 7 0 1 0-14 0c0 5.4 7 12 7 12z"/><circle cx="12" cy="9" r="2.4"/></svg>
+        <span>Meta 1</span>
+      </button>
     </div>
     <nav>
       <div class="nav-group">
@@ -764,6 +768,12 @@ input,select,textarea{font-family:inherit;}
         </div>
         <div class="tipo-select-label">Meta 2 (SBAR)</div>
       </button>
+      <button type="button" class="tipo-select-card" data-tipo="meta1">
+        <div class="tipo-select-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.6 7-12a7 7 0 1 0-14 0c0 5.4 7 12 7 12z"/><circle cx="12" cy="9" r="2.4"/></svg>
+        </div>
+        <div class="tipo-select-label">Meta 1</div>
+      </button>
     </div>
     <div class="actions" style="margin-top:16px;">
       <button class="btn btn-ghost" id="tipoSelectCancel">Cancelar</button>
@@ -876,6 +886,27 @@ const ITEMS_META2 = [
  {id:2,cat:'destino',texto:'Validação com carimbo e assinatura', statusOptions:['conforme','nao-conforme']},
 ];
 
+/* Meta 1 — auditoria de identificação do paciente. O checklist muda
+   conforme o setor escolhido: setores de "Recepção" usam 3 itens (só
+   Conforme/Não Conforme); os demais setores assistenciais usam 1 item
+   (Conforme/Parcial/Não Conforme). IDs em faixas separadas (100+/200+)
+   para nunca colidir entre os dois conjuntos em rankings agregados
+   (dashboard/setor), que podem somar auditorias dos dois tipos de setor. */
+const CATEGORIES_META1_RECEPCAO = [
+  {id:'recepcao', nome:'Identificação do Paciente na Recepção', icon:'clipboard'},
+];
+const ITEMS_META1_RECEPCAO = [
+  {id:101,cat:'recepcao',texto:'Solicitou documento para cadastro', statusOptions:['conforme','nao-conforme']},
+  {id:102,cat:'recepcao',texto:'Conferiu o documento com o paciente ou acompanhante', statusOptions:['conforme','nao-conforme']},
+  {id:103,cat:'recepcao',texto:'Conferiu pulseira com o paciente ou acompanhante', statusOptions:['conforme','nao-conforme']},
+];
+const CATEGORIES_META1_ASSISTENCIAL = [
+  {id:'identificacao', nome:'Identificação do Paciente', icon:'pin'},
+];
+const ITEMS_META1_ASSISTENCIAL = [
+  {id:201,cat:'identificacao',texto:'Aplicou 3 identificadores antes do procedimento (nome completo, data de nascimento e nome da mãe)'},
+];
+
 const ICONS = {
   cart:'<path d="M3 4h2l2.4 12.4a2 2 0 0 0 2 1.6h7.2a2 2 0 0 0 2-1.6L20 8H6"/><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/>',
   lock:'<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
@@ -972,6 +1003,13 @@ const DEFAULT_SECTOR_CARTS_MED = {};
 const SETORES_ENGENHARIA = [
  'Ambulatório 1','Ambulatório 2','Banco de Leite','Banco de Sangue','Bloco 1','Bloco 2','Bloco 3','Bloco 4','Bloco 5','CCMI','Centro Cirúrgico','Centro de Imagem','CME','Engenharia Clínica','Laboratório','Maternidade Infantil','Medicina Nuclear','Oncologia Ala A','Oncologia Pediátrica','P.S Infantil','Patologia','Pequenas Cirurgias','Pronto Socorro Adulto','Quimioterapia','Radioterapia','Sala de Hemodinâmica','Traumatologia','UCINCO','UTI Adulto Ala A','UTI Adulto Ala B','UTI Móvel','UTI Neonatal A/1','UTI Neonatal B/2','UTI Pediátrica'
 ];
+/* Setores auditados pela Meta 1 (identificação do paciente). Setores que
+   começam com "Recepção" usam o checklist de recepção (3 itens); os
+   demais usam o checklist assistencial (1 item) — ver isRecepcaoSector. */
+const SETORES_META1 = [
+ 'RECEPÇÃO PSA','RECEPÇÃO PSI','RECEPÇÃO US','RECEPÇÃO RM','RECEPÇÃO ENTREGA DE EXAMES','RECEPÇÃO CDI','RECEPÇÃO TRAUMA','RECEPÇÃO AMBULATÓRIO 1','RECEPÇÃO MED. NUCLEAR','RECEPÇÃO POSTO DE COLETA 1','RECEPÇÃO POSTO DE COLETA 2','RECEPÇÃO ONCO PED','INTERNAÇÃO SUS','INTERNAÇÃO CONVÊNIO','RECEPÇÃO PRINCIPAL','RECEPÇÃO AMBULATÓRIO 2','RECEPÇÃO RADIOTERAPIA','RECEPÇÃO QUIMIOTERAPIA','BANCO DE LEITE','LAB. BANCO DE LEITE','AGÊNCIA TRANSFUSIONAL','LABORATÓRIO CLÍNICO','LABORATÓRIO PATOLÓGICO','RX PS','RM','CDI (TC, MAMOGRAFIA, USG)','MEDICINA NUCLEAR','AMBULATÓRIO 1 (CENCOR)','SND','PS ADULTO','PS INFANTIL','TRAUMATOLOGIA','ENDOSCOPIA','BLOCO I','BLOCO II','BLOCO IV','BLOCO V','ONCO ALA A','UTI I','UTI II','CENTRO CIR.','HOSPITAL DIA','CCMI','MATERNIDADE ALA A','MATERNIDADE ALA B','UCINCA','UCINCO','BLOCO III','ONCO PED INTERNAÇÃO','UTI PEDIÁTRICA','UTI NEONATAL 1','UTI NEONATAL 2','QUIMIOTERAPIA','RADIOTERAPIA','ONCO PED AMBULATÓRIO','AMBULATÓRIO 2'
+];
+function isRecepcaoSector(setor){ return /^recep/i.test((setor||'').trim()); }
 /* Catálogo inicial de equipamentos por setor (reaproveita o mecanismo de
    "Carro" — aqui cada "carro" é um equipamento individual, identificado por
    nome + nº de patrimônio ou tag). Extraído dos planos de manutenção 2026;
@@ -1045,6 +1083,15 @@ const TIPOS = {
     categories: CATEGORIES_META2, items: ITEMS_META2, setores: SETORES_PLANILHA,
     cartProfiles: {}, defaultSectorCarts: {},
     storagePrefix: 'meta2_', carroLabel: 'Carro', requireCarroSelection: false, hasSetorDestino: true,
+  },
+  meta1: {
+    key:'meta1', label:'Meta 1', labelPlural:'Meta 1', icon:'pin',
+    categories: CATEGORIES_META1_ASSISTENCIAL, items: ITEMS_META1_ASSISTENCIAL, setores: SETORES_META1,
+    cartProfiles: {}, defaultSectorCarts: {},
+    storagePrefix: 'meta1_', carroLabel: 'Carro', requireCarroSelection: false,
+    sectorDependentItems: true, isRecepcaoSector: isRecepcaoSector,
+    categoriesRecepcao: CATEGORIES_META1_RECEPCAO, itemsRecepcao: ITEMS_META1_RECEPCAO,
+    categoriesAssistencial: CATEGORIES_META1_ASSISTENCIAL, itemsAssistencial: ITEMS_META1_ASSISTENCIAL,
   },
 };
 let currentTipo = localStorage.getItem('auditoria_tipo') || 'emergencia';
@@ -1991,6 +2038,7 @@ async function editAudit(id){
 
   full.header.carro = full.header.carro || '';
   full.header.carroIndisponivel = !!full.header.carroIndisponivel;
+  applySectorDependentItems(full.header.setor, false);
   const existingIds = new Set(full.items.map(i=>i.id));
   ITEMS.forEach(it=>{
     if(!existingIds.has(it.id)) full.items.push({ id:it.id, status:null, obs:'', photos:[], medExtra:'', cartPerfil:null, cartRespostas:{} });
@@ -2142,6 +2190,36 @@ function updateCategoriesGating(){
   const hint = document.getElementById('carroGatingHint');
   if(hint) hint.style.display = hide ? 'block' : 'none';
 }
+
+/* Meta 1: o checklist muda conforme o setor escolhido (Recepção x demais
+   setores assistenciais) — reatribui CATEGORIES/ITEMS (as mesmas
+   variáveis "ativas" usadas em todo o app) para o conjunto certo. Só
+   reconstrói o array de itens da auditoria (resetAuditItems=true) ao
+   trocar de setor durante o preenchimento; ao só visualizar/editar uma
+   auditoria já salva isso não deve apagar as respostas existentes. */
+function applySectorDependentItems(setor, resetAuditItems){
+  const cfg = TIPOS[currentTipo];
+  if(!cfg.sectorDependentItems) return;
+  const isRecepcao = cfg.isRecepcaoSector(setor);
+  const newCategories = isRecepcao ? cfg.categoriesRecepcao : cfg.categoriesAssistencial;
+  const newItems = isRecepcao ? cfg.itemsRecepcao : cfg.itemsAssistencial;
+  if(CATEGORIES===newCategories && ITEMS===newItems) return;
+  CATEGORIES = newCategories;
+  ITEMS = newItems;
+  if(resetAuditItems && currentAudit){
+    currentAudit.items = ITEMS.map(it=>({ id:it.id, status:null, obs:'', photos:[], medExtra:'', cartPerfil:null, cartRespostas:{} }));
+  }
+}
+/* União de todos os itens possíveis do tipo atual — usada só para
+   resolver o texto de um id em rankings que somam várias auditorias
+   (Meta 1 pode ter auditorias de setores de Recepção e assistenciais
+   misturadas, cada um com seu próprio conjunto de itens). */
+function allTipoItems(){
+  const cfg = TIPOS[currentTipo];
+  if(cfg.sectorDependentItems) return [...cfg.itemsRecepcao, ...cfg.itemsAssistencial];
+  return cfg.items;
+}
+
 function populateSetorSelect(){
   const sel = document.getElementById('fSetor');
   sel.innerHTML = '<option value="" disabled selected>Selecione o setor...</option>'
@@ -2185,6 +2263,12 @@ function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':
     currentAudit.header[map[id]] = e.target.value;
   });
 });
+function refreshSectorDependentItemsUI(setor){
+  if(!TIPOS[currentTipo].sectorDependentItems) return;
+  applySectorDependentItems(setor, true);
+  buildCategoriesUI();
+  updateProgress();
+}
 document.getElementById('fSetor').addEventListener('change', (e)=>{
   if(!currentAudit) return;
   if(e.target.value===SETOR_OUTRO){
@@ -2193,18 +2277,21 @@ document.getElementById('fSetor').addEventListener('change', (e)=>{
     document.getElementById('btnAddCart').style.display='none';
     currentAudit.header.setor = document.getElementById('fSetorOutro').value.trim();
     currentAudit.header.carro = '';
+    refreshSectorDependentItemsUI(currentAudit.header.setor);
     updateCategoriesGating();
     document.getElementById('fSetorOutro').focus();
   } else {
     document.getElementById('fSetorOutroWrap').style.display='none';
     currentAudit.header.setor = e.target.value;
     document.getElementById('btnAddCart').style.display = 'block';
+    refreshSectorDependentItemsUI(e.target.value);
     populateCarroSelect(e.target.value);
   }
 });
 document.getElementById('fSetorOutro').addEventListener('input', (e)=>{
   if(!currentAudit) return;
   currentAudit.header.setor = e.target.value.trim();
+  refreshSectorDependentItemsUI(currentAudit.header.setor);
 });
 document.getElementById('fSetorDestino').addEventListener('change', (e)=>{
   if(!currentAudit) return;
@@ -2682,7 +2769,7 @@ function renderDashboard(){
     rankList.innerHTML = `<div class="empty-state" style="padding:20px;"><p>Nenhuma não conformidade registrada até o momento.</p></div>`;
   } else {
     rankList.innerHTML = ranked.map(([id,val],idx)=>{
-      const it = ITEMS.find(i=>i.id==id);
+      const it = allTipoItems().find(i=>i.id==id);
       return `<div class="rank-row"><div class="num">${idx+1}</div><div class="txt">${escapeHtml(it?it.texto:'')}</div><div class="pct">${val}x</div></div>`;
     }).join('');
   }
@@ -2784,6 +2871,7 @@ async function openAuditDetail(id){
   const full = await storageGet('audit_'+id);
   if(!full){ toast('Auditoria não encontrada.','bad'); return; }
   currentDetailId = id;
+  applySectorDependentItems(full.header.setor, false);
   document.getElementById('detTitle').textContent = full.header.setor + (full.header.carro? ' · '+full.header.carro:'') + (full.header.setorDestino? ' → '+full.header.setorDestino:'') + ' — ' + fmtDate(full.header.data);
   const enfermeiroLine = TIPOS[currentTipo].hasSetorDestino
     ? `${full.header.enfermeiroOrigem? ' · Enf. Origem: '+escapeHtml(full.header.enfermeiroOrigem):''}${full.header.enfermeiroDestino? ' · Enf. Destino: '+escapeHtml(full.header.enfermeiroDestino):''}`
@@ -2897,7 +2985,7 @@ async function openSectorDetail(name){
   fin.forEach(a=>{ (a.itemStatus||[]).forEach(is=>{ if(is.status==='nao-conforme'||is.status==='parcial'){ itemFailCount[is.id]=(itemFailCount[is.id]||0)+(is.status==='nao-conforme'?1:0.5);} }); });
   const ranked = Object.entries(itemFailCount).sort((a,b)=>b[1]-a[1]).slice(0,6);
   document.getElementById('secRankList').innerHTML = ranked.length? ranked.map(([id,val],idx)=>{
-    const it = ITEMS.find(i=>i.id==id);
+    const it = allTipoItems().find(i=>i.id==id);
     return `<div class="rank-row"><div class="num">${idx+1}</div><div class="txt">${escapeHtml(it?it.texto:'')}</div><div class="pct">${val}x</div></div>`;
   }).join('') : `<div class="empty-state" style="padding:20px;"><p>Nenhuma não conformidade registrada neste setor.</p></div>`;
 
@@ -3074,6 +3162,7 @@ async function generateDashboardPdf(detailed){
     for(const summary of sorted){
       const full = await storageGet('audit_'+summary.id);
       if(!full) continue;
+      applySectorDependentItems(full.header.setor, false);
       doc.addPage();
       pdfHeader(doc, `${full.header.setor}${full.header.carro?' · '+full.header.carro:''}`,
         `${fmtDate(full.header.data)} · Auditor: ${full.header.auditor||'—'} · Conformidade: ${pct(full.score||0)}`);
@@ -3106,7 +3195,7 @@ async function buildDashboardReportText(detailed){
   fin.forEach(a=>{ (a.itemStatus||[]).forEach(is=>{ if(is.status==='nao-conforme' || is.status==='parcial'){ itemFailCount[is.id]=(itemFailCount[is.id]||0)+ (is.status==='nao-conforme'?1:0.5); } }); });
   const ranked = Object.entries(itemFailCount).sort((a,b)=>b[1]-a[1]).slice(0,6);
   const rankedLines = ranked.map(([id,val],idx)=>{
-    const it = ITEMS.find(i=>i.id==id);
+    const it = allTipoItems().find(i=>i.id==id);
     return `  ${idx+1}. ${it?it.texto:''} (${val}x)`;
   });
 
@@ -3147,6 +3236,7 @@ async function buildDashboardReportText(detailed){
     for(const summary of sorted){
       const full = await storageGet('audit_'+summary.id);
       if(!full) continue;
+      applySectorDependentItems(full.header.setor, false);
       lines.push('', `— ${full.header.setor}${full.header.carro?' · '+full.header.carro:''} — ${fmtDate(full.header.data)} — Auditor: ${full.header.auditor||'—'} — Conformidade: ${pct(full.score||0)}`);
       CATEGORIES.forEach(cat=>{
         ITEMS.filter(i=>i.cat===cat.id).forEach(it=>{
