@@ -3362,24 +3362,40 @@ async function buildDashboardReportText(detailed){
   ];
 
   if(detailed && fin.length){
-    lines.push('', 'DETALHAMENTO POR AUDITORIA (itens, observações e fotos)');
+    // Relatório copiado (texto) traz só as não conformidades: itens
+    // "Conforme" não agregam informação nesse resumo e só o deixariam
+    // maior — quem quiser o checklist completo item a item usa o PDF.
+    lines.push('', 'DETALHAMENTO DAS NÃO CONFORMIDADES (itens, observações e fotos)');
     const sorted = [...fin].sort((a,b)=> new Date(b.data)-new Date(a.data));
+    let anyNaoConforme = false;
     for(const summary of sorted){
       const full = await storageGet('audit_'+summary.id);
       if(!full) continue;
       applySectorDependentItems(full.header.setor, false);
-      lines.push('', `— ${full.header.setor}${full.header.carro?' · '+full.header.carro:''} — ${fmtDate(full.header.data)} — Auditor: ${full.header.auditor||'—'} — Conformidade: ${pct(full.score||0)}`);
-      CATEGORIES.forEach(cat=>{
-        ITEMS.filter(i=>i.cat===cat.id).forEach(it=>{
-          const resp = full.items.find(i=>i.id===it.id)||{};
-          const label = resp.status ? STATUS_META[resp.status].label : 'Pendente';
-          let line = `    ${it.id}. ${it.texto} — ${label}`;
-          if(resp.obs) line += ` | Obs.: ${resp.obs}`;
-          if(resp.photos && resp.photos.length) line += ` | ${resp.photos.length} foto(s) anexada(s) (ver PDF completo)`;
-          lines.push(line);
+      const naoConformeLines = [];
+      if(currentTipo==='emergencia' && (full.score||0)===0){
+        // Carro de Emergência com 0% de conformidade é, na prática, o
+        // setor sem carro (todos os itens viram "Não Conforme" — ver
+        // fCarroIndisponivel) — a lista item a item não agrega nada aqui.
+        naoConformeLines.push('    Setor não dispõe do carro de emergência');
+      } else {
+        CATEGORIES.forEach(cat=>{
+          ITEMS.filter(i=>i.cat===cat.id).forEach(it=>{
+            const resp = full.items.find(i=>i.id===it.id)||{};
+            if(resp.status!=='nao-conforme') return;
+            let line = `    ${it.id}. ${it.texto}`;
+            if(resp.obs) line += ` | Obs.: ${resp.obs}`;
+            if(resp.photos && resp.photos.length) line += ` | ${resp.photos.length} foto(s) anexada(s) (ver PDF completo)`;
+            naoConformeLines.push(line);
+          });
         });
-      });
+      }
+      if(!naoConformeLines.length) continue;
+      anyNaoConforme = true;
+      lines.push('', `— ${full.header.setor}${full.header.carro?' · '+full.header.carro:''} — ${fmtDate(full.header.data)} — Auditor: ${full.header.auditor||'—'} — Conformidade: ${pct(full.score||0)}`);
+      lines.push(...naoConformeLines);
     }
+    if(!anyNaoConforme) lines.push('', '  Nenhuma não conformidade registrada.');
   }
 
   return lines.join('\n');
