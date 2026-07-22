@@ -445,6 +445,10 @@ input,select,textarea{font-family:inherit;}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.6 7-12a7 7 0 1 0-14 0c0 5.4 7 12 7 12z"/><circle cx="12" cy="9" r="2.4"/></svg>
         <span>Meta 1</span>
       </button>
+      <button type="button" class="tipo-btn" data-tipo="meta4">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+        <span>Meta 4 (Time Out)</span>
+      </button>
     </div>
     <nav>
       <div class="nav-group">
@@ -544,7 +548,7 @@ input,select,textarea{font-family:inherit;}
             <div class="rank-list" id="rankList"></div>
           </div>
         </div>
-        <div class="section-title"><h2>Conformidade média por setor</h2><span class="hint">Clique para detalhar</span></div>
+        <div class="section-title"><h2 id="lblSectorChartTitle">Conformidade média por setor</h2><span class="hint" id="lblSectorChartHint">Clique para detalhar</span></div>
         <div class="card card-pad">
           <div class="chart-box" style="height:280px;"><canvas id="chartSector"></canvas></div>
         </div>
@@ -774,6 +778,12 @@ input,select,textarea{font-family:inherit;}
         </div>
         <div class="tipo-select-label">Meta 1</div>
       </button>
+      <button type="button" class="tipo-select-card" data-tipo="meta4">
+        <div class="tipo-select-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+        </div>
+        <div class="tipo-select-label">Meta 4 (Time Out)</div>
+      </button>
     </div>
     <div class="actions" style="margin-top:16px;">
       <button class="btn btn-ghost" id="tipoSelectCancel">Cancelar</button>
@@ -907,6 +917,37 @@ const ITEMS_META1_ASSISTENCIAL = [
   {id:201,cat:'identificacao',texto:'Aplicou 3 identificadores antes do procedimento (nome completo, data de nascimento e nome da mãe)'},
 ];
 
+/* Meta 4 — auditoria de cirurgia segura (Time Out). Não é feita por setor,
+   e sim por sala cirúrgica (SETORES_META4), e o objetivo não é cobrir todas
+   as salas num ciclo, e sim atingir um volume mensal de auditorias — por
+   isso o módulo não usa o mecanismo de Ciclos (hasCycles:false em TIPOS) e
+   o dashboard agrupa a conformidade por item do checklist, não por sala
+   (dashboardByItem:true), já que a mesma sala é revisitada muitas vezes. */
+const CATEGORIES_META4 = [
+  {id:'temperatura', nome:'Temperatura da Sala', icon:'clock'},
+  {id:'timeout', nome:'Time Out', icon:'clipboard'},
+];
+const ITEMS_META4 = [
+ {id:1,cat:'temperatura',texto:'Equipe preenche temperatura da sala, com carimbo e assinatura.'},
+ {id:2,cat:'timeout',texto:'Equipe confirma verbalmente a identidade do paciente.'},
+ {id:3,cat:'timeout',texto:'Procedimento cirúrgico confirmado verbalmente pela equipe.'},
+ {id:4,cat:'timeout',texto:'Lado/sítio cirúrgico confirmado.'},
+ {id:5,cat:'timeout',texto:'Demarcação do sítio cirúrgico presente, quando aplicável.'},
+ {id:6,cat:'timeout',texto:'Cirurgião participa ativamente do Time Out.'},
+ {id:7,cat:'timeout',texto:'Anestesista participa ativamente do Time Out.'},
+ {id:8,cat:'timeout',texto:'Equipe de enfermagem participa ativamente do Time Out.'},
+ {id:9,cat:'timeout',texto:'Todos interrompem suas atividades durante a realização do Time Out.'},
+ {id:10,cat:'timeout',texto:'Alergias confirmadas.'},
+ {id:11,cat:'timeout',texto:'Risco de perda sanguínea discutido, quando aplicável.'},
+ {id:12,cat:'timeout',texto:'Reserva de hemocomponentes confirmada, quando indicada.'},
+ {id:13,cat:'timeout',texto:'Profilaxia antimicrobiana administrada dentro do tempo recomendado.'},
+ {id:14,cat:'timeout',texto:'Disponibilidade de exames de imagem confirmada, quando necessária.'},
+ {id:15,cat:'timeout',texto:'Materiais, implantes, OPME e equipamentos especiais disponíveis e conferidos.'},
+ {id:16,cat:'timeout',texto:'Equipamentos essenciais testados e funcionantes.'},
+ {id:17,cat:'timeout',texto:'Time Out registrado no checklist de forma completa.'},
+];
+const SETORES_META4 = ['1CC','2CC','3CC','4CC','5CC','6CC','7CC','8CC','1CCMI','2CCMI'];
+
 const ICONS = {
   cart:'<path d="M3 4h2l2.4 12.4a2 2 0 0 0 2 1.6h7.2a2 2 0 0 0 2-1.6L20 8H6"/><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/>',
   lock:'<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
@@ -919,6 +960,7 @@ const ICONS = {
   pin:'<path d="M12 21s7-6.6 7-12a7 7 0 1 0-14 0c0 5.4 7 12 7 12z"/><circle cx="12" cy="9" r="2.4"/>',
   trash:'<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
   wrench:'<path d="M14.7 6.3a4 4 0 0 0-5.4 4.4l-6.6 6.6a1.7 1.7 0 0 0 2.4 2.4l6.6-6.6a4 4 0 0 0 5.5-3.9l-3 3-2.4-2.4z"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
 };
 
 /* Listas de medicamentos e insumos por perfil de carro (Adulto/Infantil/Misto),
@@ -1010,6 +1052,22 @@ const SETORES_META1 = [
  'RECEPÇÃO PSA','RECEPÇÃO PSI','RECEPÇÃO US','RECEPÇÃO RM','RECEPÇÃO ENTREGA DE EXAMES','RECEPÇÃO CDI','RECEPÇÃO TRAUMA','RECEPÇÃO AMBULATÓRIO 1','RECEPÇÃO MED. NUCLEAR','RECEPÇÃO POSTO DE COLETA 1','RECEPÇÃO POSTO DE COLETA 2','RECEPÇÃO ONCO PED','INTERNAÇÃO SUS','INTERNAÇÃO CONVÊNIO','RECEPÇÃO PRINCIPAL','RECEPÇÃO AMBULATÓRIO 2','RECEPÇÃO RADIOTERAPIA','RECEPÇÃO QUIMIOTERAPIA','BANCO DE LEITE','LAB. BANCO DE LEITE','AGÊNCIA TRANSFUSIONAL','LABORATÓRIO CLÍNICO','LABORATÓRIO PATOLÓGICO','RX PS','RM','CDI (TC, MAMOGRAFIA, USG)','MEDICINA NUCLEAR','AMBULATÓRIO 1 (CENCOR)','SND','PS ADULTO','PS INFANTIL','TRAUMATOLOGIA','ENDOSCOPIA','BLOCO I','BLOCO II','BLOCO IV','BLOCO V','ONCO ALA A','UTI I','UTI II','CENTRO CIR.','HOSPITAL DIA','CCMI','MATERNIDADE ALA A','MATERNIDADE ALA B','UCINCA','UCINCO','BLOCO III','ONCO PED INTERNAÇÃO','UTI PEDIÁTRICA','UTI NEONATAL 1','UTI NEONATAL 2','QUIMIOTERAPIA','RADIOTERAPIA','ONCO PED AMBULATÓRIO','AMBULATÓRIO 2'
 ];
 function isRecepcaoSector(setor){ return /^recep/i.test((setor||'').trim()); }
+/* Em setores de recepção, quem responde pela auditoria é o rececionista,
+   não um enfermeiro — troca o rótulo/placeholder do campo conforme o
+   setor escolhido. */
+function updateEnfermeiroLabel(setor){
+  const wrap = document.getElementById('fEnfermeiroWrap');
+  if(!wrap) return;
+  const label = wrap.querySelector('label');
+  const input = document.getElementById('fEnfermeiro');
+  if(isRecepcaoSector(setor)){
+    label.textContent = 'Recepcionista *';
+    input.placeholder = 'Nome do recepcionista';
+  } else {
+    label.textContent = 'Enfermeiro Responsável *';
+    input.placeholder = 'Nome do enfermeiro';
+  }
+}
 /* Catálogo inicial de equipamentos por setor (reaproveita o mecanismo de
    "Carro" — aqui cada "carro" é um equipamento individual, identificado por
    nome + nº de patrimônio ou tag). Extraído dos planos de manutenção 2026;
@@ -1093,6 +1151,14 @@ const TIPOS = {
     categoriesRecepcao: CATEGORIES_META1_RECEPCAO, itemsRecepcao: ITEMS_META1_RECEPCAO,
     categoriesAssistencial: CATEGORIES_META1_ASSISTENCIAL, itemsAssistencial: ITEMS_META1_ASSISTENCIAL,
   },
+  meta4: {
+    key:'meta4', label:'Meta 4 (Time Out)', labelPlural:'Meta 4 (Time Out)', icon:'clock',
+    categories: CATEGORIES_META4, items: ITEMS_META4, setores: SETORES_META4,
+    cartProfiles: {}, defaultSectorCarts: {},
+    storagePrefix: 'meta4_', carroLabel: 'Carro', requireCarroSelection: false,
+    setorLabel: 'Sala', setorArticle: 'a', avaliadosLabel: 'salas avaliadas',
+    hasCycles: false, dashboardByItem: true,
+  },
 };
 let currentTipo = localStorage.getItem('auditoria_tipo') || 'emergencia';
 if(!TIPOS[currentTipo]) currentTipo = 'emergencia';
@@ -1141,8 +1207,18 @@ function updateTipoUI(){
     ? ('+ Cadastrar novo '+carroLabel.toLowerCase()+' neste setor')
     : ('+ Este setor tem mais de um '+carroLabel.toLowerCase()+'? Adicionar '+carroLabel.toLowerCase());
 
-  // rótulo do campo "Setor" vira "Setor de Origem" quando há Setor de Destino (Meta 2/SBAR)
-  setId('lblSetorField', cfg.hasSetorDestino ? 'Setor de Origem' : 'Setor');
+  // rótulo do campo "Setor" vira "Setor de Origem" (Meta 2/SBAR) ou o rótulo
+  // customizado do tipo (ex.: "Sala" na Meta 4/Time Out)
+  setId('lblSetorField', cfg.hasSetorDestino ? 'Setor de Origem' : (cfg.setorLabel || 'Setor'));
+
+  // Ciclos exige cobertura de 100% dos setores/salas para poder ser
+  // concluído — não faz sentido para tipos como a Meta 4, cujo objetivo é
+  // um volume mensal de auditorias, não cobrir todas as salas uma vez.
+  const navCycles = document.querySelector('.nav-item[data-view="cycles"]');
+  if(navCycles) navCycles.style.display = cfg.hasCycles===false ? 'none' : '';
+
+  setId('lblSectorChartTitle', cfg.dashboardByItem ? 'Conformidade média por item' : 'Conformidade média por setor');
+  setId('lblSectorChartHint', cfg.dashboardByItem ? '' : 'Clique para detalhar');
 }
 
 /* Troca de módulo: recarrega do Supabase (chaves do tipo escolhido) em vez
@@ -1166,9 +1242,10 @@ async function performSwitchTipo(tipo){
   await loadSectorCarts();
   const fetched = await fetchIndexSafe();
   allAudits = fetched===undefined ? [] : fetched;
-  await ensureCurrentCycle();
+  if(TIPOS[currentTipo].hasCycles!==false) await ensureCurrentCycle();
   const activeEl = document.querySelector('.view.active');
-  const viewName = activeEl ? activeEl.id.replace('view-','') : 'dashboard';
+  let viewName = activeEl ? activeEl.id.replace('view-','') : 'dashboard';
+  if(viewName==='cycles' && TIPOS[currentTipo].hasCycles===false) viewName = 'dashboard';
   showView(['dashboard','history','sectors','cycles'].includes(viewName) ? viewName : 'dashboard');
 }
 
@@ -2012,6 +2089,7 @@ async function startNewAuditForm(){
   document.getElementById('fEnfermeiroWrap').style.display = hasDestino ? 'none' : '';
   document.getElementById('fEnfermeiroOrigemWrap').style.display = hasDestino ? '' : 'none';
   document.getElementById('fEnfermeiroDestinoWrap').style.display = hasDestino ? '' : 'none';
+  updateEnfermeiroLabel('');
   if(hasDestino){ populateSetorDestinoSelect(); document.getElementById('fSetorDestino').value = ''; }
   document.getElementById('fCarroWrap').style.display = 'none';
   document.getElementById('btnAddCart').style.display = 'none';
@@ -2059,6 +2137,7 @@ async function editAudit(id){
   document.getElementById('fEnfermeiroWrap').style.display = hasDestinoEnf ? 'none' : '';
   document.getElementById('fEnfermeiroOrigemWrap').style.display = hasDestinoEnf ? '' : 'none';
   document.getElementById('fEnfermeiroDestinoWrap').style.display = hasDestinoEnf ? '' : 'none';
+  updateEnfermeiroLabel(currentAudit.header.setor);
 
   populateSetorSelect();
   const sel = document.getElementById('fSetor');
@@ -2222,7 +2301,9 @@ function allTipoItems(){
 
 function populateSetorSelect(){
   const sel = document.getElementById('fSetor');
-  sel.innerHTML = '<option value="" disabled selected>Selecione o setor...</option>'
+  const cfg = TIPOS[currentTipo];
+  const placeholder = `Selecione ${cfg.setorArticle||'o'} ${(cfg.setorLabel||'Setor').toLowerCase()}...`;
+  sel.innerHTML = `<option value="" disabled selected>${placeholder}</option>`
     + activeBaseSectors().map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('')
     + `<option value="${SETOR_OUTRO}">Outro</option>`;
 }
@@ -2278,6 +2359,7 @@ document.getElementById('fSetor').addEventListener('change', (e)=>{
     currentAudit.header.setor = document.getElementById('fSetorOutro').value.trim();
     currentAudit.header.carro = '';
     refreshSectorDependentItemsUI(currentAudit.header.setor);
+    updateEnfermeiroLabel(currentAudit.header.setor);
     updateCategoriesGating();
     document.getElementById('fSetorOutro').focus();
   } else {
@@ -2285,6 +2367,7 @@ document.getElementById('fSetor').addEventListener('change', (e)=>{
     currentAudit.header.setor = e.target.value;
     document.getElementById('btnAddCart').style.display = 'block';
     refreshSectorDependentItemsUI(e.target.value);
+    updateEnfermeiroLabel(e.target.value);
     populateCarroSelect(e.target.value);
   }
 });
@@ -2292,6 +2375,7 @@ document.getElementById('fSetorOutro').addEventListener('input', (e)=>{
   if(!currentAudit) return;
   currentAudit.header.setor = e.target.value.trim();
   refreshSectorDependentItemsUI(currentAudit.header.setor);
+  updateEnfermeiroLabel(currentAudit.header.setor);
 });
 document.getElementById('fSetorDestino').addEventListener('change', (e)=>{
   if(!currentAudit) return;
@@ -2601,7 +2685,11 @@ function computeCategoryScore(audit, catId){
 async function persistAudit(finalize){
   const h = currentAudit.header;
   if(!h.data){ toast('Informe a data da auditoria.','bad'); document.getElementById('fData').focus(); return false; }
-  if(!h.setor){ toast('Informe o setor da auditoria.','bad'); document.getElementById('fSetor').focus(); return false; }
+  if(!h.setor){
+    const cfg = TIPOS[currentTipo];
+    toast(`Informe ${cfg.setorArticle||'o'} ${(cfg.setorLabel||'Setor').toLowerCase()} da auditoria.`,'bad');
+    document.getElementById('fSetor').focus(); return false;
+  }
   if(cartsForSector(h.setor).length && !h.carro){ toast(`Selecione o ${(TIPOS[currentTipo].carroLabel||'carro').toLowerCase()} deste setor.`,'bad'); document.getElementById('fCarro').focus(); return false; }
   if(TIPOS[currentTipo].hasSetorDestino && !h.setorDestino){ toast('Informe o setor de destino.','bad'); document.getElementById('fSetorDestino').focus(); return false; }
   if(!h.auditor || !h.auditor.trim()){ toast('Informe o nome do auditor.','bad'); document.getElementById('fAuditor').focus(); return false; }
@@ -2689,18 +2777,19 @@ function renderDashboard(){
   const thisMonth = fin.filter(a=>{ const d=new Date(a.data); return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear(); }).length;
   const criticos = fin.filter(a=>a.score<0.7).length;
 
+  const avaliadosLabel = TIPOS[currentTipo].avaliadosLabel || 'setores avaliados';
   if(TIPOS[currentTipo].hasSetorDestino){
     const avgOrigem = fin.reduce((s,a)=>s+(a.scoreOrigem||0),0)/fin.length;
     const avgDestino = fin.reduce((s,a)=>s+(a.scoreDestino||0),0)/fin.length;
     kpiGrid.innerHTML = `
-      ${kpiCard('Total de Auditorias', fin.length, `${setores.size} setores avaliados`)}
+      ${kpiCard('Total de Auditorias', fin.length, `${setores.size} ${avaliadosLabel}`)}
       ${kpiCard('Conformidade — Origem', pct(avgOrigem), avgOrigem>=0.85?'Bom desempenho geral':'Atenção necessária')}
       ${kpiCard('Conformidade — Destino', pct(avgDestino), avgDestino>=0.85?'Bom desempenho geral':'Atenção necessária')}
       ${kpiCard('Auditorias este mês', thisMonth, now.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}))}
     `;
   } else {
     kpiGrid.innerHTML = `
-      ${kpiCard('Total de Auditorias', fin.length, `${setores.size} setores avaliados`)}
+      ${kpiCard('Total de Auditorias', fin.length, `${setores.size} ${avaliadosLabel}`)}
       ${kpiCard('Conformidade Média', pct(avgScore), avgScore>=0.85?'Bom desempenho geral':'Atenção necessária')}
       ${kpiCard('Auditorias este mês', thisMonth, now.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}))}
       ${kpiCard('Auditorias Críticas', criticos, 'Conformidade abaixo de 70%')}
@@ -2744,6 +2833,24 @@ function renderDashboard(){
       ]},
       options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true, position:'top', align:'end'}},
         scales:{ y:{min:0,max:100, ticks:{callback:v=>v+'%'}, grid:{color:'#EEF4FA'} }, x:{grid:{display:false}} } }
+    });
+  } else if(TIPOS[currentTipo].dashboardByItem){
+    // Meta 4 (Time Out): o que importa não é a sala, e sim quais itens do
+    // checklist vêm falhando — agrupa a conformidade média por item em vez
+    // de por sala, num gráfico horizontal (textos dos itens são longos).
+    const byItem = {};
+    fin.forEach(a=>{ (a.itemStatus||[]).forEach(is=>{ if(!is.status || is.status==='nao-aplica') return; (byItem[is.id]=byItem[is.id]||[]).push(SCORE_VALUE[is.status]); }); });
+    const itemIds = allTipoItems().map(i=>i.id).filter(id=> byItem[id]);
+    const itemTextos = itemIds.map(id=> (allTipoItems().find(i=>i.id===id)||{}).texto || '');
+    const itemLabels = itemTextos.map(t=> t.length>34 ? t.slice(0,32)+'…' : t);
+    const itemAvgs = itemIds.map(id=> byItem[id].reduce((x,y)=>x+y,0)/byItem[id].length);
+    charts.sector = new Chart(ctxS, {
+      type:'bar',
+      data:{ labels: itemLabels, datasets:[{ label:'Conformidade média', data: itemAvgs.map(v=>Math.round(v*100)),
+        backgroundColor: itemAvgs.map(v=> v>=0.85?'#22C55E': v>=0.7?'#FACC15':'#EF4444'), borderRadius:8, maxBarThickness:22 }] },
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},
+        tooltip:{callbacks:{title:(items)=> itemTextos[items[0].dataIndex] }}},
+        scales:{ x:{min:0,max:100, ticks:{callback:v=>v+'%'}, grid:{color:'#EEF4FA'} }, y:{grid:{display:false}} } }
     });
   } else {
     const bySector = {};
@@ -3149,7 +3256,7 @@ async function generateDashboardPdf(detailed){
   if(charts.sector){
     if(y>230){ doc.addPage(); y=20; }
     const img2 = charts.sector.toBase64Image();
-    doc.text('Conformidade média por setor', 14, y); y+=4;
+    doc.text(TIPOS[currentTipo].dashboardByItem ? 'Conformidade média por item' : 'Conformidade média por setor', 14, y); y+=4;
     doc.addImage(img2,'PNG',14,y,182,70); y+=78;
   }
   doc.addPage();
@@ -3184,12 +3291,24 @@ async function buildDashboardReportText(detailed){
   const thisMonth = fin.filter(a=>{ const d=new Date(a.data); return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear(); }).length;
   const criticos = fin.filter(a=>a.score<0.7).length;
 
-  const bySector = {};
-  fin.forEach(a=>{ (bySector[a.setor]=bySector[a.setor]||[]).push(a.score); });
-  const sectorLines = Object.keys(bySector).sort().map(s=>{
-    const avgS = bySector[s].reduce((x,y)=>x+y,0)/bySector[s].length;
-    return `  ${s}: ${pct(avgS)}`;
-  });
+  let sectorLines, sectorSectionTitle;
+  if(TIPOS[currentTipo].dashboardByItem){
+    const byItem = {};
+    fin.forEach(a=>{ (a.itemStatus||[]).forEach(is=>{ if(!is.status || is.status==='nao-aplica') return; (byItem[is.id]=byItem[is.id]||[]).push(SCORE_VALUE[is.status]); }); });
+    sectorSectionTitle = 'CONFORMIDADE MÉDIA POR ITEM';
+    sectorLines = allTipoItems().filter(i=>byItem[i.id]).map(it=>{
+      const avgI = byItem[it.id].reduce((x,y)=>x+y,0)/byItem[it.id].length;
+      return `  ${it.texto}: ${pct(avgI)}`;
+    });
+  } else {
+    const bySector = {};
+    fin.forEach(a=>{ (bySector[a.setor]=bySector[a.setor]||[]).push(a.score); });
+    sectorSectionTitle = 'CONFORMIDADE MÉDIA POR SETOR';
+    sectorLines = Object.keys(bySector).sort().map(s=>{
+      const avgS = bySector[s].reduce((x,y)=>x+y,0)/bySector[s].length;
+      return `  ${s}: ${pct(avgS)}`;
+    });
+  }
 
   const itemFailCount = {};
   fin.forEach(a=>{ (a.itemStatus||[]).forEach(is=>{ if(is.status==='nao-conforme' || is.status==='parcial'){ itemFailCount[is.id]=(itemFailCount[is.id]||0)+ (is.status==='nao-conforme'?1:0.5); } }); });
@@ -3202,25 +3321,27 @@ async function buildDashboardReportText(detailed){
   const recent = [...fin].sort((a,b)=> new Date(b.data)-new Date(a.data)).slice(0,10)
     .map(a=>`  ${fmtDate(a.data)} — ${a.setor} — ${a.auditor||'—'} — ${pct(a.score)}`);
 
-  const currentCycle = getCurrentCycle();
+  const hasCycles = TIPOS[currentTipo].hasCycles!==false;
+  const currentCycle = hasCycles ? getCurrentCycle() : null;
   const cicloLine = currentCycle ? (()=>{
     const p = cycleProgress(currentCycle);
     return `  Ciclo atual: Nº ${currentCycle.numero} — ${p.done} de ${p.total} setores auditados (${Math.round(p.pct*100)}%)`;
-  })() : '  Nenhum ciclo em andamento.';
+  })() : (hasCycles ? '  Nenhum ciclo em andamento.' : null);
 
+  const avaliadosLabel = TIPOS[currentTipo].avaliadosLabel || 'setores avaliados';
   const lines = [
     'RELATÓRIO — AUDITORIA DE '+TIPOS[currentTipo].labelPlural.toUpperCase(),
     'Hospital Maternidade São Vicente de Paulo',
     `Gerado em ${new Date().toLocaleString('pt-BR')}`,
     '',
     'RESUMO GERAL',
-    `  Total de auditorias: ${fin.length} (${setores.size} setores avaliados)`,
+    `  Total de auditorias: ${fin.length} (${setores.size} ${avaliadosLabel})`,
     `  Conformidade média: ${pct(avg)}`,
     `  Auditorias este mês: ${thisMonth}`,
     `  Auditorias críticas (abaixo de 70%): ${criticos}`,
-    cicloLine,
+    ...(cicloLine? [cicloLine] : []),
     '',
-    'CONFORMIDADE MÉDIA POR SETOR',
+    sectorSectionTitle,
     ...(sectorLines.length? sectorLines : ['  Nenhum dado disponível.']),
     '',
     'ITENS MAIS NÃO CONFORMES',
@@ -3337,7 +3458,7 @@ async function init(){
   allAudits = fetched===undefined ? [] : fetched;
   await loadInactiveSectors();
   await loadSectorCarts();
-  await ensureCurrentCycle();
+  if(TIPOS[currentTipo].hasCycles!==false) await ensureCurrentCycle();
   showView('dashboard');
 }
 /* init() é chamado por sb.auth.onAuthStateChange() após confirmar a sessão. */
