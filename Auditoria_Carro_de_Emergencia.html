@@ -450,6 +450,10 @@ input,select,textarea{font-family:inherit;}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
         <span>Meta 4 (Time Out)</span>
       </button>
+      <button type="button" class="tipo-btn" data-tipo="transfusional">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6.5 7.2 6.5 11.5a6.5 6.5 0 0 1-13 0C5.5 10.2 12 3 12 3z"/></svg>
+        <span>Processo Transfusional</span>
+      </button>
     </div>
     <nav>
       <div class="nav-group">
@@ -664,7 +668,7 @@ input,select,textarea{font-family:inherit;}
         <div class="section-title"><h2>Histórico de Ciclos</h2><span class="hint">Ciclos concluídos</span></div>
         <div class="card" style="overflow:auto;">
           <table class="audit-table" id="cyclesHistoryTable">
-            <thead><tr><th>Ciclo</th><th>Período</th><th>Duração</th><th>Setores</th><th>Conformidade média</th><th></th></tr></thead>
+            <thead><tr><th>Ciclo</th><th>Período</th><th>Duração</th><th id="thCyclesCount">Setores</th><th>Conformidade média</th><th></th></tr></thead>
             <tbody id="cyclesHistoryBody"></tbody>
           </table>
           <div class="empty-state" id="cyclesHistoryEmpty" style="display:none;">
@@ -784,6 +788,12 @@ input,select,textarea{font-family:inherit;}
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
         </div>
         <div class="tipo-select-label">Meta 4 (Time Out)</div>
+      </button>
+      <button type="button" class="tipo-select-card" data-tipo="transfusional">
+        <div class="tipo-select-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6.5 7.2 6.5 11.5a6.5 6.5 0 0 1-13 0C5.5 10.2 12 3 12 3z"/></svg>
+        </div>
+        <div class="tipo-select-label">Processo Transfusional</div>
       </button>
     </div>
     <div class="actions" style="margin-top:16px;">
@@ -921,8 +931,9 @@ const ITEMS_META1_ASSISTENCIAL = [
 /* Meta 4 — auditoria de cirurgia segura (Time Out). Não é feita por setor,
    e sim por sala cirúrgica (SETORES_META4), e o objetivo não é cobrir todas
    as salas num ciclo, e sim atingir um volume mensal de auditorias — por
-   isso o módulo não usa o mecanismo de Ciclos (hasCycles:false em TIPOS) e
-   o dashboard agrupa a conformidade por item do checklist, não por sala
+   isso o ciclo desse módulo é por mês corrido em vez de por cobertura de
+   sala (cycleMode:'monthly' em TIPOS, ver ensureCurrentCycle) e o dashboard
+   agrupa a conformidade por item do checklist, não por sala
    (dashboardByItem:true), já que a mesma sala é revisitada muitas vezes. */
 const CATEGORIES_META4 = [
   {id:'temperatura', nome:'Temperatura da Sala', icon:'clock'},
@@ -949,6 +960,65 @@ const ITEMS_META4 = [
 ];
 const SETORES_META4 = ['1CC','2CC','3CC','4CC','5CC','6CC','7CC','8CC','1CCMI','2CCMI'];
 
+/* Processo Transfusional — mesma lógica de ciclo mensal da Meta 4
+   (cycleMode:'monthly', ver ensureCurrentCycle). As 8 perguntas do
+   protocolo institucional viram categorias (títulos do checklist); cada
+   subcritério listado dentro delas é um item auditado individualmente
+   (própria Conforme/Parcial/Não Conforme, observação e fotos). Só o
+   dashboard agrupa a conformidade de volta nos 8 tópicos em vez de por
+   item ou por setor (dashboardByItem:true + dashboardGroupBy:'category'
+   em TIPOS — ver dashboardItemGroups). */
+const CATEGORIES_TRANSFUSIONAL = [
+  {id:'liberacao', nome:'A liberação do hemocomponente ocorreu conforme o protocolo institucional?', icon:'drop'},
+  {id:'saida', nome:'A saída da bolsa da Agência Transfusional foi devidamente registrada?', icon:'drop'},
+  {id:'transporte', nome:'O transporte do hemocomponente até o setor assistencial ocorreu de forma segura?', icon:'drop'},
+  {id:'aptidao', nome:'O enfermeiro conferiu a aptidão clínica do paciente antes da instalação da transfusão?', icon:'drop'},
+  {id:'instalacao', nome:'A instalação da bolsa ocorreu imediatamente após recebimento, conforme protocolo?', icon:'drop'},
+  {id:'checagem', nome:'A dupla checagem à beira-leito foi realizada corretamente antes da instalação da transfusão?', icon:'drop'},
+  {id:'tecnica', nome:'A técnica e os materiais utilizados na instalação da transfusão estavam adequados?', icon:'drop'},
+  {id:'hemovigilancia', nome:'As medidas de hemovigilância estão sendo adotadas durante e após a transfusão?', icon:'drop'},
+];
+const ITEMS_TRANSFUSIONAL = [
+ {id:1,cat:'liberacao',texto:'Prescrição médica válida e disponível no momento da liberação'},
+ {id:2,cat:'liberacao',texto:'RT devidamente preenchida'},
+ {id:3,cat:'liberacao',texto:'Termo de consentimento para transfusão assinado (ou justificativa médica em prontuário em caso de urgência)'},
+ {id:4,cat:'liberacao',texto:'Compatibilidade sanguínea confirmada'},
+ {id:5,cat:'liberacao',texto:'Registro de data, horário e responsável pela liberação'},
+ {id:6,cat:'saida',texto:'Registro de saída da bolsa (sistema ou impresso)'},
+ {id:7,cat:'saida',texto:'Identificação do paciente'},
+ {id:8,cat:'saida',texto:'Identificação do profissional que retirou a bolsa'},
+ {id:9,cat:'saida',texto:'Data e horário da retirada'},
+ {id:10,cat:'saida',texto:'Número da bolsa registrado'},
+ {id:11,cat:'transporte',texto:'Transporte realizado em caixa térmica apropriada'},
+ {id:12,cat:'transporte',texto:'Integridade da bolsa preservada'},
+ {id:13,cat:'transporte',texto:'Transporte direto, sem interrupções indevidas'},
+ {id:14,cat:'transporte',texto:'Tempo de transporte compatível com o protocolo'},
+ {id:15,cat:'transporte',texto:'Identificação do responsável pelo transporte'},
+ {id:16,cat:'aptidao',texto:'Avaliação clínica prévia registrada'},
+ {id:17,cat:'aptidao',texto:'Sinais vitais verificados antes da instalação'},
+ {id:18,cat:'aptidao',texto:'Ausência de contraindicação clínica registrada'},
+ {id:19,cat:'aptidao',texto:'Comunicação com o banco de sangue quando necessário'},
+ {id:20,cat:'instalacao',texto:'Horário de recebimento registrado'},
+ {id:21,cat:'instalacao',texto:'Horário de início da transfusão registrado'},
+ {id:22,cat:'instalacao',texto:'Intervalo compatível entre recebimento e instalação'},
+ {id:23,cat:'instalacao',texto:'Justificativa documentada em caso de atraso'},
+ {id:24,cat:'checagem',texto:'Conferência da pulseira de identificação do paciente'},
+ {id:25,cat:'checagem',texto:'Conferência da placa de identificação do leito'},
+ {id:26,cat:'checagem',texto:'Conferência da prescrição médica'},
+ {id:27,cat:'checagem',texto:'Conferência dos dados da bolsa (tipo sanguíneo, número, validade)'},
+ {id:28,cat:'checagem',texto:'Assinatura do enfermeiro e do técnico de enfermagem'},
+ {id:29,cat:'tecnica',texto:'Uso de equipo com filtro para transfusão'},
+ {id:30,cat:'tecnica',texto:'Acesso venoso pérvio'},
+ {id:31,cat:'tecnica',texto:'Técnica asséptica observada'},
+ {id:32,cat:'tecnica',texto:'Ausência de improvisações'},
+ {id:33,cat:'tecnica',texto:'Profissional habilitado executando o procedimento'},
+ {id:34,cat:'hemovigilancia',texto:'Placa de hemovigilância fixada à cabeceira do leito'},
+ {id:35,cat:'hemovigilancia',texto:'Equipe orientada quanto aos sinais de reação transfusional'},
+ {id:36,cat:'hemovigilancia',texto:'Observação ativa do paciente durante a transfusão'},
+ {id:37,cat:'hemovigilancia',texto:'Registro de intercorrências, quando presentes'},
+];
+const SETORES_TRANSFUSIONAL = ['Bloco 1','Bloco 2','Bloco 4','Bloco 5','Oncologia Ala A','UTI Adulto 1','UTI Adulto 2','Bloco 3','UTI Pediátrica','UTI Neonatal 1','UTI Neonatal 2','UCINCO','Oncologia Pediátrica Internação','Maternidade Ala A','Maternidade Ala B','Hemodinâmica','RPA','PSA','PSI'];
+
 const ICONS = {
   cart:'<path d="M3 4h2l2.4 12.4a2 2 0 0 0 2 1.6h7.2a2 2 0 0 0 2-1.6L20 8H6"/><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/>',
   lock:'<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
@@ -962,6 +1032,7 @@ const ICONS = {
   trash:'<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
   wrench:'<path d="M14.7 6.3a4 4 0 0 0-5.4 4.4l-6.6 6.6a1.7 1.7 0 0 0 2.4 2.4l6.6-6.6a4 4 0 0 0 5.5-3.9l-3 3-2.4-2.4z"/>',
   clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+  drop:'<path d="M12 3s6.5 7.2 6.5 11.5a6.5 6.5 0 0 1-13 0C5.5 10.2 12 3 12 3z"/>',
 };
 
 /* Listas de medicamentos e insumos por perfil de carro (Adulto/Infantil/Misto),
@@ -1160,7 +1231,14 @@ const TIPOS = {
     cartProfiles: {}, defaultSectorCarts: {},
     storagePrefix: 'meta4_', carroLabel: 'Carro', requireCarroSelection: false,
     setorLabel: 'Sala', setorArticle: 'a', avaliadosLabel: 'salas avaliadas',
-    hasCycles: false, dashboardByItem: true, hasCarts: false,
+    cycleMode: 'monthly', dashboardByItem: true, hasCarts: false,
+  },
+  transfusional: {
+    key:'transfusional', label:'Processo Transfusional', labelPlural:'Processo Transfusional', icon:'drop',
+    categories: CATEGORIES_TRANSFUSIONAL, items: ITEMS_TRANSFUSIONAL, setores: SETORES_TRANSFUSIONAL,
+    cartProfiles: {}, defaultSectorCarts: {},
+    storagePrefix: 'transf_', carroLabel: 'Carro', requireCarroSelection: false,
+    cycleMode: 'monthly', dashboardByItem: true, dashboardGroupBy: 'category', hasCarts: false,
   },
 };
 let currentTipo = localStorage.getItem('auditoria_tipo') || 'emergencia';
@@ -1214,11 +1292,13 @@ function updateTipoUI(){
   // customizado do tipo (ex.: "Sala" na Meta 4/Time Out)
   setId('lblSetorField', cfg.hasSetorDestino ? 'Setor de Origem' : (cfg.setorLabel || 'Setor'));
 
-  // Ciclos exige cobertura de 100% dos setores/salas para poder ser
-  // concluído — não faz sentido para tipos como a Meta 4, cujo objetivo é
-  // um volume mensal de auditorias, não cobrir todas as salas uma vez.
+  // hasCycles:false (nenhum tipo usa hoje) tira o módulo do mecanismo de
+  // Ciclos por completo; cycleMode:'monthly' (Meta 4, Processo
+  // Transfusional) o mantém, só que fechando/abrindo por mês corrido em
+  // vez de exigir cobertura de 100% dos setores/salas.
   const navCycles = document.querySelector('.nav-item[data-view="cycles"]');
   if(navCycles) navCycles.style.display = cfg.hasCycles===false ? 'none' : '';
+  setId('thCyclesCount', cfg.cycleMode==='monthly' ? 'Auditorias' : 'Setores');
 
   setId('lblSectorChartTitle', cfg.dashboardByItem ? 'Conformidade média por item' : 'Conformidade média por setor');
   setId('lblSectorChartHint', cfg.dashboardByItem ? '' : 'Clique para detalhar');
@@ -1657,6 +1737,20 @@ function activeBaseSectors(){
     return carts.some(carro=>!inactiveSectors.includes(trackKey(setor,carro)));
   });
 }
+/* Ciclos "mensais" (Meta 4, Processo Transfusional): a chave do mês
+   corrente (ex.: "2026-07") identifica o ciclo em vez de cobertura de
+   setor — usada tanto para abrir/fechar o ciclo automaticamente quanto
+   para exibir o nome do mês por extenso. */
+function currentMonthKey(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+function monthLabel(mesKey){
+  if(!mesKey) return '—';
+  const [y,m] = mesKey.split('-').map(Number);
+  const s = new Date(y, m-1, 1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  return s.charAt(0).toUpperCase()+s.slice(1);
+}
 /* Chaves de rastreamento exigidas por um ciclo novo: uma por carro, ou o
    nome do setor quando ele não tem carros cadastrados — excluindo o que
    estiver desativado. */
@@ -1724,12 +1818,35 @@ async function reactivateSector(setorName){
   return true;
 }
 
-/* Garante que exista um ciclo aberto, criando o primeiro (Nº 1) se necessário. */
+/* Garante que exista um ciclo aberto. Na maioria dos módulos, cria o
+   primeiro (Nº 1) se necessário e só fecha por ação manual (100% dos
+   setores cobertos). Nos módulos de ciclo mensal (Meta 4, Processo
+   Transfusional), fecha automaticamente o ciclo do mês anterior e abre o
+   do mês corrente sempre que a data virar — sem exigir cobertura. */
 async function ensureCurrentCycle(){
+  const cfg = TIPOS[currentTipo];
   const fetched = await fetchCyclesSafe();
   let cycles = fetched===undefined ? allCycles.slice() : fetched;
   let current = cycles.find(c=>c.status==='aberto');
-  if(!current){
+  let changed = false;
+
+  if(cfg.cycleMode==='monthly'){
+    const mesAtual = currentMonthKey();
+    if(current && current.mes!==mesAtual){
+      cycles = cycles.map(c=> c.id===current.id ? {...c, status:'concluido', concluidoEm:new Date().toISOString()} : c);
+      current = null;
+      changed = true;
+    }
+    if(!current){
+      current = {
+        id: uid(), numero: cycles.length+1, mes: mesAtual,
+        iniciadoEm: new Date().toISOString(), concluidoEm: null,
+        status: 'aberto', setores: [],
+      };
+      cycles = [...cycles, current];
+      changed = true;
+    }
+  } else if(!current){
     current = {
       id: uid(),
       numero: cycles.length + 1,
@@ -1739,8 +1856,10 @@ async function ensureCurrentCycle(){
       setores: requiredTrackKeys(),
     };
     cycles = [...cycles, current];
-    await storageSet(skey('cycles'), cycles);
+    changed = true;
   }
+
+  if(changed) await storageSet(skey('cycles'), cycles);
   allCycles = cycles;
   return current;
 }
@@ -1759,6 +1878,10 @@ function cycleNumeroById(id){
   return c ? c.numero : null;
 }
 function cycleProgress(cycle){
+  if(TIPOS[currentTipo].cycleMode==='monthly'){
+    const done = allAudits.filter(a=>a.status==='finalizada' && a.cicloId===cycle.id).length;
+    return { done, total: null, pct: null, doneSectors: [], pendingSectors: [] };
+  }
   const doneSet = new Set(
     allAudits.filter(a=>a.status==='finalizada' && a.cicloId===cycle.id).map(a=>trackKey(a.setor, a.carro))
   );
@@ -1808,6 +1931,19 @@ function renderCycleBanner(){
   const current = getCurrentCycle();
   if(!current){ el.innerHTML=''; return; }
   const prog = cycleProgress(current);
+  if(TIPOS[currentTipo].cycleMode==='monthly'){
+    el.innerHTML = `
+      <div class="cycle-banner-head">
+        <div>
+          <div class="section-title" style="margin:0;"><h2 style="font-size:15px;">Ciclo Atual — ${monthLabel(current.mes)}</h2></div>
+          <div class="cycle-progress-label" style="margin-top:2px;">${prog.done} auditoria${prog.done===1?'':'s'} finalizada${prog.done===1?'':'s'} neste mês</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btnGoToCycles">Ver ciclos</button>
+      </div>
+    `;
+    document.getElementById('btnGoToCycles').addEventListener('click', ()=> showView('cycles'));
+    return;
+  }
   const pctVal = Math.round(prog.pct*100);
   el.innerHTML = `
     <div class="cycle-banner-head">
@@ -1841,7 +1977,20 @@ function sortSectorsForDisplay(sectors){
 function renderCycles(){
   const current = getCurrentCycle();
   const card = document.getElementById('currentCycleCard');
-  if(current){
+  const cfg = TIPOS[currentTipo];
+  if(current && cfg.cycleMode==='monthly'){
+    const prog = cycleProgress(current);
+    const avg = cycleAvgScore(current);
+    card.innerHTML = `
+      <div class="cycle-banner-head">
+        <div>
+          <div class="section-title" style="margin:0;"><h2>Ciclo Atual — ${monthLabel(current.mes)}</h2></div>
+          <div class="cycle-progress-label" style="margin-top:2px;">Iniciado em ${fmtDateShort(current.iniciadoEm)}</div>
+        </div>
+      </div>
+      <div class="cycle-progress-label" style="margin-top:14px;">${prog.done} auditoria${prog.done===1?'':'s'} finalizada${prog.done===1?'':'s'} neste mês${prog.done? ' · conformidade média '+pct(avg) : ''}</div>
+    `;
+  } else if(current){
     const prog = cycleProgress(current);
     const pctVal = Math.round(prog.pct*100);
     const chips = sortSectorsForDisplay(current.setores).map(s=>{
@@ -1894,11 +2043,13 @@ function renderCycles(){
     const avg = cycleAvgScore(c);
     const sc = scoreColor(avg);
     const durDays = Math.max(0, Math.round((new Date(c.concluidoEm)-new Date(c.iniciadoEm))/86400000));
+    const cicloLabel = cfg.cycleMode==='monthly' ? monthLabel(c.mes) : ('Ciclo '+c.numero);
+    const countCell = cfg.cycleMode==='monthly' ? p.done : `${p.done}/${p.total}`;
     return `<tr onclick="viewCycleAudits('${c.id}')" style="cursor:pointer;">
-      <td>Ciclo ${c.numero}</td>
+      <td>${cicloLabel}</td>
       <td>${fmtDateShort(c.iniciadoEm)} – ${fmtDateShort(c.concluidoEm)}</td>
       <td>${durDays} dia${durDays===1?'':'s'}</td>
-      <td>${p.done}/${p.total}</td>
+      <td>${countCell}</td>
       <td><span class="score-pill" style="background:${sc.bg};color:${sc.c};">${pct(avg)}</span></td>
       <td style="text-align:right;"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();viewCycleAudits('${c.id}')">Ver auditorias</button></td>
     </tr>`;
@@ -2725,7 +2876,7 @@ async function persistAudit(finalize){
   }
   currentAudit.updatedAt = Date.now();
 
-  await ensureSectorInCycle(currentAudit.cicloId, trackKey(h.setor, h.carro));
+  if(TIPOS[currentTipo].cycleMode!=='monthly') await ensureSectorInCycle(currentAudit.cicloId, trackKey(h.setor, h.carro));
 
   const savedDetail = await storageSet('audit_'+currentAudit.id, currentAudit);
   if(!savedDetail){
@@ -2766,6 +2917,36 @@ document.getElementById('btnFinalizeAudit').addEventListener('click', async ()=>
    DASHBOARD GERAL
    ========================================================================= */
 function finalizedAudits(){ return allAudits.filter(a=>a.status==='finalizada'); }
+
+/* Agrupamento usado pelos tipos com dashboardByItem (Meta 4, Processo
+   Transfusional): por padrão agrupa por item (cada item já é um tópico
+   completo). Com dashboardGroupBy:'category' (Processo Transfusional),
+   agrupa pelos itens dentro de cada categoria — os subcritérios são
+   auditados individualmente, mas o dashboard só mostra os 8 tópicos
+   (categorias), não cada subcritério. */
+function dashboardItemGroups(fin){
+  const cfg = TIPOS[currentTipo];
+  const byCategory = cfg.dashboardGroupBy==='category';
+  const byGroup = {};
+  fin.forEach(a=>{
+    (a.itemStatus||[]).forEach(is=>{
+      if(!is.status || is.status==='nao-aplica') return;
+      const key = byCategory ? (allTipoItems().find(i=>i.id===is.id)||{}).cat : is.id;
+      if(key==null) return;
+      (byGroup[key]=byGroup[key]||[]).push(SCORE_VALUE[is.status]);
+    });
+  });
+  let ids, fullTexts;
+  if(byCategory){
+    ids = CATEGORIES.filter(c=>byGroup[c.id]).map(c=>c.id);
+    fullTexts = ids.map(id=> (CATEGORIES.find(c=>c.id===id)||{}).nome || '');
+  } else {
+    ids = allTipoItems().map(i=>i.id).filter(id=>byGroup[id]);
+    fullTexts = ids.map(id=> (allTipoItems().find(i=>i.id===id)||{}).texto || '');
+  }
+  const avgs = ids.map(id=> byGroup[id].reduce((x,y)=>x+y,0)/byGroup[id].length);
+  return { ids, fullTexts, avgs };
+}
 
 function renderDashboard(){
   const fin = finalizedAudits();
@@ -2845,21 +3026,18 @@ function renderDashboard(){
         scales:{ y:{min:0,max:100, ticks:{callback:v=>v+'%'}, grid:{color:'#EEF4FA'} }, x:{grid:{display:false}} } }
     });
   } else if(TIPOS[currentTipo].dashboardByItem){
-    // Meta 4 (Time Out): o que importa não é a sala, e sim quais itens do
-    // checklist vêm falhando — agrupa a conformidade média por item em vez
-    // de por sala, num gráfico horizontal (textos dos itens são longos).
-    const byItem = {};
-    fin.forEach(a=>{ (a.itemStatus||[]).forEach(is=>{ if(!is.status || is.status==='nao-aplica') return; (byItem[is.id]=byItem[is.id]||[]).push(SCORE_VALUE[is.status]); }); });
-    const itemIds = allTipoItems().map(i=>i.id).filter(id=> byItem[id]);
-    const itemTextos = itemIds.map(id=> (allTipoItems().find(i=>i.id===id)||{}).texto || '');
-    const itemLabels = itemTextos.map(t=> t.length>34 ? t.slice(0,32)+'…' : t);
-    const itemAvgs = itemIds.map(id=> byItem[id].reduce((x,y)=>x+y,0)/byItem[id].length);
+    // Meta 4 (Time Out) / Processo Transfusional: o que importa não é o
+    // setor, e sim quais itens (ou tópicos, no caso de Processo
+    // Transfusional — ver dashboardItemGroups) vêm falhando — gráfico
+    // horizontal, já que os textos costumam ser longos.
+    const { fullTexts, avgs } = dashboardItemGroups(fin);
+    const labels = fullTexts.map(t=> t.length>34 ? t.slice(0,32)+'…' : t);
     charts.sector = new Chart(ctxS, {
       type:'bar',
-      data:{ labels: itemLabels, datasets:[{ label:'Conformidade média', data: itemAvgs.map(v=>Math.round(v*100)),
-        backgroundColor: itemAvgs.map(v=> v>=0.85?'#22C55E': v>=0.7?'#FACC15':'#EF4444'), borderRadius:8, maxBarThickness:22 }] },
+      data:{ labels, datasets:[{ label:'Conformidade média', data: avgs.map(v=>Math.round(v*100)),
+        backgroundColor: avgs.map(v=> v>=0.85?'#22C55E': v>=0.7?'#FACC15':'#EF4444'), borderRadius:8, maxBarThickness:22 }] },
       options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},
-        tooltip:{callbacks:{title:(items)=> itemTextos[items[0].dataIndex] }}},
+        tooltip:{callbacks:{title:(items)=> fullTexts[items[0].dataIndex] }}},
         scales:{ x:{min:0,max:100, ticks:{callback:v=>v+'%'}, grid:{color:'#EEF4FA'} }, y:{grid:{display:false}} } }
     });
   } else {
@@ -3303,13 +3481,9 @@ async function buildDashboardReportText(detailed){
 
   let sectorLines, sectorSectionTitle;
   if(TIPOS[currentTipo].dashboardByItem){
-    const byItem = {};
-    fin.forEach(a=>{ (a.itemStatus||[]).forEach(is=>{ if(!is.status || is.status==='nao-aplica') return; (byItem[is.id]=byItem[is.id]||[]).push(SCORE_VALUE[is.status]); }); });
+    const { fullTexts, avgs } = dashboardItemGroups(fin);
     sectorSectionTitle = 'CONFORMIDADE MÉDIA POR ITEM';
-    sectorLines = allTipoItems().filter(i=>byItem[i.id]).map(it=>{
-      const avgI = byItem[it.id].reduce((x,y)=>x+y,0)/byItem[it.id].length;
-      return `  ${it.texto}: ${pct(avgI)}`;
-    });
+    sectorLines = fullTexts.map((t,idx)=> `  ${t}: ${pct(avgs[idx])}`);
   } else {
     const bySector = {};
     fin.forEach(a=>{ (bySector[a.setor]=bySector[a.setor]||[]).push(a.score); });
@@ -3335,6 +3509,9 @@ async function buildDashboardReportText(detailed){
   const currentCycle = hasCycles ? getCurrentCycle() : null;
   const cicloLine = currentCycle ? (()=>{
     const p = cycleProgress(currentCycle);
+    if(TIPOS[currentTipo].cycleMode==='monthly'){
+      return `  Ciclo atual: ${monthLabel(currentCycle.mes)} — ${p.done} auditoria${p.done===1?'':'s'} finalizada${p.done===1?'':'s'}`;
+    }
     return `  Ciclo atual: Nº ${currentCycle.numero} — ${p.done} de ${p.total} setores auditados (${Math.round(p.pct*100)}%)`;
   })() : (hasCycles ? '  Nenhum ciclo em andamento.' : null);
 
