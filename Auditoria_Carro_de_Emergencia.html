@@ -1022,7 +1022,8 @@ const ITEMS_META2_CENSO = [
 
 /* Meta 6 (adesão - QUEDAS) — auditoria de adesão às medidas de prevenção
    de quedas. Setores próprios (só os que internam), itens só
-   Conforme/Não Conforme. */
+   Conforme/Não Conforme. Ciclo mensal com meta numérica (mesmo mecanismo
+   da Meta 6/LP): 20 auditorias por setor, 140 no total. */
 const CATEGORIES_META6_QUEDAS = [
   {id:'quedas', nome:'Prevenção de Quedas', icon:'alert'},
 ];
@@ -1369,7 +1370,7 @@ const TIPOS = {
     categories: CATEGORIES_META6_QUEDAS, items: ITEMS_META6_QUEDAS, setores: SETORES_META6,
     cartProfiles: {}, defaultSectorCarts: {},
     storagePrefix: 'meta6_', carroLabel: 'Carro', requireCarroSelection: false,
-    hasCarts: false,
+    hasCarts: false, cycleMode: 'monthly', monthlyTargetPerSector: 20, monthlyTargetTotal: 140,
   },
   meta6lp: {
     key:'meta6lp', label:'Meta 6 (adesão - LP)', labelPlural:'Meta 6 (adesão - LP)', icon:'bed',
@@ -1385,6 +1386,11 @@ const TIPOS = {
     storagePrefix: 'meta4_', carroLabel: 'Carro', requireCarroSelection: false,
     setorLabel: 'Sala', setorArticle: 'a', avaliadosLabel: 'salas avaliadas',
     cycleMode: 'monthly', dashboardByItem: true, hasCarts: false,
+    monthlyTargetTotal: 40,
+    monthlyTargetGroups: [
+      { label: 'CC', target: 30, match: s => /CC$/.test(s) && !/CCMI$/.test(s) },
+      { label: 'CCMI', target: 10, match: s => /CCMI$/.test(s) },
+    ],
   },
   transfusional: {
     key:'transfusional', label:'Processo Transfusional', labelPlural:'Processo Transfusional', icon:'drop',
@@ -2049,7 +2055,21 @@ function cycleProgress(cycle){
     cycleAudits.forEach(a=>{ bySector[a.setor] = (bySector[a.setor]||0)+1; });
     const total = cfg.monthlyTargetTotal || null;
     const pct = total ? Math.min(1, done/total) : null;
-    return { done, total, pct, doneSectors: [], pendingSectors: [], bySector, perSectorTarget: cfg.monthlyTargetPerSector || null };
+    // "groups" é a lista de placares mostrados como chips no ciclo: um por
+    // setor (monthlyTargetPerSector, ex.: Meta 6/QUEDAS-LP — cada setor com
+    // a mesma meta) ou um por grupo customizado de setores
+    // (monthlyTargetGroups, ex.: Meta 4 — salas "CC" e "CCMI" com metas
+    // diferentes, somando as auditorias de todos os setores do grupo).
+    let groups = [];
+    if(cfg.monthlyTargetGroups){
+      groups = cfg.monthlyTargetGroups.map(g=>{
+        const n = cfg.setores.filter(g.match).reduce((s,setor)=> s+(bySector[setor]||0), 0);
+        return { label: g.label, done: n, target: g.target };
+      });
+    } else if(cfg.monthlyTargetPerSector){
+      groups = cfg.setores.map(s=> ({ label: s, done: bySector[s]||0, target: cfg.monthlyTargetPerSector }));
+    }
+    return { done, total, pct, doneSectors: [], pendingSectors: [], bySector, groups };
   }
   const doneSet = new Set(
     allAudits.filter(a=>a.status==='finalizada' && a.cicloId===cycle.id).map(a=>trackKey(a.setor, a.carro))
@@ -2157,11 +2177,10 @@ function renderCycles(){
     const summaryLabel = prog.total
       ? `${prog.done} de ${prog.total} auditorias neste mês (${Math.round(prog.pct*100)}%)`
       : `${prog.done} auditoria${prog.done===1?'':'s'} finalizada${prog.done===1?'':'s'} neste mês`;
-    const chips = prog.perSectorTarget ? cfg.setores.map(s=>{
-      const n = prog.bySector[s] || 0;
-      const done = n>=prog.perSectorTarget;
-      return `<div class="cycle-sector-chip ${done?'done':'pending'}">${done?'✓':'○'} ${escapeHtml(s)} — ${n}/${prog.perSectorTarget}</div>`;
-    }).join('') : '';
+    const chips = prog.groups.map(g=>{
+      const done = g.done>=g.target;
+      return `<div class="cycle-sector-chip ${done?'done':'pending'}">${done?'✓':'○'} ${escapeHtml(g.label)} — ${g.done}/${g.target}</div>`;
+    }).join('');
     card.innerHTML = `
       <div class="cycle-banner-head">
         <div>
