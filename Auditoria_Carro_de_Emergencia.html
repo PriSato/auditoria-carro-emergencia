@@ -113,8 +113,12 @@ input,select,textarea{font-family:inherit;}
 .tipo-btn svg{width:16px;height:16px;flex-shrink:0;opacity:.9;}
 .tipo-btn:hover{background:rgba(255,255,255,.1);color:#fff;}
 .tipo-btn.active{background:rgba(46,139,255,.28);color:#fff;}
+.tipo-group-label{font-size:10px;font-weight:800;letter-spacing:.07em;color:#7FA3C6;text-transform:uppercase;padding:10px 10px 2px;}
+.tipo-group-label:first-child{padding-top:4px;}
 .tipo-select-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;}
 @media (max-width:520px){ .tipo-select-grid{grid-template-columns:1fr;} }
+.tipo-select-group-title{font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--ink-soft);text-transform:uppercase;margin:20px 0 0;}
+.tipo-select-group-title:first-of-type{margin-top:2px;}
 .tipo-select-card{display:flex;flex-direction:column;align-items:center;gap:10px;padding:22px 14px;border:1.5px solid var(--line);border-radius:14px;background:#fff;cursor:pointer;transition:.15s;}
 .tipo-select-card:hover{border-color:var(--blue-500);background:var(--blue-50);transform:translateY(-1px);}
 .tipo-select-icon{width:42px;height:42px;border-radius:12px;background:var(--blue-100);color:var(--blue-600);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -426,6 +430,7 @@ input,select,textarea{font-family:inherit;}
       <div class="brand-subtitle" id="brandSubtitle">Auditorias do Serviço de Qualidade Hospitalar</div>
     </div>
     <div class="tipo-switcher" id="tipoSwitcher">
+      <div class="tipo-group-label">Qualidade</div>
       <button type="button" class="tipo-btn active" data-tipo="emergencia">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12.5l-8 8-8-8a5 5 0 0 1 7-7.2l1 1 1-1a5 5 0 0 1 7 7.2z"/><path d="M4 12.5h4l1.5-3 2 5 1.5-2.5h6.5"/></svg>
         <span>Carro de Emergência</span>
@@ -438,21 +443,26 @@ input,select,textarea{font-family:inherit;}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="9.5" width="17" height="7" rx="3.5" transform="rotate(-35 12 13)"/><path d="M11 10l3 6" stroke-width="1.6"/></svg>
         <span>Carro de Medicação</span>
       </button>
+      <button type="button" class="tipo-btn" data-tipo="transfusional">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6.5 7.2 6.5 11.5a6.5 6.5 0 0 1-13 0C5.5 10.2 12 3 12 3z"/></svg>
+        <span>Processo Transfusional</span>
+      </button>
+      <div class="tipo-group-label">Segurança do Paciente</div>
       <button type="button" class="tipo-btn" data-tipo="meta2">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/></svg>
         <span>Meta 2 (SBAR)</span>
       </button>
       <button type="button" class="tipo-btn" data-tipo="meta1">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.6 7-12a7 7 0 1 0-14 0c0 5.4 7 12 7 12z"/><circle cx="12" cy="9" r="2.4"/></svg>
-        <span>Meta 1</span>
+        <span>Meta 1 (pulseiras)</span>
+      </button>
+      <button type="button" class="tipo-btn" data-tipo="meta1adesao">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/></svg>
+        <span>Meta 1 (adesão)</span>
       </button>
       <button type="button" class="tipo-btn" data-tipo="meta4">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
         <span>Meta 4 (Time Out)</span>
-      </button>
-      <button type="button" class="tipo-btn" data-tipo="transfusional">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6.5 7.2 6.5 11.5a6.5 6.5 0 0 1-13 0C5.5 10.2 12 3 12 3z"/></svg>
-        <span>Processo Transfusional</span>
       </button>
     </div>
     <nav>
@@ -752,6 +762,7 @@ input,select,textarea{font-family:inherit;}
   <div class="modal" style="max-width:620px;">
     <h3>Nova Auditoria</h3>
     <p>Qual auditoria você quer iniciar?</p>
+    <p class="tipo-select-group-title">Qualidade</p>
     <div class="tipo-select-grid">
       <button type="button" class="tipo-select-card" data-tipo="emergencia">
         <div class="tipo-select-icon">
@@ -771,6 +782,15 @@ input,select,textarea{font-family:inherit;}
         </div>
         <div class="tipo-select-label">Carro de Medicação</div>
       </button>
+      <button type="button" class="tipo-select-card" data-tipo="transfusional">
+        <div class="tipo-select-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6.5 7.2 6.5 11.5a6.5 6.5 0 0 1-13 0C5.5 10.2 12 3 12 3z"/></svg>
+        </div>
+        <div class="tipo-select-label">Processo Transfusional</div>
+      </button>
+    </div>
+    <p class="tipo-select-group-title">Segurança do Paciente</p>
+    <div class="tipo-select-grid">
       <button type="button" class="tipo-select-card" data-tipo="meta2">
         <div class="tipo-select-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/></svg>
@@ -781,19 +801,19 @@ input,select,textarea{font-family:inherit;}
         <div class="tipo-select-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.6 7-12a7 7 0 1 0-14 0c0 5.4 7 12 7 12z"/><circle cx="12" cy="9" r="2.4"/></svg>
         </div>
-        <div class="tipo-select-label">Meta 1</div>
+        <div class="tipo-select-label">Meta 1 (pulseiras)</div>
+      </button>
+      <button type="button" class="tipo-select-card" data-tipo="meta1adesao">
+        <div class="tipo-select-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/></svg>
+        </div>
+        <div class="tipo-select-label">Meta 1 (adesão)</div>
       </button>
       <button type="button" class="tipo-select-card" data-tipo="meta4">
         <div class="tipo-select-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
         </div>
         <div class="tipo-select-label">Meta 4 (Time Out)</div>
-      </button>
-      <button type="button" class="tipo-select-card" data-tipo="transfusional">
-        <div class="tipo-select-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6.5 7.2 6.5 11.5a6.5 6.5 0 0 1-13 0C5.5 10.2 12 3 12 3z"/></svg>
-        </div>
-        <div class="tipo-select-label">Processo Transfusional</div>
       </button>
     </div>
     <div class="actions" style="margin-top:16px;">
@@ -903,16 +923,17 @@ const CATEGORIES_META2 = [
   {id:'destino', nome:'Setor de Destino', icon:'pin'},
 ];
 const ITEMS_META2 = [
- {id:1,cat:'origem',texto:'Preenchimento adequado'},
+ {id:1,cat:'origem',texto:'Preenchimento adequado', statusOptions:['conforme','nao-conforme']},
  {id:2,cat:'destino',texto:'Validação com carimbo e assinatura', statusOptions:['conforme','nao-conforme']},
 ];
 
-/* Meta 1 — auditoria de identificação do paciente. O checklist muda
-   conforme o setor escolhido: setores de "Recepção" usam 3 itens (só
-   Conforme/Não Conforme); os demais setores assistenciais usam 1 item
-   (Conforme/Parcial/Não Conforme). IDs em faixas separadas (100+/200+)
-   para nunca colidir entre os dois conjuntos em rankings agregados
-   (dashboard/setor), que podem somar auditorias dos dois tipos de setor. */
+/* Meta 1 (pulseiras) — auditoria de identificação do paciente. O checklist
+   muda conforme o setor escolhido: setores de "Recepção" usam 3 itens; os
+   demais setores assistenciais usam os itens de pulseira/quadro de
+   identificação à beira-leito. Todos os itens são só Conforme/Não
+   Conforme (sem "Parcial"). IDs em faixas separadas (100+/200+) para nunca
+   colidir entre os dois conjuntos em rankings agregados (dashboard/setor),
+   que podem somar auditorias dos dois tipos de setor. */
 const CATEGORIES_META1_RECEPCAO = [
   {id:'recepcao', nome:'Identificação do Paciente na Recepção', icon:'clipboard'},
 ];
@@ -925,10 +946,19 @@ const CATEGORIES_META1_ASSISTENCIAL = [
   {id:'identificacao', nome:'Identificação do Paciente', icon:'pin'},
 ];
 const ITEMS_META1_ASSISTENCIAL = [
-  {id:201,cat:'identificacao',texto:'Aplicou 3 identificadores antes do procedimento (nome completo, data de nascimento e nome da mãe)'},
-  {id:202,cat:'identificacao',texto:'Paciente utiliza pulseira de identificação, com informações legíveis'},
-  {id:203,cat:'identificacao',texto:'Quadro de identificação à beira leito está preenchido'},
-  {id:204,cat:'identificacao',texto:'Informações do quadro de identificação correspondem ao paciente internado'},
+  {id:202,cat:'identificacao',texto:'Paciente utiliza pulseira de identificação, com informações legíveis', statusOptions:['conforme','nao-conforme']},
+  {id:203,cat:'identificacao',texto:'Quadro de identificação à beira leito está preenchido', statusOptions:['conforme','nao-conforme']},
+  {id:204,cat:'identificacao',texto:'Informações do quadro de identificação correspondem ao paciente internado', statusOptions:['conforme','nao-conforme']},
+];
+
+/* Meta 1 (adesão) — módulo separado da Meta 1 (pulseiras): audita só a
+   adesão aos 3 identificadores antes de procedimentos. O item 201 morava
+   na Meta 1 (pulseiras) e foi movido para cá; manteve o mesmo id. */
+const CATEGORIES_META1_ADESAO = [
+  {id:'adesao', nome:'Adesão aos 3 Identificadores', icon:'clipboard'},
+];
+const ITEMS_META1_ADESAO = [
+  {id:201,cat:'adesao',texto:'Aplicou 3 identificadores antes do procedimento (nome completo, data de nascimento e nome da mãe)'},
 ];
 
 /* Meta 4 — auditoria de cirurgia segura (Time Out). Não é feita por setor,
@@ -1219,13 +1249,20 @@ const TIPOS = {
     hasCarts: false,
   },
   meta1: {
-    key:'meta1', label:'Meta 1', labelPlural:'Meta 1', icon:'pin',
+    key:'meta1', label:'Meta 1 (pulseiras)', labelPlural:'Meta 1 (pulseiras)', icon:'pin',
     categories: CATEGORIES_META1_ASSISTENCIAL, items: ITEMS_META1_ASSISTENCIAL, setores: SETORES_META1,
     cartProfiles: {}, defaultSectorCarts: {},
     storagePrefix: 'meta1_', carroLabel: 'Carro', requireCarroSelection: false,
     sectorDependentItems: true, isRecepcaoSector: isRecepcaoSector,
     categoriesRecepcao: CATEGORIES_META1_RECEPCAO, itemsRecepcao: ITEMS_META1_RECEPCAO,
     categoriesAssistencial: CATEGORIES_META1_ASSISTENCIAL, itemsAssistencial: ITEMS_META1_ASSISTENCIAL,
+    hasCarts: false,
+  },
+  meta1adesao: {
+    key:'meta1adesao', label:'Meta 1 (adesão)', labelPlural:'Meta 1 (adesão)', icon:'clipboard',
+    categories: CATEGORIES_META1_ADESAO, items: ITEMS_META1_ADESAO, setores: SETORES_META1,
+    cartProfiles: {}, defaultSectorCarts: {},
+    storagePrefix: 'meta1adesao_', carroLabel: 'Carro', requireCarroSelection: false,
     hasCarts: false,
   },
   meta4: {
