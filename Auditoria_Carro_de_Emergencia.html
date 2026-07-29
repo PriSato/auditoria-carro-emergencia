@@ -481,6 +481,14 @@ input,select,textarea{font-family:inherit;}
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 4v4h-4M6 20v-4h4"/></svg>
             <span>Meta 2 (censo)</span>
           </button>
+          <button type="button" class="tipo-btn" data-tipo="meta6">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3L2 20h20L12 3z"/><path d="M12 9v5"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg>
+            <span>Meta 6 (adesão - QUEDAS)</span>
+          </button>
+          <button type="button" class="tipo-btn" data-tipo="meta6lp">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v7"/><path d="M3 15h18"/><path d="M7 11V7a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1"/><path d="M3 18v2M21 18v2"/></svg>
+            <span>Meta 6 (adesão - LP)</span>
+          </button>
           <button type="button" class="tipo-btn" data-tipo="meta4">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
             <span>Meta 4 (Time Out)</span>
@@ -838,6 +846,18 @@ input,select,textarea{font-family:inherit;}
         </div>
         <div class="tipo-select-label">Meta 2 (censo)</div>
       </button>
+      <button type="button" class="tipo-select-card" data-tipo="meta6">
+        <div class="tipo-select-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3L2 20h20L12 3z"/><path d="M12 9v5"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg>
+        </div>
+        <div class="tipo-select-label">Meta 6 (adesão - QUEDAS)</div>
+      </button>
+      <button type="button" class="tipo-select-card" data-tipo="meta6lp">
+        <div class="tipo-select-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v7"/><path d="M3 15h18"/><path d="M7 11V7a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1"/><path d="M3 18v2M21 18v2"/></svg>
+        </div>
+        <div class="tipo-select-label">Meta 6 (adesão - LP)</div>
+      </button>
       <button type="button" class="tipo-select-card" data-tipo="meta4">
         <div class="tipo-select-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
@@ -976,7 +996,8 @@ const CATEGORIES_META1_ASSISTENCIAL = [
 ];
 const ITEMS_META1_ASSISTENCIAL = [
   {id:202,cat:'identificacao',texto:'Paciente utiliza pulseira de identificação, com informações legíveis', statusOptions:['conforme','nao-conforme']},
-  {id:203,cat:'identificacao',texto:'Quadro de identificação à beira leito está preenchido', statusOptions:['conforme','nao-conforme']},
+  {id:205,cat:'identificacao',texto:'Pulseira de identificação íntegra e sem sujidade aparente', statusOptions:['conforme','nao-conforme']},
+  {id:203,cat:'identificacao',texto:'Quadro de identificação à beira leito está totalmente preenchido', statusOptions:['conforme','nao-conforme']},
   {id:204,cat:'identificacao',texto:'Informações do quadro de identificação correspondem ao paciente internado', statusOptions:['conforme','nao-conforme']},
 ];
 
@@ -998,6 +1019,37 @@ const CATEGORIES_META2_CENSO = [
 const ITEMS_META2_CENSO = [
   {id:1,cat:'censo',texto:'Preenchimento completo do censo', statusOptions:['conforme','nao-conforme']},
 ];
+
+/* Meta 6 (adesão - QUEDAS) — auditoria de adesão às medidas de prevenção
+   de quedas. Setores próprios (só os que internam), itens só
+   Conforme/Não Conforme. */
+const CATEGORIES_META6_QUEDAS = [
+  {id:'quedas', nome:'Prevenção de Quedas', icon:'alert'},
+];
+const ITEMS_META6_QUEDAS = [
+  {id:1,cat:'quedas',texto:'Grades elevadas', statusOptions:['conforme','nao-conforme']},
+  {id:2,cat:'quedas',texto:'Paciente/acompanhante orientado sobre medidas contra quedas', statusOptions:['conforme','nao-conforme']},
+];
+const SETORES_META6 = ['Bloco 1','Bloco 2','Bloco 4','Bloco 5','Oncologia Ala A','Maternidade Ala A','Maternidade Ala B'];
+
+/* Meta 6 (adesão - LP) — auditoria de adesão às medidas de prevenção de
+   lesão por pressão. Itens só Conforme/Não Conforme, mesmo padrão dos
+   demais módulos de "adesão" (ver Meta 1/adesão, Meta 6/quedas). Ciclo
+   mensal com meta numérica (cycleMode:'monthly' + monthlyTargetPerSector/
+   monthlyTargetTotal em TIPOS): 20 auditorias por setor, 60 no total —
+   ver cycleProgress para o cálculo do progresso contra essa meta. */
+const CATEGORIES_META6_LP = [
+  {id:'lp', nome:'Prevenção de Lesão por Pressão', icon:'bed'},
+];
+const ITEMS_META6_LP = [
+  {id:1,cat:'lp',texto:'Preenchimento do relógio de decúbito', statusOptions:['conforme','nao-conforme']},
+  {id:2,cat:'lp',texto:'Decúbito do paciente compatível com relógio de decúbito', statusOptions:['conforme','nao-conforme']},
+  {id:3,cat:'lp',texto:'Lençóis sem dobras (esticados), limpos e secos', statusOptions:['conforme','nao-conforme']},
+  {id:4,cat:'lp',texto:'Utilização adequada de coxins', statusOptions:['conforme','nao-conforme']},
+  {id:5,cat:'lp',texto:'Calcâneos flutuantes', statusOptions:['conforme','nao-conforme']},
+  {id:6,cat:'lp',texto:'Uso de colchão pneumático (com motor funcionante)', statusOptions:['conforme','nao-conforme']},
+];
+const SETORES_META6_LP = ['UTI Adulto 1','UTI Adulto 2','UTI Pediátrica'];
 
 /* Meta 4 — auditoria de cirurgia segura (Time Out). Não é feita por setor,
    e sim por sala cirúrgica (SETORES_META4), e o objetivo não é cobrir todas
@@ -1104,6 +1156,8 @@ const ICONS = {
   wrench:'<path d="M14.7 6.3a4 4 0 0 0-5.4 4.4l-6.6 6.6a1.7 1.7 0 0 0 2.4 2.4l6.6-6.6a4 4 0 0 0 5.5-3.9l-3 3-2.4-2.4z"/>',
   clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
   drop:'<path d="M12 3s6.5 7.2 6.5 11.5a6.5 6.5 0 0 1-13 0C5.5 10.2 12 3 12 3z"/>',
+  alert:'<path d="M12 3L2 20h20L12 3z"/><path d="M12 9v5"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/>',
+  bed:'<path d="M3 18v-7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v7"/><path d="M3 15h18"/><path d="M7 11V7a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1"/><path d="M3 18v2M21 18v2"/>',
 };
 
 /* Listas de medicamentos e insumos por perfil de carro (Adulto/Infantil/Misto),
@@ -1309,6 +1363,20 @@ const TIPOS = {
     cartProfiles: {}, defaultSectorCarts: {},
     storagePrefix: 'meta2censo_', carroLabel: 'Carro', requireCarroSelection: false,
     hasCarts: false,
+  },
+  meta6: {
+    key:'meta6', label:'Meta 6 (adesão - QUEDAS)', labelPlural:'Meta 6 (adesão - QUEDAS)', icon:'alert',
+    categories: CATEGORIES_META6_QUEDAS, items: ITEMS_META6_QUEDAS, setores: SETORES_META6,
+    cartProfiles: {}, defaultSectorCarts: {},
+    storagePrefix: 'meta6_', carroLabel: 'Carro', requireCarroSelection: false,
+    hasCarts: false,
+  },
+  meta6lp: {
+    key:'meta6lp', label:'Meta 6 (adesão - LP)', labelPlural:'Meta 6 (adesão - LP)', icon:'bed',
+    categories: CATEGORIES_META6_LP, items: ITEMS_META6_LP, setores: SETORES_META6_LP,
+    cartProfiles: {}, defaultSectorCarts: {},
+    storagePrefix: 'meta6lp_', carroLabel: 'Carro', requireCarroSelection: false,
+    hasCarts: false, cycleMode: 'monthly', monthlyTargetPerSector: 20, monthlyTargetTotal: 60,
   },
   meta4: {
     key:'meta4', label:'Meta 4 (Time Out)', labelPlural:'Meta 4 (Time Out)', icon:'clock',
@@ -1974,8 +2042,14 @@ function cycleNumeroById(id){
 }
 function cycleProgress(cycle){
   if(TIPOS[currentTipo].cycleMode==='monthly'){
-    const done = allAudits.filter(a=>a.status==='finalizada' && a.cicloId===cycle.id).length;
-    return { done, total: null, pct: null, doneSectors: [], pendingSectors: [] };
+    const cfg = TIPOS[currentTipo];
+    const cycleAudits = allAudits.filter(a=>a.status==='finalizada' && a.cicloId===cycle.id);
+    const done = cycleAudits.length;
+    const bySector = {};
+    cycleAudits.forEach(a=>{ bySector[a.setor] = (bySector[a.setor]||0)+1; });
+    const total = cfg.monthlyTargetTotal || null;
+    const pct = total ? Math.min(1, done/total) : null;
+    return { done, total, pct, doneSectors: [], pendingSectors: [], bySector, perSectorTarget: cfg.monthlyTargetPerSector || null };
   }
   const doneSet = new Set(
     allAudits.filter(a=>a.status==='finalizada' && a.cicloId===cycle.id).map(a=>trackKey(a.setor, a.carro))
@@ -2027,14 +2101,18 @@ function renderCycleBanner(){
   if(!current){ el.innerHTML=''; return; }
   const prog = cycleProgress(current);
   if(TIPOS[currentTipo].cycleMode==='monthly'){
+    const label = prog.total
+      ? `${prog.done} de ${prog.total} auditorias neste mês (${Math.round(prog.pct*100)}%)`
+      : `${prog.done} auditoria${prog.done===1?'':'s'} finalizada${prog.done===1?'':'s'} neste mês`;
     el.innerHTML = `
       <div class="cycle-banner-head">
         <div>
           <div class="section-title" style="margin:0;"><h2 style="font-size:15px;">Ciclo Atual — ${monthLabel(current.mes)}</h2></div>
-          <div class="cycle-progress-label" style="margin-top:2px;">${prog.done} auditoria${prog.done===1?'':'s'} finalizada${prog.done===1?'':'s'} neste mês</div>
+          <div class="cycle-progress-label" style="margin-top:2px;">${label}</div>
         </div>
         <button class="btn btn-secondary btn-sm" id="btnGoToCycles">Ver ciclos</button>
       </div>
+      ${prog.total ? `<div class="progress-bar-bg" style="margin-top:12px;"><div class="progress-bar-fg" style="width:${Math.round(prog.pct*100)}%"></div></div>` : ''}
     `;
     document.getElementById('btnGoToCycles').addEventListener('click', ()=> showView('cycles'));
     return;
@@ -2076,6 +2154,14 @@ function renderCycles(){
   if(current && cfg.cycleMode==='monthly'){
     const prog = cycleProgress(current);
     const avg = cycleAvgScore(current);
+    const summaryLabel = prog.total
+      ? `${prog.done} de ${prog.total} auditorias neste mês (${Math.round(prog.pct*100)}%)`
+      : `${prog.done} auditoria${prog.done===1?'':'s'} finalizada${prog.done===1?'':'s'} neste mês`;
+    const chips = prog.perSectorTarget ? cfg.setores.map(s=>{
+      const n = prog.bySector[s] || 0;
+      const done = n>=prog.perSectorTarget;
+      return `<div class="cycle-sector-chip ${done?'done':'pending'}">${done?'✓':'○'} ${escapeHtml(s)} — ${n}/${prog.perSectorTarget}</div>`;
+    }).join('') : '';
     card.innerHTML = `
       <div class="cycle-banner-head">
         <div>
@@ -2083,7 +2169,9 @@ function renderCycles(){
           <div class="cycle-progress-label" style="margin-top:2px;">Iniciado em ${fmtDateShort(current.iniciadoEm)}</div>
         </div>
       </div>
-      <div class="cycle-progress-label" style="margin-top:14px;">${prog.done} auditoria${prog.done===1?'':'s'} finalizada${prog.done===1?'':'s'} neste mês${prog.done? ' · conformidade média '+pct(avg) : ''}</div>
+      ${prog.total ? `<div class="progress-bar-bg" style="margin-top:14px;"><div class="progress-bar-fg" style="width:${Math.round(prog.pct*100)}%"></div></div>` : ''}
+      <div class="cycle-progress-label" style="margin-top:${prog.total?8:14}px;">${summaryLabel}${prog.done? ' · conformidade média '+pct(avg) : ''}</div>
+      ${chips ? `<div class="cycle-sector-grid">${chips}</div>` : ''}
     `;
   } else if(current){
     const prog = cycleProgress(current);
@@ -2139,7 +2227,7 @@ function renderCycles(){
     const sc = scoreColor(avg);
     const durDays = Math.max(0, Math.round((new Date(c.concluidoEm)-new Date(c.iniciadoEm))/86400000));
     const cicloLabel = cfg.cycleMode==='monthly' ? monthLabel(c.mes) : ('Ciclo '+c.numero);
-    const countCell = cfg.cycleMode==='monthly' ? p.done : `${p.done}/${p.total}`;
+    const countCell = cfg.cycleMode==='monthly' ? (p.total? `${p.done}/${p.total}` : p.done) : `${p.done}/${p.total}`;
     return `<tr onclick="viewCycleAudits('${c.id}')" style="cursor:pointer;">
       <td>${cicloLabel}</td>
       <td>${fmtDateShort(c.iniciadoEm)} – ${fmtDateShort(c.concluidoEm)}</td>
@@ -3605,7 +3693,8 @@ async function buildDashboardReportText(detailed){
   const cicloLine = currentCycle ? (()=>{
     const p = cycleProgress(currentCycle);
     if(TIPOS[currentTipo].cycleMode==='monthly'){
-      return `  Ciclo atual: ${monthLabel(currentCycle.mes)} — ${p.done} auditoria${p.done===1?'':'s'} finalizada${p.done===1?'':'s'}`;
+      const contagem = p.total ? `${p.done} de ${p.total} auditorias (${Math.round(p.pct*100)}%)` : `${p.done} auditoria${p.done===1?'':'s'} finalizada${p.done===1?'':'s'}`;
+      return `  Ciclo atual: ${monthLabel(currentCycle.mes)} — ${contagem}`;
     }
     return `  Ciclo atual: Nº ${currentCycle.numero} — ${p.done} de ${p.total} setores auditados (${Math.round(p.pct*100)}%)`;
   })() : (hasCycles ? '  Nenhum ciclo em andamento.' : null);
