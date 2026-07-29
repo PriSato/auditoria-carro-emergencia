@@ -465,10 +465,6 @@ input,select,textarea{font-family:inherit;}
           <svg class="tipo-group-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="tipo-group-body">
-          <button type="button" class="tipo-btn" data-tipo="meta2">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/></svg>
-            <span>Meta 2 (SBAR)</span>
-          </button>
           <button type="button" class="tipo-btn" data-tipo="meta1">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.6 7-12a7 7 0 1 0-14 0c0 5.4 7 12 7 12z"/><circle cx="12" cy="9" r="2.4"/></svg>
             <span>Meta 1 (pulseiras)</span>
@@ -477,9 +473,17 @@ input,select,textarea{font-family:inherit;}
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/></svg>
             <span>Meta 1 (adesão)</span>
           </button>
+          <button type="button" class="tipo-btn" data-tipo="meta2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/></svg>
+            <span>Meta 2 (SBAR)</span>
+          </button>
           <button type="button" class="tipo-btn" data-tipo="meta2censo">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 4v4h-4M6 20v-4h4"/></svg>
             <span>Meta 2 (censo)</span>
+          </button>
+          <button type="button" class="tipo-btn" data-tipo="meta4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+            <span>Meta 4 (Time Out)</span>
           </button>
           <button type="button" class="tipo-btn" data-tipo="meta6">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3L2 20h20L12 3z"/><path d="M12 9v5"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg>
@@ -488,10 +492,6 @@ input,select,textarea{font-family:inherit;}
           <button type="button" class="tipo-btn" data-tipo="meta6lp">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v7"/><path d="M3 15h18"/><path d="M7 11V7a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1"/><path d="M3 18v2M21 18v2"/></svg>
             <span>Meta 6 (adesão - LP)</span>
-          </button>
-          <button type="button" class="tipo-btn" data-tipo="meta4">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
-            <span>Meta 4 (Time Out)</span>
           </button>
         </div>
       </div>
@@ -822,12 +822,6 @@ input,select,textarea{font-family:inherit;}
     </div>
     <p class="tipo-select-group-title">Segurança do Paciente</p>
     <div class="tipo-select-grid">
-      <button type="button" class="tipo-select-card" data-tipo="meta2">
-        <div class="tipo-select-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/></svg>
-        </div>
-        <div class="tipo-select-label">Meta 2 (SBAR)</div>
-      </button>
       <button type="button" class="tipo-select-card" data-tipo="meta1">
         <div class="tipo-select-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.6 7-12a7 7 0 1 0-14 0c0 5.4 7 12 7 12z"/><circle cx="12" cy="9" r="2.4"/></svg>
@@ -840,11 +834,23 @@ input,select,textarea{font-family:inherit;}
         </div>
         <div class="tipo-select-label">Meta 1 (adesão)</div>
       </button>
+      <button type="button" class="tipo-select-card" data-tipo="meta2">
+        <div class="tipo-select-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/></svg>
+        </div>
+        <div class="tipo-select-label">Meta 2 (SBAR)</div>
+      </button>
       <button type="button" class="tipo-select-card" data-tipo="meta2censo">
         <div class="tipo-select-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 4v4h-4M6 20v-4h4"/></svg>
         </div>
         <div class="tipo-select-label">Meta 2 (censo)</div>
+      </button>
+      <button type="button" class="tipo-select-card" data-tipo="meta4">
+        <div class="tipo-select-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+        </div>
+        <div class="tipo-select-label">Meta 4 (Time Out)</div>
       </button>
       <button type="button" class="tipo-select-card" data-tipo="meta6">
         <div class="tipo-select-icon">
@@ -857,12 +863,6 @@ input,select,textarea{font-family:inherit;}
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v7"/><path d="M3 15h18"/><path d="M7 11V7a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1"/><path d="M3 18v2M21 18v2"/></svg>
         </div>
         <div class="tipo-select-label">Meta 6 (adesão - LP)</div>
-      </button>
-      <button type="button" class="tipo-select-card" data-tipo="meta4">
-        <div class="tipo-select-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
-        </div>
-        <div class="tipo-select-label">Meta 4 (Time Out)</div>
       </button>
     </div>
     <div class="actions" style="margin-top:16px;">
@@ -1243,13 +1243,15 @@ const DEFAULT_SECTOR_CARTS_MED = {};
 const SETORES_ENGENHARIA = [
  'Ambulatório 1','Ambulatório 2','Banco de Leite','Banco de Sangue','Bloco 1','Bloco 2','Bloco 3','Bloco 4','Bloco 5','CCMI','Centro Cirúrgico','Centro de Imagem','CME','Engenharia Clínica','Laboratório','Maternidade Infantil','Medicina Nuclear','Oncologia Ala A','Oncologia Pediátrica','P.S Infantil','Patologia','Pequenas Cirurgias','Pronto Socorro Adulto','Quimioterapia','Radioterapia','Sala de Hemodinâmica','Traumatologia','UCINCO','UTI Adulto Ala A','UTI Adulto Ala B','UTI Móvel','UTI Neonatal A/1','UTI Neonatal B/2','UTI Pediátrica'
 ];
-/* Setores auditados pela Meta 1 (identificação do paciente). Setores que
-   começam com "Recepção" usam o checklist de recepção (3 itens); os
-   demais usam o checklist assistencial (1 item) — ver isRecepcaoSector. */
-const SETORES_META1 = [
- 'RECEPÇÃO PSA','RECEPÇÃO PSI','RECEPÇÃO US','RECEPÇÃO RM','RECEPÇÃO ENTREGA DE EXAMES','RECEPÇÃO CDI','RECEPÇÃO TRAUMA','RECEPÇÃO AMBULATÓRIO 1','RECEPÇÃO MED. NUCLEAR','RECEPÇÃO POSTO DE COLETA 1','RECEPÇÃO POSTO DE COLETA 2','RECEPÇÃO ONCO PED','INTERNAÇÃO SUS','INTERNAÇÃO CONVÊNIO','RECEPÇÃO PRINCIPAL','RECEPÇÃO AMBULATÓRIO 2','RECEPÇÃO RADIOTERAPIA','RECEPÇÃO QUIMIOTERAPIA','BANCO DE LEITE','LAB. BANCO DE LEITE','AGÊNCIA TRANSFUSIONAL','LABORATÓRIO CLÍNICO','LABORATÓRIO PATOLÓGICO','RX PS','RM','CDI (TC, MAMOGRAFIA, USG)','MEDICINA NUCLEAR','AMBULATÓRIO 1 (CENCOR)','SND','PS ADULTO','PS INFANTIL','TRAUMATOLOGIA','ENDOSCOPIA','BLOCO I','BLOCO II','BLOCO IV','BLOCO V','ONCO ALA A','UTI I','UTI II','CENTRO CIR.','HOSPITAL DIA','CCMI','MATERNIDADE ALA A','MATERNIDADE ALA B','UCINCA','UCINCO','BLOCO III','ONCO PED INTERNAÇÃO','UTI PEDIÁTRICA','UTI NEONATAL 1','UTI NEONATAL 2','QUIMIOTERAPIA','RADIOTERAPIA','ONCO PED AMBULATÓRIO','AMBULATÓRIO 2'
-];
 function isRecepcaoSector(setor){ return /^recep/i.test((setor||'').trim()); }
+/* 17 setores assistenciais padrão, reaproveitados por vários módulos de
+   auditoria mais recentes (Meta 1/pulseiras, Meta 2/censo — ver TIPOS).
+   Nenhum começa com "Recepção". Cada módulo que a usa define sua própria
+   meta mensal (ver cycleMode/monthlyTarget* em TIPOS de cada um). */
+const SETORES_ASSISTENCIAIS = ['Bloco 1','Bloco 2','Bloco 4','Bloco 5','Oncologia Ala A','UTI 1','UTI 2','UTI Pediátrica','UTI Neonatal 1','UTI Neonatal 2','UCINCO','UCINCA','Maternidade (Alas A e B)','Bloco 3','PS Adulto','PS Infantil','Oncologia Pediátrica'];
+/* Setores próprios da Meta 1 (adesão). Ciclo mensal com meta de 20
+   auditorias por setor, 140 no total (7 setores). */
+const SETORES_META1_ADESAO = ['UTI 1','UTI 2','UTI Pediátrica','UTI Neonatal 1','UTI Neonatal 2','PS Adulto','PS Infantil'];
 /* Em setores de recepção, quem responde pela auditoria é o rececionista,
    não um enfermeiro — troca o rótulo/placeholder do campo conforme o
    setor escolhido. */
@@ -1343,27 +1345,27 @@ const TIPOS = {
   },
   meta1: {
     key:'meta1', label:'Meta 1 (pulseiras)', labelPlural:'Meta 1 (pulseiras)', icon:'pin',
-    categories: CATEGORIES_META1_ASSISTENCIAL, items: ITEMS_META1_ASSISTENCIAL, setores: SETORES_META1,
+    categories: CATEGORIES_META1_ASSISTENCIAL, items: ITEMS_META1_ASSISTENCIAL, setores: SETORES_ASSISTENCIAIS,
     cartProfiles: {}, defaultSectorCarts: {},
     storagePrefix: 'meta1_', carroLabel: 'Carro', requireCarroSelection: false,
     sectorDependentItems: true, isRecepcaoSector: isRecepcaoSector,
     categoriesRecepcao: CATEGORIES_META1_RECEPCAO, itemsRecepcao: ITEMS_META1_RECEPCAO,
     categoriesAssistencial: CATEGORIES_META1_ASSISTENCIAL, itemsAssistencial: ITEMS_META1_ASSISTENCIAL,
-    hasCarts: false,
+    hasCarts: false, cycleMode: 'monthly', monthlyTargetPerSector: 20, monthlyTargetTotal: 340,
   },
   meta1adesao: {
     key:'meta1adesao', label:'Meta 1 (adesão)', labelPlural:'Meta 1 (adesão)', icon:'clipboard',
-    categories: CATEGORIES_META1_ADESAO, items: ITEMS_META1_ADESAO, setores: SETORES_META1,
+    categories: CATEGORIES_META1_ADESAO, items: ITEMS_META1_ADESAO, setores: SETORES_META1_ADESAO,
     cartProfiles: {}, defaultSectorCarts: {},
     storagePrefix: 'meta1adesao_', carroLabel: 'Carro', requireCarroSelection: false,
-    hasCarts: false,
+    hasCarts: false, cycleMode: 'monthly', monthlyTargetPerSector: 20, monthlyTargetTotal: 140,
   },
   meta2censo: {
     key:'meta2censo', label:'Meta 2 (censo)', labelPlural:'Meta 2 (censo)', icon:'refresh',
-    categories: CATEGORIES_META2_CENSO, items: ITEMS_META2_CENSO, setores: SETORES_PLANILHA,
+    categories: CATEGORIES_META2_CENSO, items: ITEMS_META2_CENSO, setores: SETORES_ASSISTENCIAIS,
     cartProfiles: {}, defaultSectorCarts: {},
     storagePrefix: 'meta2censo_', carroLabel: 'Carro', requireCarroSelection: false,
-    hasCarts: false,
+    hasCarts: false, cycleMode: 'monthly', monthlyTargetPerSector: 20, monthlyTargetTotal: 340,
   },
   meta6: {
     key:'meta6', label:'Meta 6 (adesão - QUEDAS)', labelPlural:'Meta 6 (adesão - QUEDAS)', icon:'alert',
