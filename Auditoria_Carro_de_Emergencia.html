@@ -457,6 +457,10 @@ input,select,textarea{font-family:inherit;}
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6.5 7.2 6.5 11.5a6.5 6.5 0 0 1-13 0C5.5 10.2 12 3 12 3z"/></svg>
             <span>Processo Transfusional</span>
           </button>
+          <button type="button" class="tipo-btn" data-tipo="saep">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/></svg>
+            <span>Registro da SAEP</span>
+          </button>
         </div>
       </div>
       <div class="tipo-group" data-group="seguranca">
@@ -634,7 +638,7 @@ input,select,textarea{font-family:inherit;}
             <div class="field" id="fEnfermeiroDestinoWrap" style="display:none;"><label>Enfermeiro do Setor de Destino *</label><input type="text" id="fEnfermeiroDestino" placeholder="Nome do enfermeiro"></div>
           </div>
           <button type="button" class="link-btn" id="btnAddCart" style="display:none;">+ Este setor tem mais de um carro? Adicionar carro</button>
-          <label class="checkbox-label">
+          <label class="checkbox-label" id="fCarroIndisponivelWrap">
             <input type="checkbox" id="fCarroIndisponivel">
             <span id="lblCarroIndisponivel">Carro de emergência não disponível no setor</span>
           </label>
@@ -818,6 +822,12 @@ input,select,textarea{font-family:inherit;}
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6.5 7.2 6.5 11.5a6.5 6.5 0 0 1-13 0C5.5 10.2 12 3 12 3z"/></svg>
         </div>
         <div class="tipo-select-label">Processo Transfusional</div>
+      </button>
+      <button type="button" class="tipo-select-card" data-tipo="saep">
+        <div class="tipo-select-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><rect x="9" y="2.5" width="6" height="3" rx="1"/><path d="M9 11h6M9 15h6"/></svg>
+        </div>
+        <div class="tipo-select-label">Registro da SAEP</div>
       </button>
     </div>
     <p class="tipo-select-group-title">Segurança do Paciente</p>
@@ -1008,7 +1018,7 @@ const CATEGORIES_META1_ADESAO = [
   {id:'adesao', nome:'Adesão aos 3 Identificadores', icon:'clipboard'},
 ];
 const ITEMS_META1_ADESAO = [
-  {id:201,cat:'adesao',texto:'Aplicou 3 identificadores antes do procedimento (nome completo, data de nascimento e nome da mãe)'},
+  {id:201,cat:'adesao',texto:'Aplicou 3 identificadores antes do procedimento (nome completo, data de nascimento e nome da mãe)', statusOptions:['conforme','nao-conforme']},
 ];
 
 /* Meta 2 (censo) — módulo separado da Meta 2 (SBAR): audita só o
@@ -1051,6 +1061,61 @@ const ITEMS_META6_LP = [
   {id:6,cat:'lp',texto:'Uso de colchão pneumático (com motor funcionante)', statusOptions:['conforme','nao-conforme']},
 ];
 const SETORES_META6_LP = ['UTI Adulto 1','UTI Adulto 2','UTI Pediátrica'];
+
+/* Registro da SAEP (Sistematização da Assistência de Enfermagem
+   Perioperatória) — checklist muda conforme a fase do setor escolhido
+   (ver sectorPhase/phases em TIPOS e applySectorDependentItems): setor
+   "Pré-operatório" usa as Etapas 1-3; qualquer "Transoperatório - Sala N"
+   usa as Etapas 4-5; "Pós-operatório" usa as Etapas 6-7. IDs em faixas
+   separadas (100+/200+/300+) para nunca colidir entre as três fases nos
+   rankings agregados do dashboard, que podem somar auditorias das três. */
+const CATEGORIES_SAEP_PRE = [
+  {id:'etapa1', nome:'Etapa 1 — Admissão na Unidade de Internação', icon:'clipboard'},
+  {id:'etapa2', nome:'Etapa 2 — Encaminhamento ao CC', icon:'clipboard'},
+  {id:'etapa3', nome:'Etapa 3 — Admissão no CC', icon:'clipboard'},
+];
+const ITEMS_SAEP_PRE = [
+  {id:101,cat:'etapa1',texto:'Admissão na Unidade de Internação preenchida', statusOptions:['conforme','nao-conforme']},
+  {id:102,cat:'etapa1',texto:'Diagnósticos e intervenções de enfermagem assinalados', statusOptions:['conforme','nao-conforme']},
+  {id:103,cat:'etapa1',texto:'Assinatura e carimbo do enfermeiro', statusOptions:['conforme','nao-conforme']},
+  {id:104,cat:'etapa2',texto:'Encaminhamento ao CC com sinais vitais', statusOptions:['conforme','nao-conforme']},
+  {id:105,cat:'etapa2',texto:'Jejum e dispositivos registrados', statusOptions:['conforme','nao-conforme']},
+  {id:106,cat:'etapa2',texto:'Carimbo e assinatura do técnico de enfermagem', statusOptions:['conforme','nao-conforme']},
+  {id:107,cat:'etapa3',texto:'Admissão no CC com checklist de segurança', statusOptions:['conforme','nao-conforme']},
+  {id:108,cat:'etapa3',texto:'Termo de consentimento confirmado', statusOptions:['conforme','nao-conforme']},
+];
+const CATEGORIES_SAEP_TRANS = [
+  {id:'etapa4', nome:'Etapa 4 — Registros Transoperatórios', icon:'clipboard'},
+  {id:'etapa5', nome:'Etapa 5 — Controle de Esterilização', icon:'clipboard'},
+];
+const ITEMS_SAEP_TRANS = [
+  {id:201,cat:'etapa4',texto:'Registro de acesso venoso', statusOptions:['conforme','nao-conforme']},
+  {id:202,cat:'etapa4',texto:'Registro do posicionamento', statusOptions:['conforme','nao-conforme']},
+  {id:203,cat:'etapa4',texto:'Registro do ELPO', statusOptions:['conforme','nao-conforme']},
+  {id:204,cat:'etapa4',texto:'Registro de prevenção de hipotermia e diagrama corporal', statusOptions:['conforme','nao-conforme']},
+  {id:205,cat:'etapa4',texto:'Contagem cirúrgica registrada nos três momentos (pré-incisão, pré-sutura e após término)', statusOptions:['conforme','nao-conforme']},
+  {id:206,cat:'etapa5',texto:'Controle de esterilização (fita, integrador e etiquetas) registrado', statusOptions:['conforme','nao-conforme']},
+];
+const CATEGORIES_SAEP_POS = [
+  {id:'etapa6', nome:'Etapa 6 — Registros Pós-operatórios', icon:'clipboard'},
+  {id:'etapa7', nome:'Etapa 7 — RPA', icon:'clipboard'},
+];
+const ITEMS_SAEP_POS = [
+  {id:301,cat:'etapa6',texto:'Registro do destino', statusOptions:['conforme','nao-conforme']},
+  {id:302,cat:'etapa6',texto:'Registro de queixas', statusOptions:['conforme','nao-conforme']},
+  {id:303,cat:'etapa6',texto:'Registro dos sinais vitais', statusOptions:['conforme','nao-conforme']},
+  {id:304,cat:'etapa6',texto:'Registro da oxigenoterapia', statusOptions:['conforme','nao-conforme']},
+  {id:305,cat:'etapa7',texto:'RPA com sinais vitais nos intervalos previstos', statusOptions:['conforme','nao-conforme']},
+  {id:306,cat:'etapa7',texto:'Avaliação da dor e intervenções anotadas', statusOptions:['conforme','nao-conforme']},
+  {id:307,cat:'etapa7',texto:'Assinatura e carimbo presentes em todas as etapas da fase concluídas', statusOptions:['conforme','nao-conforme']},
+];
+function saepSectorPhase(setor){
+  const s = (setor||'').trim();
+  if(s==='Pós-operatório') return 'pos';
+  if(s==='Pré-operatório') return 'pre';
+  return 'trans';
+}
+const SETORES_SAEP = ['Pré-operatório', ...Array.from({length:8},(_,i)=>`Transoperatório - Sala ${i+1}`), 'Pós-operatório'];
 
 /* Meta 4 — auditoria de cirurgia segura (Time Out). Não é feita por setor,
    e sim por sala cirúrgica (SETORES_META4), e o objetivo não é cobrir todas
@@ -1341,16 +1406,19 @@ const TIPOS = {
     categories: CATEGORIES_META2, items: ITEMS_META2, setores: SETORES_PLANILHA,
     cartProfiles: {}, defaultSectorCarts: {},
     storagePrefix: 'meta2_', carroLabel: 'Carro', requireCarroSelection: false, hasSetorDestino: true,
-    hasCarts: false,
+    hasCarts: false, cycleMode: 'monthly',
   },
   meta1: {
     key:'meta1', label:'Meta 1 (pulseiras)', labelPlural:'Meta 1 (pulseiras)', icon:'pin',
     categories: CATEGORIES_META1_ASSISTENCIAL, items: ITEMS_META1_ASSISTENCIAL, setores: SETORES_ASSISTENCIAIS,
     cartProfiles: {}, defaultSectorCarts: {},
     storagePrefix: 'meta1_', carroLabel: 'Carro', requireCarroSelection: false,
-    sectorDependentItems: true, isRecepcaoSector: isRecepcaoSector,
-    categoriesRecepcao: CATEGORIES_META1_RECEPCAO, itemsRecepcao: ITEMS_META1_RECEPCAO,
-    categoriesAssistencial: CATEGORIES_META1_ASSISTENCIAL, itemsAssistencial: ITEMS_META1_ASSISTENCIAL,
+    sectorDependentItems: true,
+    sectorPhase: setor => isRecepcaoSector(setor) ? 'recepcao' : 'assistencial',
+    phases: {
+      recepcao: { categories: CATEGORIES_META1_RECEPCAO, items: ITEMS_META1_RECEPCAO },
+      assistencial: { categories: CATEGORIES_META1_ASSISTENCIAL, items: ITEMS_META1_ASSISTENCIAL },
+    },
     hasCarts: false, cycleMode: 'monthly', monthlyTargetPerSector: 20, monthlyTargetTotal: 340,
   },
   meta1adesao: {
@@ -1401,6 +1469,19 @@ const TIPOS = {
     storagePrefix: 'transf_', carroLabel: 'Carro', requireCarroSelection: false,
     cycleMode: 'monthly', dashboardByItem: true, dashboardGroupBy: 'category', hasCarts: false,
   },
+  saep: {
+    key:'saep', label:'Registro da SAEP', labelPlural:'Registro da SAEP', icon:'clipboard',
+    categories: CATEGORIES_SAEP_PRE, items: ITEMS_SAEP_PRE, setores: SETORES_SAEP,
+    cartProfiles: {}, defaultSectorCarts: {},
+    storagePrefix: 'saep_', carroLabel: 'Carro', requireCarroSelection: false,
+    sectorDependentItems: true, sectorPhase: saepSectorPhase,
+    phases: {
+      pre: { categories: CATEGORIES_SAEP_PRE, items: ITEMS_SAEP_PRE },
+      trans: { categories: CATEGORIES_SAEP_TRANS, items: ITEMS_SAEP_TRANS },
+      pos: { categories: CATEGORIES_SAEP_POS, items: ITEMS_SAEP_POS },
+    },
+    hasCarts: false,
+  },
 };
 let currentTipo = localStorage.getItem('auditoria_tipo') || 'emergencia';
 if(!TIPOS[currentTipo]) currentTipo = 'emergencia';
@@ -1443,6 +1524,11 @@ function updateTipoUI(){
   if(heroSub) heroSub.textContent = 'Painel de Conformidade — Auditoria de '+cfg.labelPlural;
   const lblIndisp = document.getElementById('lblCarroIndisponivel');
   if(lblIndisp) lblIndisp.textContent = cfg.label+' não disponível no setor';
+  // Só faz sentido em módulos que auditam um carro/equipamento físico —
+  // nos demais (Segurança do Paciente, Processo Transfusional, SAEP) não
+  // há "carro" para estar indisponível.
+  const carroIndispWrap = document.getElementById('fCarroIndisponivelWrap');
+  if(carroIndispWrap) carroIndispWrap.style.display = cfg.hasCarts===false ? 'none' : '';
   if(typeof VIEW_TITLES!=='undefined') VIEW_TITLES['new-audit'][1] = 'Preencha o checklist do '+cfg.label.toLowerCase();
   document.title = APP_TITLE;
 
@@ -2628,18 +2714,21 @@ function updateCategoriesGating(){
   if(hint) hint.style.display = hide ? 'block' : 'none';
 }
 
-/* Meta 1: o checklist muda conforme o setor escolhido (Recepção x demais
-   setores assistenciais) — reatribui CATEGORIES/ITEMS (as mesmas
-   variáveis "ativas" usadas em todo o app) para o conjunto certo. Só
+/* Alguns módulos têm checklist que muda conforme o setor escolhido —
+   reatribui CATEGORIES/ITEMS (as mesmas variáveis "ativas" usadas em todo
+   o app) para a fase correta. `cfg.sectorPhase(setor)` devolve a chave da
+   fase (ex.: 'recepcao'/'assistencial' na Meta 1; 'pre'/'trans'/'pos' na
+   SAEP) e `cfg.phases[chave]` tem os {categories,items} daquela fase. Só
    reconstrói o array de itens da auditoria (resetAuditItems=true) ao
    trocar de setor durante o preenchimento; ao só visualizar/editar uma
    auditoria já salva isso não deve apagar as respostas existentes. */
 function applySectorDependentItems(setor, resetAuditItems){
   const cfg = TIPOS[currentTipo];
   if(!cfg.sectorDependentItems) return;
-  const isRecepcao = cfg.isRecepcaoSector(setor);
-  const newCategories = isRecepcao ? cfg.categoriesRecepcao : cfg.categoriesAssistencial;
-  const newItems = isRecepcao ? cfg.itemsRecepcao : cfg.itemsAssistencial;
+  const phase = cfg.phases[cfg.sectorPhase(setor)];
+  if(!phase) return;
+  const newCategories = phase.categories;
+  const newItems = phase.items;
   if(CATEGORIES===newCategories && ITEMS===newItems) return;
   CATEGORIES = newCategories;
   ITEMS = newItems;
@@ -2649,11 +2738,12 @@ function applySectorDependentItems(setor, resetAuditItems){
 }
 /* União de todos os itens possíveis do tipo atual — usada só para
    resolver o texto de um id em rankings que somam várias auditorias
-   (Meta 1 pode ter auditorias de setores de Recepção e assistenciais
-   misturadas, cada um com seu próprio conjunto de itens). */
+   (um módulo de checklist por fase pode ter auditorias de setores de
+   fases diferentes misturadas, cada um com seu próprio conjunto de
+   itens). */
 function allTipoItems(){
   const cfg = TIPOS[currentTipo];
-  if(cfg.sectorDependentItems) return [...cfg.itemsRecepcao, ...cfg.itemsAssistencial];
+  if(cfg.sectorDependentItems) return Object.values(cfg.phases).flatMap(p=>p.items);
   return cfg.items;
 }
 
