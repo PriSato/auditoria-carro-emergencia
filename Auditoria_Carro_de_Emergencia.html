@@ -610,6 +610,9 @@ input,select,textarea{font-family:inherit;}
           <div class="section-title" style="margin-top:0;"><h2>Dados da Auditoria</h2></div>
           <div class="header-form">
             <div class="field"><label>Data</label><input type="date" id="fData"></div>
+            <div class="field" id="fFaseWrap" style="display:none;"><label>Fase</label>
+              <select id="fFase"></select>
+            </div>
             <div class="field"><label id="lblSetorField">Setor</label>
               <select id="fSetor"></select>
             </div>
@@ -1063,12 +1066,17 @@ const ITEMS_META6_LP = [
 const SETORES_META6_LP = ['UTI Adulto 1','UTI Adulto 2','UTI Pediátrica'];
 
 /* Registro da SAEP (Sistematização da Assistência de Enfermagem
-   Perioperatória) — checklist muda conforme a fase do setor escolhido
-   (ver sectorPhase/phases em TIPOS e applySectorDependentItems): setor
-   "Pré-operatório" usa as Etapas 1-3; qualquer "Transoperatório - Sala N"
-   usa as Etapas 4-5; "Pós-operatório" usa as Etapas 6-7. IDs em faixas
-   separadas (100+/200+/300+) para nunca colidir entre as três fases nos
-   rankings agregados do dashboard, que podem somar auditorias das três. */
+   Perioperatória) — uma auditoria cobre o processo inteiro do paciente,
+   com 3 fases (Pré/Trans/Pós-operatório) escolhidas num campo "Fase"
+   próprio (cfg.multiFase/fases/faseCategorias — ver fFase no formulário),
+   cada uma com seu próprio setor (currentAudit.header.faseSetores) — a
+   mesma lista de setores reais serve para as três. CATEGORIES/ITEMS
+   ficam sempre com as 7 etapas/21 itens completos (não trocam por
+   setor); só a UI de preenchimento filtra pela fase selecionada (ver
+   buildCategoriesUI). Finalizar exige as 3 fases com setor + todos os
+   itens respondidos (ver persistAudit). IDs em faixas separadas
+   (100+/200+/300+) só por organização, sem outra finalidade agora que
+   as fases não trocam mais CATEGORIES/ITEMS dinamicamente. */
 const CATEGORIES_SAEP_PRE = [
   {id:'etapa1', nome:'Etapa 1 — Admissão na Unidade de Internação', icon:'clipboard'},
   {id:'etapa2', nome:'Etapa 2 — Encaminhamento ao CC', icon:'clipboard'},
@@ -1109,13 +1117,19 @@ const ITEMS_SAEP_POS = [
   {id:306,cat:'etapa7',texto:'Avaliação da dor e intervenções anotadas', statusOptions:['conforme','nao-conforme']},
   {id:307,cat:'etapa7',texto:'Assinatura e carimbo presentes em todas as etapas da fase concluídas', statusOptions:['conforme','nao-conforme']},
 ];
-function saepSectorPhase(setor){
-  const s = (setor||'').trim();
-  if(s==='Pós-operatório') return 'pos';
-  if(s==='Pré-operatório') return 'pre';
-  return 'trans';
-}
-const SETORES_SAEP = ['Pré-operatório', ...Array.from({length:8},(_,i)=>`Transoperatório - Sala ${i+1}`), 'Pós-operatório'];
+const CATEGORIES_SAEP = [...CATEGORIES_SAEP_PRE, ...CATEGORIES_SAEP_TRANS, ...CATEGORIES_SAEP_POS];
+const ITEMS_SAEP = [...ITEMS_SAEP_PRE, ...ITEMS_SAEP_TRANS, ...ITEMS_SAEP_POS];
+const SAEP_FASES = [
+  {key:'pre', label:'Pré-operatório'},
+  {key:'trans', label:'Transoperatório'},
+  {key:'pos', label:'Pós-operatório'},
+];
+const SAEP_FASE_CATEGORIAS = {
+  pre: CATEGORIES_SAEP_PRE.map(c=>c.id),
+  trans: CATEGORIES_SAEP_TRANS.map(c=>c.id),
+  pos: CATEGORIES_SAEP_POS.map(c=>c.id),
+};
+const SETORES_SAEP = ['Bloco 1','Bloco 2','Bloco 4','Bloco 5','Oncologia Ala A','Bloco 3','UTI Adulto 1','UTI Adulto 2','UTI Pediátrico','UTI Neo 1','UTI Neo 2'];
 
 /* Meta 4 — auditoria de cirurgia segura (Time Out). Não é feita por setor,
    e sim por sala cirúrgica (SETORES_META4), e o objetivo não é cobrir todas
@@ -1133,7 +1147,7 @@ const ITEMS_META4 = [
  {id:2,cat:'timeout',texto:'Equipe confirma verbalmente a identidade do paciente.'},
  {id:3,cat:'timeout',texto:'Procedimento cirúrgico confirmado verbalmente pela equipe.'},
  {id:4,cat:'timeout',texto:'Lado/sítio cirúrgico confirmado.'},
- {id:5,cat:'timeout',texto:'Demarcação do sítio cirúrgico presente, quando aplicável.'},
+ {id:5,cat:'timeout',texto:'Demarcação do sítio cirúrgico presente, quando aplicável.', statusOptions:['conforme','parcial','nao-conforme','nao-aplica']},
  {id:6,cat:'timeout',texto:'Cirurgião participa ativamente do Time Out.'},
  {id:7,cat:'timeout',texto:'Anestesista participa ativamente do Time Out.'},
  {id:8,cat:'timeout',texto:'Equipe de enfermagem participa ativamente do Time Out.'},
@@ -1141,7 +1155,7 @@ const ITEMS_META4 = [
  {id:10,cat:'timeout',texto:'Alergias confirmadas.'},
  {id:11,cat:'timeout',texto:'Risco de perda sanguínea discutido, quando aplicável.'},
  {id:12,cat:'timeout',texto:'Reserva de hemocomponentes confirmada, quando indicada.'},
- {id:13,cat:'timeout',texto:'Profilaxia antimicrobiana administrada dentro do tempo recomendado.'},
+ {id:13,cat:'timeout',texto:'Profilaxia antimicrobiana administrada dentro do tempo recomendado.', statusOptions:['conforme','parcial','nao-conforme','nao-aplica']},
  {id:14,cat:'timeout',texto:'Disponibilidade de exames de imagem confirmada, quando necessária.'},
  {id:15,cat:'timeout',texto:'Materiais, implantes, OPME e equipamentos especiais disponíveis e conferidos.'},
  {id:16,cat:'timeout',texto:'Equipamentos essenciais testados e funcionantes.'},
@@ -1420,6 +1434,13 @@ const TIPOS = {
       assistencial: { categories: CATEGORIES_META1_ASSISTENCIAL, items: ITEMS_META1_ASSISTENCIAL },
     },
     hasCarts: false, cycleMode: 'monthly', monthlyTargetPerSector: 20, monthlyTargetTotal: 340,
+    // Metas específicas por setor (os demais setores da lista mantêm os
+    // 20 padrão de monthlyTargetPerSector) — a soma continua batendo com
+    // monthlyTargetTotal (340).
+    monthlyTargetPerSectorMap: {
+      'UTI Neonatal 1': 10, 'UTI Neonatal 2': 10, 'UTI Pediátrica': 10, 'UCINCO': 10, 'UCINCA': 10,
+      'Bloco 1': 30, 'Bloco 2': 30, 'Bloco 4': 30, 'Bloco 5': 30, 'Maternidade (Alas A e B)': 30,
+    },
   },
   meta1adesao: {
     key:'meta1adesao', label:'Meta 1 (adesão)', labelPlural:'Meta 1 (adesão)', icon:'clipboard',
@@ -1471,16 +1492,11 @@ const TIPOS = {
   },
   saep: {
     key:'saep', label:'Registro da SAEP', labelPlural:'Registro da SAEP', icon:'clipboard',
-    categories: CATEGORIES_SAEP_PRE, items: ITEMS_SAEP_PRE, setores: SETORES_SAEP,
+    categories: CATEGORIES_SAEP, items: ITEMS_SAEP, setores: SETORES_SAEP,
     cartProfiles: {}, defaultSectorCarts: {},
     storagePrefix: 'saep_', carroLabel: 'Carro', requireCarroSelection: false,
-    sectorDependentItems: true, sectorPhase: saepSectorPhase,
-    phases: {
-      pre: { categories: CATEGORIES_SAEP_PRE, items: ITEMS_SAEP_PRE },
-      trans: { categories: CATEGORIES_SAEP_TRANS, items: ITEMS_SAEP_TRANS },
-      pos: { categories: CATEGORIES_SAEP_POS, items: ITEMS_SAEP_POS },
-    },
     hasCarts: false,
+    multiFase: true, fases: SAEP_FASES, faseCategorias: SAEP_FASE_CATEGORIAS,
   },
 };
 let currentTipo = localStorage.getItem('auditoria_tipo') || 'emergencia';
@@ -2155,7 +2171,10 @@ function cycleProgress(cycle){
         return { label: g.label, done: n, target: g.target };
       });
     } else if(cfg.monthlyTargetPerSector){
-      groups = cfg.setores.map(s=> ({ label: s, done: bySector[s]||0, target: cfg.monthlyTargetPerSector }));
+      // monthlyTargetPerSectorMap (opcional) sobrescreve a meta de setores
+      // específicos (ex.: Meta 1/pulseiras); os demais usam
+      // monthlyTargetPerSector como padrão.
+      groups = cfg.setores.map(s=> ({ label: s, done: bySector[s]||0, target: (cfg.monthlyTargetPerSectorMap && cfg.monthlyTargetPerSectorMap[s]) || cfg.monthlyTargetPerSector }));
     }
     return { done, total, pct, doneSectors: [], pendingSectors: [], bySector, groups };
   }
@@ -2509,10 +2528,14 @@ async function startNewAuditForm(){
   await refreshInactiveSectorsFromStorage();
   await refreshSectorCartsFromStorage();
   const cycle = getCurrentCycle();
+  const cfg = TIPOS[currentTipo];
   currentAudit = {
     id: uid(),
     cicloId: cycle ? cycle.id : null,
-    header:{ data: todayISO(), setor:'', carro:'', setorDestino:'', auditor:'', enfermeiro:'', enfermeiroOrigem:'', enfermeiroDestino:'', carroIndisponivel:false },
+    header:{ data: todayISO(), setor:'', carro:'', setorDestino:'', auditor:'', enfermeiro:'', enfermeiroOrigem:'', enfermeiroDestino:'', carroIndisponivel:false,
+      fase: cfg.multiFase ? cfg.fases[0].key : null,
+      faseSetores: cfg.multiFase ? Object.fromEntries(cfg.fases.map(f=>[f.key,''])) : null,
+    },
     items: ITEMS.map(it=>({ id:it.id, status:null, obs:'', photos:[], medExtra:'', cartPerfil:null, cartRespostas:{} })),
     status:'rascunho',
     createdAt: Date.now(),
@@ -2522,6 +2545,8 @@ async function startNewAuditForm(){
   document.getElementById('fEnfermeiro').value = '';
   document.getElementById('fEnfermeiroOrigem').value = '';
   document.getElementById('fEnfermeiroDestino').value = '';
+  document.getElementById('fFaseWrap').style.display = cfg.multiFase ? '' : 'none';
+  if(cfg.multiFase){ populateFaseSelect(); document.getElementById('fFase').value = currentAudit.header.fase; }
   populateSetorSelect();
   document.getElementById('fSetor').value = '';
   document.getElementById('fSetorOutroWrap').style.display = 'none';
@@ -2571,6 +2596,12 @@ async function editAudit(id){
     i.cartRespostas = i.cartRespostas || {};
   });
   currentAudit = full;
+  const cfgEdit = TIPOS[currentTipo];
+  if(cfgEdit.multiFase){
+    currentAudit.header.faseSetores = currentAudit.header.faseSetores || {};
+    cfgEdit.fases.forEach(f=>{ if(!currentAudit.header.faseSetores[f.key]) currentAudit.header.faseSetores[f.key] = ''; });
+    currentAudit.header.fase = currentAudit.header.fase || cfgEdit.fases[0].key;
+  }
 
   document.getElementById('fData').value = currentAudit.header.data || todayISO();
   document.getElementById('fAuditor').value = currentAudit.header.auditor || '';
@@ -2583,10 +2614,13 @@ async function editAudit(id){
   document.getElementById('fEnfermeiroDestinoWrap').style.display = hasDestinoEnf ? '' : 'none';
   updateEnfermeiroLabel(currentAudit.header.setor);
 
+  document.getElementById('fFaseWrap').style.display = cfgEdit.multiFase ? '' : 'none';
+  if(cfgEdit.multiFase){ populateFaseSelect(); document.getElementById('fFase').value = currentAudit.header.fase; }
+
   populateSetorSelect();
   const sel = document.getElementById('fSetor');
-  const originalSetor = currentAudit.header.setor;
-  const isKnownSetor = SETORES_PLANILHA.includes(originalSetor);
+  const originalSetor = cfgEdit.multiFase ? (currentAudit.header.faseSetores[currentAudit.header.fase]||'') : currentAudit.header.setor;
+  const isKnownSetor = originalSetor && SETORES_PLANILHA.includes(originalSetor);
   if(isKnownSetor){
     if(!Array.from(sel.options).some(o=>o.value===originalSetor)){
       // Setor foi desativado depois que esta auditoria foi criada; adiciona
@@ -2606,13 +2640,19 @@ async function editAudit(id){
       currentAudit.header.carro = originalCarro;
       document.getElementById('btnRemoveCart').style.display = 'flex';
     }
-  } else {
+  } else if(originalSetor){
     sel.value = SETOR_OUTRO;
     document.getElementById('fSetorOutroWrap').style.display = 'flex';
-    document.getElementById('fSetorOutro').value = originalSetor || '';
+    document.getElementById('fSetorOutro').value = originalSetor;
     document.getElementById('fCarroWrap').style.display = 'none';
     document.getElementById('btnAddCart').style.display = 'none';
-    currentAudit.header.setor = originalSetor;
+    if(!cfgEdit.multiFase) currentAudit.header.setor = originalSetor;
+  } else {
+    // Fase (SAEP) ainda sem setor escolhido.
+    sel.value = '';
+    document.getElementById('fSetorOutroWrap').style.display = 'none';
+    document.getElementById('fCarroWrap').style.display = 'none';
+    document.getElementById('btnAddCart').style.display = 'none';
   }
 
   const hasDestino = !!TIPOS[currentTipo].hasSetorDestino;
@@ -2655,6 +2695,7 @@ function restoreAuditUI(){
   currentAudit.items.forEach(item=>{
     const itDef = ITEMS.find(i=>i.id===item.id);
     if(!itDef) return;
+    if(!document.getElementById('itemrow-'+item.id)) return; // item de outra fase (SAEP), não renderizado agora
     if(item.status){
       document.querySelectorAll(`.status-btn[data-item="${item.id}"]`).forEach(b=>b.classList.remove('sel-ok','sel-warn','sel-bad'));
       const meta = STATUS_META[item.status];
@@ -2747,6 +2788,41 @@ function allTipoItems(){
   return cfg.items;
 }
 
+/* Módulos "multiFase" (Registro da SAEP): uma auditoria cobre as 3 fases
+   do processo, cada uma com seu próprio setor — o campo "Fase" escolhe
+   qual delas está sendo preenchida agora, e o campo "Setor" reflete/edita
+   o setor daquela fase específica (currentAudit.header.faseSetores). */
+function populateFaseSelect(){
+  const cfg = TIPOS[currentTipo];
+  document.getElementById('fFase').innerHTML = cfg.fases.map(f=>`<option value="${f.key}">${f.label}</option>`).join('');
+}
+/* Reflete no seletor de Setor o valor já salvo para a fase informada
+   (ou o deixa vazio, se essa fase ainda não tem setor escolhido). */
+function syncSetorSelectToFase(fase){
+  const setor = currentAudit.header.faseSetores[fase] || '';
+  const sel = document.getElementById('fSetor');
+  if(setor && SETORES_PLANILHA.includes(setor)){
+    sel.value = setor;
+    document.getElementById('fSetorOutroWrap').style.display = 'none';
+  } else if(setor){
+    sel.value = SETOR_OUTRO;
+    document.getElementById('fSetorOutroWrap').style.display = 'flex';
+    document.getElementById('fSetorOutro').value = setor;
+  } else {
+    sel.value = '';
+    document.getElementById('fSetorOutroWrap').style.display = 'none';
+    document.getElementById('fSetorOutro').value = '';
+  }
+}
+document.getElementById('fFase').addEventListener('change', (e)=>{
+  if(!currentAudit) return;
+  currentAudit.header.fase = e.target.value;
+  syncSetorSelectToFase(e.target.value);
+  buildCategoriesUI();
+  restoreAuditUI();
+  updateProgress();
+});
+
 function populateSetorSelect(){
   const sel = document.getElementById('fSetor');
   const cfg = TIPOS[currentTipo];
@@ -2798,13 +2874,24 @@ function refreshSectorDependentItemsUI(setor){
   buildCategoriesUI();
   updateProgress();
 }
+/* Grava o setor escolhido: em módulos multiFase (SAEP) vai para a fase
+   atual (faseSetores), com header.setor sempre espelhando essa mesma
+   fase para o resto do app (título, "Recepcionista" etc.); nos demais
+   módulos vai direto em header.setor, como sempre. */
+function setCurrentSetor(val){
+  const cfg = TIPOS[currentTipo];
+  if(cfg.multiFase){
+    currentAudit.header.faseSetores[currentAudit.header.fase] = val;
+  }
+  currentAudit.header.setor = val;
+}
 document.getElementById('fSetor').addEventListener('change', (e)=>{
   if(!currentAudit) return;
   if(e.target.value===SETOR_OUTRO){
     document.getElementById('fSetorOutroWrap').style.display='flex';
     document.getElementById('fCarroWrap').style.display='none';
     document.getElementById('btnAddCart').style.display='none';
-    currentAudit.header.setor = document.getElementById('fSetorOutro').value.trim();
+    setCurrentSetor(document.getElementById('fSetorOutro').value.trim());
     currentAudit.header.carro = '';
     refreshSectorDependentItemsUI(currentAudit.header.setor);
     updateEnfermeiroLabel(currentAudit.header.setor);
@@ -2812,7 +2899,7 @@ document.getElementById('fSetor').addEventListener('change', (e)=>{
     document.getElementById('fSetorOutro').focus();
   } else {
     document.getElementById('fSetorOutroWrap').style.display='none';
-    currentAudit.header.setor = e.target.value;
+    setCurrentSetor(e.target.value);
     document.getElementById('btnAddCart').style.display = TIPOS[currentTipo].hasCarts===false ? 'none' : 'block';
     refreshSectorDependentItemsUI(e.target.value);
     updateEnfermeiroLabel(e.target.value);
@@ -2821,7 +2908,7 @@ document.getElementById('fSetor').addEventListener('change', (e)=>{
 });
 document.getElementById('fSetorOutro').addEventListener('input', (e)=>{
   if(!currentAudit) return;
-  currentAudit.header.setor = e.target.value.trim();
+  setCurrentSetor(e.target.value.trim());
   refreshSectorDependentItemsUI(currentAudit.header.setor);
   updateEnfermeiroLabel(currentAudit.header.setor);
 });
@@ -2890,7 +2977,11 @@ document.getElementById('addCartConfirm').addEventListener('click', async ()=>{
 
 function buildCategoriesUI(){
   const wrap = document.getElementById('categoriesWrap');
-  wrap.innerHTML = CATEGORIES.map(cat=>{
+  const cfg = TIPOS[currentTipo];
+  const visibleCats = (cfg.multiFase && currentAudit)
+    ? CATEGORIES.filter(c=> cfg.faseCategorias[currentAudit.header.fase].includes(c.id))
+    : CATEGORIES;
+  wrap.innerHTML = visibleCats.map(cat=>{
     const items = ITEMS.filter(i=>i.cat===cat.id);
     return `
     <div class="category open" data-cat="${cat.id}">
@@ -3139,9 +3230,10 @@ function computeCategoryScore(audit, catId){
 
 async function persistAudit(finalize){
   const h = currentAudit.header;
+  const cfg = TIPOS[currentTipo];
+  if(cfg.multiFase) h.setor = h.faseSetores[h.fase] || cfg.fases.map(f=>h.faseSetores[f.key]).find(Boolean) || '';
   if(!h.data){ toast('Informe a data da auditoria.','bad'); document.getElementById('fData').focus(); return false; }
   if(!h.setor){
-    const cfg = TIPOS[currentTipo];
     toast(`Informe ${cfg.setorArticle||'o'} ${(cfg.setorLabel||'Setor').toLowerCase()} da auditoria.`,'bad');
     document.getElementById('fSetor').focus(); return false;
   }
@@ -3155,9 +3247,20 @@ async function persistAudit(finalize){
     if(!h.enfermeiro || !h.enfermeiro.trim()){ toast('Informe o nome do enfermeiro responsável.','bad'); document.getElementById('fEnfermeiro').focus(); return false; }
   }
   if(finalize){
+    if(cfg.multiFase){
+      const missing = cfg.fases.filter(f=> !h.faseSetores[f.key]);
+      if(missing.length){
+        toast(`Selecione o setor da fase "${missing[0].label}" antes de finalizar.`,'bad');
+        currentAudit.header.fase = missing[0].key;
+        document.getElementById('fFase').value = missing[0].key;
+        syncSetorSelectToFase(missing[0].key);
+        buildCategoriesUI(); restoreAuditUI(); updateProgress();
+        return false;
+      }
+    }
     const answered = currentAudit.items.filter(i=>i.status).length;
     if(answered < currentAudit.items.length){
-      toast(`Ainda restam ${currentAudit.items.length-answered} itens não avaliados.`,'bad');
+      toast(`Ainda restam ${currentAudit.items.length-answered} itens não avaliados${cfg.multiFase?' (nas 3 fases)':''}.`,'bad');
       return false;
     }
   }
@@ -3183,6 +3286,7 @@ async function persistAudit(finalize){
     cicloId: currentAudit.cicloId || null,
     carroIndisponivel: !!h.carroIndisponivel,
     setor: h.setor, carro: h.carro || null, setorDestino: h.setorDestino || null,
+    faseSetores: h.faseSetores || null,
     auditor: h.auditor, enfermeiro: h.enfermeiro,
     enfermeiroOrigem: h.enfermeiroOrigem || null, enfermeiroDestino: h.enfermeiroDestino || null,
     data: h.data,
@@ -3461,7 +3565,11 @@ async function openAuditDetail(id){
   if(!full){ toast('Auditoria não encontrada.','bad'); return; }
   currentDetailId = id;
   applySectorDependentItems(full.header.setor, false);
-  document.getElementById('detTitle').textContent = full.header.setor + (full.header.carro? ' · '+full.header.carro:'') + (full.header.setorDestino? ' → '+full.header.setorDestino:'') + ' — ' + fmtDate(full.header.data);
+  const cfgDet = TIPOS[currentTipo];
+  const setorLabel = (cfgDet.multiFase && full.header.faseSetores)
+    ? cfgDet.fases.map(f=> full.header.faseSetores[f.key] ? `${f.label}: ${full.header.faseSetores[f.key]}` : null).filter(Boolean).join(' · ')
+    : full.header.setor;
+  document.getElementById('detTitle').textContent = (setorLabel||full.header.setor) + (full.header.carro? ' · '+full.header.carro:'') + (full.header.setorDestino? ' → '+full.header.setorDestino:'') + ' — ' + fmtDate(full.header.data);
   const enfermeiroLine = TIPOS[currentTipo].hasSetorDestino
     ? `${full.header.enfermeiroOrigem? ' · Enf. Origem: '+escapeHtml(full.header.enfermeiroOrigem):''}${full.header.enfermeiroDestino? ' · Enf. Destino: '+escapeHtml(full.header.enfermeiroDestino):''}`
     : (full.header.enfermeiro? ' · Enfermeiro: '+escapeHtml(full.header.enfermeiro):'');
