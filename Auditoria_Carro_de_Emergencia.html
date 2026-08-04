@@ -1154,7 +1154,7 @@ const ITEMS_META4 = [
  {id:9,cat:'timeout',texto:'Todos interrompem suas atividades durante a realização do Time Out.'},
  {id:10,cat:'timeout',texto:'Alergias confirmadas.'},
  {id:11,cat:'timeout',texto:'Risco de perda sanguínea discutido, quando aplicável.'},
- {id:12,cat:'timeout',texto:'Reserva de hemocomponentes confirmada, quando indicada.'},
+ {id:12,cat:'timeout',texto:'Reserva de hemocomponentes confirmada, quando indicada.', statusOptions:['conforme','parcial','nao-conforme','nao-aplica']},
  {id:13,cat:'timeout',texto:'Profilaxia antimicrobiana administrada dentro do tempo recomendado.', statusOptions:['conforme','parcial','nao-conforme','nao-aplica']},
  {id:14,cat:'timeout',texto:'Disponibilidade de exames de imagem confirmada, quando necessária.'},
  {id:15,cat:'timeout',texto:'Materiais, implantes, OPME e equipamentos especiais disponíveis e conferidos.'},
@@ -1448,6 +1448,9 @@ const TIPOS = {
     cartProfiles: {}, defaultSectorCarts: {},
     storagePrefix: 'meta1adesao_', carroLabel: 'Carro', requireCarroSelection: false,
     hasCarts: false, cycleMode: 'monthly', monthlyTargetPerSector: 20, monthlyTargetTotal: 140,
+    // PS Adulto reduzido e UTI 1/2 aumentadas; os demais setores mantêm os
+    // 20/mês padrão (soma continua em 140).
+    monthlyTargetPerSectorMap: { 'PS Adulto': 10, 'UTI 1': 25, 'UTI 2': 25 },
   },
   meta2censo: {
     key:'meta2censo', label:'Meta 2 (censo)', labelPlural:'Meta 2 (censo)', icon:'refresh',
