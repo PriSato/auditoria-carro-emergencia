@@ -2600,10 +2600,88 @@ const ITEMS_UNIDADES_RADIOTERAPIA = [
  {id:47,cat:'radioterapia',texto:'O paciente recebe orientações formais sobre o tratamento radioterápico antes e durante as sessões? Verificar: registro de orientação pré-tratamento; registro de orientações durante o tratamento; comprovação de ciência do paciente (assinatura ou registro em prontuário). Considerar: Conforme com os 3 itens; Parcial Conforme com 2 itens; Não Conforme com 1 ou nenhum item.'},
 ];
 
+/* Fase "recepcaops" — checklist da Recepção dos Prontos Socorros (Adulto e
+   Infantil), compartilhado pelos dois setores porque os documentos
+   enviados para cada um trazem o mesmo formulário, com pequenas falhas de
+   diagramação diferentes em cada arquivo: o documento da Recepção PSA
+   perdeu o cabeçalho "D) Segurança do Paciente" (célula em branco) e o
+   item 15/B ("Cumprimento do cronograma de manutenção preventiva, com
+   registros atualizados"), presentes no documento da Recepção PSI — a
+   versão abaixo reúne as duas, sem nenhum conteúdo faltando. Diferente
+   dos demais questionários do módulo, este veio em formato de tabela
+   pontuada por item curto (sem o texto "Verificar/Considerar"), então os
+   itens foram transcritos como afirmações objetivas. */
+const CATEGORIES_UNIDADES_RECEPCAOPS = [
+  {id:'higiene', nome:'Higiene', icon:'refresh'},
+  {id:'manutencao', nome:'Manutenção', icon:'wrench'},
+  {id:'estrutura', nome:'Estrutura e Ambiente', icon:'cart'},
+  {id:'segurancapaciente', nome:'Segurança do Paciente', icon:'pin'},
+  {id:'fluxista', nome:'Fluxista e Gestão de Leitos', icon:'bed'},
+  {id:'qualidade', nome:'Qualidade e Experiência do Paciente', icon:'heart'},
+  {id:'documental', nome:'Gestão Documental', icon:'clipboard'},
+];
+const ITEMS_UNIDADES_RECEPCAOPS = [
+ {id:1,cat:'higiene',texto:'Limpeza e conservação da recepção, contemplando pisos, balcão de atendimento, mesas, bancadas, cadeiras, longarinas, portas, maçanetas, corrimãos, vidros, divisórias e demais mobiliários, livres de poeira, manchas e resíduos.'},
+ {id:2,cat:'higiene',texto:'Lixeiras limpas, íntegras, identificadas, com sacos adequados, sem transbordamento e com coleta de resíduos realizada conforme rotina.'},
+ {id:3,cat:'higiene',texto:'Disponibilidade de materiais e insumos para higiene e limpeza, incluindo dispensadores de álcool 70% para usuários e colaboradores.'},
+ {id:4,cat:'higiene',texto:'Preenchimento dos registros e checklists de limpeza, conforme rotina estabelecida.'},
+ {id:5,cat:'higiene',texto:'Utilização correta dos EPIs pela equipe de higiene durante a execução das atividades.'},
+ {id:6,cat:'higiene',texto:'Sinalização adequada durante a execução da limpeza, incluindo placas de piso molhado e organização dos materiais de limpeza, sem obstrução das áreas de circulação.'},
+ {id:7,cat:'higiene',texto:'Ausência de odores desagradáveis, evidenciando condições adequadas de higiene e conservação do ambiente.'},
+ {id:8,cat:'higiene',texto:'Tempo de resposta às solicitações de limpeza da recepção, conforme fluxo institucional.'},
+ {id:9,cat:'manutencao',texto:'Integridade e conservação da estrutura física da recepção, contemplando pisos, paredes, tetos, forro, portas, fechaduras, maçanetas, vidros, janelas, divisórias e balcão de atendimento, livres de rachaduras, infiltrações ou outros danos.'},
+ {id:10,cat:'manutencao',texto:'Funcionamento das instalações elétricas e climatização, incluindo iluminação, iluminação de emergência, tomadas, interruptores, luminárias e sistema de climatização/ventilação.'},
+ {id:11,cat:'manutencao',texto:'Funcionamento das instalações hidráulicas, incluindo ausência de vazamentos e pleno funcionamento dos pontos hidráulicos existentes na recepção.'},
+ {id:12,cat:'manutencao',texto:'Conservação e funcionamento do mobiliário e equipamentos sob responsabilidade da manutenção, incluindo cadeiras, mesas, armários, bancadas, macas, cadeiras de rodas, relógios e demais equipamentos fixos da recepção.'},
+ {id:13,cat:'manutencao',texto:'Condições de segurança da recepção, contemplando extintores, sinalização de combate a incêndio, rotas de fuga e sinalização de emergência.'},
+ {id:14,cat:'manutencao',texto:'Disponibilidade e funcionamento do gerador de energia, conforme rotina de testes e manutenção.'},
+ {id:15,cat:'manutencao',texto:'Cumprimento do cronograma de manutenção preventiva, com registros atualizados.'},
+ {id:16,cat:'manutencao',texto:'Registro, acompanhamento e tempo de resposta das ordens de serviço de manutenção corretiva, conforme prazos estabelecidos.'},
+ {id:17,cat:'manutencao',texto:'Comunicação efetiva entre a equipe de manutenção e a equipe da recepção, minimizando impactos no atendimento durante intervenções.'},
+ {id:18,cat:'estrutura',texto:'Ambiente limpo e organizado.'},
+ {id:19,cat:'estrutura',texto:'Ambiente sem acúmulo de materiais desnecessários.'},
+ {id:20,cat:'estrutura',texto:'Sinalização adequada e visível.'},
+ {id:21,cat:'estrutura',texto:'Fluxo de entrada e saída definido.'},
+ {id:22,cat:'estrutura',texto:'Assentos suficientes para usuários.'},
+ {id:23,cat:'estrutura',texto:'Acessibilidade para pessoas com deficiência.'},
+ {id:24,cat:'estrutura',texto:'Banheiros identificados e acessíveis.'},
+ {id:25,cat:'segurancapaciente',texto:'Utilização de identificador — pulseira/adesivo.'},
+ {id:26,cat:'segurancapaciente',texto:'Conferência de documento de identificação.'},
+ {id:27,cat:'segurancapaciente',texto:'Fluxo definido para pacientes sem identificação.'},
+ {id:28,cat:'segurancapaciente',texto:'Fluxo de classificação de risco sinalizado.'},
+ {id:29,cat:'segurancapaciente',texto:'Orientações fornecidas ao paciente/acompanhante.'},
+ {id:30,cat:'fluxista',texto:'Monitoramento contínuo da ocupação dos setores do PS.'},
+ {id:31,cat:'fluxista',texto:'Atuação para reduzir o tempo de permanência dos pacientes no PS.'},
+ {id:32,cat:'fluxista',texto:'Acompanhamento da disponibilidade de leitos internos e externos.'},
+ {id:33,cat:'fluxista',texto:'Manutenção da interface com a Central de Leitos quando necessário.'},
+ {id:34,cat:'fluxista',texto:'Comunicação efetiva com a equipe multiprofissional.'},
+ {id:35,cat:'fluxista',texto:'Comunicação de intercorrências de fluxo ao enfermeiro/liderança.'},
+ {id:36,cat:'fluxista',texto:'Registro de informações relevantes durante a passagem de plantão.'},
+ {id:37,cat:'fluxista',texto:'Atuação integrada com recepção, classificação de risco e equipes assistenciais.'},
+ {id:38,cat:'fluxista',texto:'Pacientes críticos encaminhados imediatamente ao setor adequado.'},
+ {id:39,cat:'fluxista',texto:'Monitoramento de pacientes aguardando leitos, exames, resultados ou atendimento médico.'},
+ {id:40,cat:'fluxista',texto:'Registro de transferências internas e externas, conforme padronização institucional.'},
+ {id:41,cat:'fluxista',texto:'Registros completos, legíveis e rastreáveis.'},
+ {id:42,cat:'fluxista',texto:'Respeito às prioridades definidas pela classificação de risco.'},
+ {id:43,cat:'qualidade',texto:'Atendimento cordial e humanizado.'},
+ {id:44,cat:'qualidade',texto:'Profissionais identificados com crachá.'},
+ {id:45,cat:'qualidade',texto:'Orientações fornecidas de forma clara.'},
+ {id:46,cat:'qualidade',texto:'Canal para reclamações e sugestões disponível.'},
+ {id:47,cat:'qualidade',texto:'Tempo de espera monitorado.'},
+ {id:48,cat:'qualidade',texto:'Indicadores do setor acompanhados.'},
+ {id:49,cat:'documental',texto:'POPs disponíveis e atualizados.'},
+ {id:50,cat:'documental',texto:'Escalas atualizadas.'},
+ {id:51,cat:'documental',texto:'Treinamento em atendimento ao público.'},
+ {id:52,cat:'documental',texto:'Treinamento em LGPD e sigilo profissional.'},
+ {id:53,cat:'documental',texto:'Capacitação em segurança do paciente.'},
+ {id:54,cat:'documental',texto:'Treinamentos registrados.'},
+ {id:55,cat:'documental',texto:'Conhecimento do acesso ao Qualiex (abordar 3 profissionais).'},
+];
+
 /* Setores da auditoria "Unidades Assistenciais" — cada um recebe o
    questionário correspondente via UNIDADES_ASSISTENCIAIS_FASE_POR_SETOR
    logo abaixo. Cresce conforme novos setores forem enviados. */
-const SETORES_UNIDADES_ASSISTENCIAIS = ['Ambulatório 1 (CENCOR)', 'Ambulatório 2 (Pequenas Cirurgias)', 'Centro Cirúrgico', 'Centro Cirúrgico Materno-Infantil', 'CME', 'Bloco 1', 'Bloco 2', 'Bloco 3', 'Bloco 4', 'Bloco 5', 'Oncologia Ala A', 'Maternidade Ala A', 'Maternidade Ala B', 'PS Adulto', 'PS Infantil', 'UCINCO', 'UTI Adulto 1', 'UTI Adulto 2', 'UTI Neonatal 1', 'UTI Neonatal 2', 'UTI Pediátrica', 'Endoscopia', 'Hemodinâmica', 'SND - Serviço de Nutrição e Dietética', 'Centro de Diagnóstico por Imagem', 'Agência Transfusional', 'Laboratório Clínico', 'OPME', 'Quimioterapia', 'Radioterapia'];
+const SETORES_UNIDADES_ASSISTENCIAIS = ['Ambulatório 1 (CENCOR)', 'Ambulatório 2 (Pequenas Cirurgias)', 'Centro Cirúrgico', 'Centro Cirúrgico Materno-Infantil', 'CME', 'Bloco 1', 'Bloco 2', 'Bloco 3', 'Bloco 4', 'Bloco 5', 'Oncologia Ala A', 'Maternidade Ala A', 'Maternidade Ala B', 'PS Adulto', 'PS Infantil', 'UCINCO', 'UTI Adulto 1', 'UTI Adulto 2', 'UTI Neonatal 1', 'UTI Neonatal 2', 'UTI Pediátrica', 'Endoscopia', 'Hemodinâmica', 'SND - Serviço de Nutrição e Dietética', 'Centro de Diagnóstico por Imagem', 'Agência Transfusional', 'Laboratório Clínico', 'OPME', 'Quimioterapia', 'Radioterapia', 'Recepção PS Adulto', 'Recepção PS Infantil'];
 /* Mapa setor -> fase (chave em TIPOS.unidadesAssistenciais.phases). Ambulatório
    1 (CENCOR) e Ambulatório 2 (Pequenas Cirurgias) compartilham o mesmo
    questionário ("ambulatorio"); ao chegar o questionário de um novo setor,
@@ -2639,6 +2717,8 @@ const UNIDADES_ASSISTENCIAIS_FASE_POR_SETOR = {
   'OPME': 'opme',
   'Quimioterapia': 'quimioterapia',
   'Radioterapia': 'radioterapia',
+  'Recepção PS Adulto': 'recepcaops',
+  'Recepção PS Infantil': 'recepcaops',
 };
 
 const ICONS = {
@@ -2976,6 +3056,7 @@ const TIPOS = {
       opme: { categories: CATEGORIES_UNIDADES_OPME, items: ITEMS_UNIDADES_OPME },
       quimioterapia: { categories: CATEGORIES_UNIDADES_QUIMIOTERAPIA, items: ITEMS_UNIDADES_QUIMIOTERAPIA },
       radioterapia: { categories: CATEGORIES_UNIDADES_RADIOTERAPIA, items: ITEMS_UNIDADES_RADIOTERAPIA },
+      recepcaops: { categories: CATEGORIES_UNIDADES_RECEPCAOPS, items: ITEMS_UNIDADES_RECEPCAOPS },
     },
   },
 };
