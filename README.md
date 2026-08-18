@@ -1,140 +1,79 @@
 # Auditorias do Serviço de Qualidade Hospitalar
 
-Aplicativo web single-file (HTML/CSS/JS) para as auditorias do Serviço
-de Qualidade do **Hospital Maternidade São Vicente de Paulo**. Permite à
-equipe registrar, acompanhar e organizar em ciclos as conferências
-periódicas de todos os setores do hospital, pelos tablets em campo —
-hoje reunindo **5 módulos de auditoria** diferentes num único app.
+App web single-file (HTML/CSS/JS, sem build) para as auditorias do Serviço
+de Qualidade do **Hospital Maternidade São Vicente de Paulo**, usado pelos
+tablets em campo — hoje **14 módulos de auditoria** independentes num só app.
 
-**Link em produção:** https://prisato.github.io/auditoria-carro-emergencia/
+**Produção:** https://prisato.github.io/auditoria-carro-emergencia/
+**Hospedagem:** GitHub Pages, deploy automático a cada push na `master`.
 
-## Arquivo principal
-`Auditoria_Carro_de_Emergencia.html` — contém toda a interface, estilos e
-lógica do app (não há build step; é servido como está). O nome do
-arquivo é histórico (o projeto começou como só a auditoria dos carros
-de emergência); o título e o conteúdo já cobrem todos os módulos.
-
-`index.html` só existe para redirecionar a raiz do GitHub Pages para o
-arquivo principal.
+## Arquivos
+- `Auditoria_Carro_de_Emergencia.html` — todo o app (interface, estilos, lógica). Nome histórico (começou só com carros de emergência); já cobre todos os módulos.
+- `index.html` — só redireciona a raiz do GitHub Pages para o arquivo acima.
+- `supabase_schema.sql` — schema e RLS do banco.
 
 ## Stack
-- **Frontend:** HTML/CSS/JS puro, sem framework. Fonte Montserrat.
-  Chart.js (gráficos), jsPDF + jspdf-autotable (exportação em PDF).
-- **Backend:** [Supabase](https://supabase.com) — Postgres (tabela
-  `kv_store` genérica chave/valor, mais a tabela `profiles`), Auth
-  (login por e-mail/senha) e Realtime (presença "quem está online").
-  Configuração (URL do projeto e chave pública) e todo o schema SQL
-  ficam no próprio `Auditoria_Carro_de_Emergencia.html` e em
-  `supabase_schema.sql`, respectivamente.
-- **Hospedagem:** GitHub Pages, deploy automático a cada push na
-  branch `master`.
-
-## Contas e acesso
-Login por e-mail/senha via Supabase Auth. Autocadastro está liberado
-(qualquer pessoa com o link pode criar a própria conta) e a confirmação
-por e-mail está desativada, para permitir cadastro instantâneo direto
-no tablet. Todos os usuários autenticados compartilham os mesmos dados
-(não há times/organizações separadas).
+- **Frontend:** HTML/CSS/JS puro. Chart.js (gráficos), jsPDF + jspdf-autotable (PDF).
+- **Backend:** [Supabase](https://supabase.com) — Postgres (tabela `kv_store` chave/valor genérica + `profiles`), Auth (e-mail/senha, autocadastro liberado, sem confirmação por e-mail), Realtime (presença "Online agora"). Todos os usuários autenticados compartilham os mesmos dados (sem times/organizações).
 
 ## Módulos de auditoria
-Antes de iniciar qualquer auditoria (ou ao trocar de módulo pela barra
-lateral), a pessoa escolhe qual das 5 auditorias vai preencher. Cada
-módulo tem checklist, setores e dados próprios — completamente
-independentes entre si, sem misturar histórico, ciclos ou indicadores.
+A pessoa escolhe o módulo na barra lateral (agrupada em **QUALIDADE** e
+**SEGURANÇA DO PACIENTE**, seções recolhíveis) ou no seletor "Nova
+Auditoria". Cada módulo tem checklist, setores, ciclo e dados
+(`storagePrefix` no `kv_store`) completamente isolados dos demais.
 
-| Módulo | Setores | Checklist |
-|---|---|---|
-| **Carro de Emergência** | 30 setores fixos + "Outro" | 25 itens em 9 categorias (Acesso/Limpeza, Lacre, Desfibrilador, Registros, Via Aérea, Oxigênio, Medicamentos, Reposição, Localização) |
-| **Carro de Medicação** | 9 setores + "Outro" | 22 itens em 4 categorias (Segurança/Acesso, Identificação, Limpeza/Conservação, Descarte de Resíduos) |
-| **Equipamentos da Engenharia Clínica** | 34 setores + "Outro" | 7 itens (Calibração, Manutenção Preventiva, Rede Elétrica, Funcionamento, Higiene, Armazenamento, Registro); auditado por **equipamento individual** (ver abaixo) |
-| **Meta 2 (SBAR)** | mesmos 30 setores da Carro de Emergência + "Outro" | 2 itens — um para o **setor de origem** (Preenchimento adequado) e outro para o **setor de destino** (Validação com carimbo e assinatura, sem opção "Parcial") |
-| **Meta 1** | 56 setores próprios (recepções + setores assistenciais) | Muda conforme o setor: **Recepções** (16 setores) têm 3 itens (só Conforme/Não Conforme); **demais setores** (40) têm 1 item (Conforme/Parcial/Não Conforme) |
+### Qualidade
 
-### Checklist — regras gerais (valem para todos os módulos)
-- Cada item aceita, por padrão, Conforme / Parcial / Não Conforme,
-  observação e fotos; uma caixinha ao lado do texto fica verde assim
-  que o item é respondido. Alguns itens restringem as opções (ex.: só
-  Conforme/Não Conforme) ou, na Engenharia Clínica, ganham uma 4ª opção
-  **"Não se Aplica"** (pintada em cinza-escuro), que é **excluída do
-  numerador e do denominador** do cálculo de conformidade.
-- Selecionar **Conforme** (ou "Não se Aplica") não abre o campo de
-  observações/fotos — só aparece quando o item precisa de justificativa
-  (Parcial ou Não Conforme).
-- Campos obrigatórios para salvar (rascunho ou finalizado): data,
-  setor, auditor e enfermeiro responsável (ou, na Meta 2, os dois
-  enfermeiros — origem e destino).
-- Opção **"Carro não disponível"** no cabeçalho: dispensa o checklist
-  item a item e registra a auditoria como não conformidade total do
-  setor.
-- Auditorias já salvas (rascunho ou finalizada) podem ser **editadas**
-  a partir do Histórico — útil principalmente para preencher itens do
-  checklist que foram adicionados depois que a auditoria foi feita.
+| Módulo (`storagePrefix`) | Setores | Checklist | Ciclo |
+|---|---|---|---|
+| Carro de Emergência (` `) | 30 fixos + Outro | 25 itens / 9 categorias | Cobertura (100% dos setores) |
+| Carro de Medicação (`med_`) | 9 + Outro | 22 itens / 4 categorias | Cobertura |
+| Engenharia Clínica (`eng_`) | 34 + Outro, auditado por **equipamento individual** (Setor→Equipamento→checklist) | 7 itens, com "Não se Aplica" | Cobertura |
+| Processo Transfusional (`transf_`) | 19 fixos | 8 categorias (perguntas do protocolo) / 37 itens (subcritérios auditados individualmente) | Mensal, sem meta |
+| Registro da SAEP (`saep_`) | 11 reais + Outro, **por fase** (campo "Fase" próprio, antes de "Setor") | 3 fases (Pré/Trans/Pós-operatório) × 7 etapas / 21 itens; finalizar exige as 3 fases completas, cada uma com seu setor | Cobertura |
+| Unidade Oncológica Iguatu (`oncoIguatu_`) | 3 "setores" pseudônimos = as 3 auditorias em si (campo "Setor" vira "Auditoria") | Reaproveita, sem duplicar, os checklists originais de Carro de Emergência, Meta 1 (pulseiras) e Meta 1 (adesão) — troca conforme a auditoria escolhida | Cobertura (fecha ao completar as 3 auditorias) |
+| Unidades Assistenciais (`unidadesAssist_`) | 25 setores reais, cada um com o **checklist do seu tipo de unidade** (15 checklists diferentes ao todo: Ambulatórios, Centro Cirúrgico, CCMI, CME, Enfermarias/Blocos/Oncologia, Alojamento Conjunto/Maternidade, Pronto Socorro, UCINCO, UTI Adulto, UTI Neonatal, UTI Pediátrica, Endoscopia, Hemodinâmica, SND, CDI) | 41 a 65 itens por checklist, 7 a 10 categorias cada, conforme o tipo de unidade | Cobertura |
 
-### Setores com múltiplos carros/equipamentos
-Setores que têm mais de um "carro" usam o recurso **"Adicionar
-carro"**: cada carro é rastreado separadamente para fins de conclusão
-do ciclo, mas a conformidade exibida no Dashboard e em Setores é do
-setor como um todo. Também é possível **remover** um carro/equipamento
-do setor (o histórico das auditorias já feitas para ele é mantido, só
-deixa de aparecer para novas auditorias).
+### Segurança do Paciente
 
-Na **Engenharia Clínica** esse mecanismo vira o fluxo principal:
-Setor → Equipamento → checklist. O checklist só abre depois que um
-equipamento é escolhido. O catálogo inicial (337 equipamentos em 27 dos
-34 setores, identificados por nome + nº de patrimônio/tag) foi
-extraído dos planos de manutenção 2026 da engenharia clínica; novos
-equipamentos podem ser cadastrados pela própria tela.
+| Módulo (`storagePrefix`) | Setores | Checklist | Ciclo mensal |
+|---|---|---|---|
+| Meta 1 – pulseiras (`meta1_`) | 17 (`SETORES_ASSISTENCIAIS`) | Recepção (3 itens) x assistencial (4 itens, pulseira/quadro leito) conforme o setor | Meta por setor: UTI Neo 1/2, UTI Ped., UCINCO, UCINCA = 10; Bloco 1/2/4/5, Maternidade = 30; demais = 20 (total 340) |
+| Meta 1 – adesão (`meta1adesao_`) | 7 | 1 item (3 identificadores) | PS Adulto = 10; UTI 1/2 = 25; demais = 20 (total 140) |
+| Meta 2 – SBAR (`meta2_`) | 30 + Outro | 2 itens: origem (Preenchimento) e destino (Validação, sem "Parcial") | Sem meta fixa |
+| Meta 2 – censo (`meta2censo_`) | 17 (`SETORES_ASSISTENCIAIS`) | 1 item (preenchimento do censo) | 20/setor (total 340) |
+| Meta 4 – Time Out (`meta4_`) | 10 salas (1CC-8CC, 1CCMI, 2CCMI) | 17 itens / 2 categorias; 3 itens com "Não se Aplica" (demarcação sítio, profilaxia, reserva hemocomponentes) | Por grupo: salas "CC" = 30, "CCMI" = 10 (total 40) |
+| Meta 6 – QUEDAS (`meta6_`) | 7 | 2 itens | 20/setor (total 140) |
+| Meta 6 – LP (`meta6lp_`) | 3 (UTIs) | 6 itens; 1 com "Não se Aplica" (calcâneos flutuantes) | 20/setor (total 60) |
 
-### Meta 2 (SBAR) — origem e destino
-Cada auditoria avalia a passagem de caso entre dois setores: o
-preenchimento no setor de origem e a validação no setor de destino
-(campos, enfermeiros e itens separados). O Dashboard mostra os dois
-indicadores de conformidade (Origem/Destino) separadamente, e o
-gráfico "conformidade por setor" separa as médias por papel — um
-mesmo setor pode ser origem em uma auditoria e destino em outra.
+### Regras gerais do checklist
+- Status padrão: Conforme / Parcial / Não Conforme + observação/fotos. Itens podem restringir opções (`statusOptions`, ex.: só Conforme/Não Conforme) ou ganhar **"Não se Aplica"**, sempre **excluída do numerador e denominador** da conformidade e dos gráficos por item.
+- Observação/fotos só abrem quando o status precisa de justificativa (não abre em Conforme/Não se Aplica).
+- Campos obrigatórios: data, setor, auditor, enfermeiro (ou os dois em SBAR/origem-destino).
+- Checkbox **"[módulo] não disponível no setor"** — só nos módulos que auditam um carro/equipamento físico (Emergência, Medicação, Engenharia); zera o checklist item a item como não conformidade total.
+- Setores que começam com "Recepção" trocam o rótulo do campo "Enfermeiro Responsável" para "Recepcionista".
+- Auditorias salvas (rascunho ou finalizada) podem ser reabertas e editadas pelo Histórico.
+- **Checklist dependente do setor** (`sectorDependentItems`/`phases`): a escolha do setor (ou, na Unidade Oncológica Iguatu, da "Auditoria") troca as categorias/itens em uso, sem duplicar módulo. Usado por Meta 1 (Recepção × Assistencial), Unidade Oncológica Iguatu (3 auditorias) e Unidades Assistenciais (15 checklists, um por tipo de unidade).
 
-### Ciclos de auditoria
-Agrupa as auditorias em ciclos que cobrem todos os setores previstos do
-módulo atual. A tela **Ciclos** mostra o progresso do ciclo (setores
-auditados vs. pendentes), permite concluir o ciclo (ao atingir 100%) e
-mantém o histórico completo de ciclos anteriores, com duração e
-conformidade média. Setores inativos (unidade fechada/reformada) podem
-ser desativados/reativados sem perder o histórico de auditorias já
-feitas para eles.
+### Ciclos de auditoria (dois modos, por módulo)
+- **Cobertura** (padrão): ciclo cobre todos os setores previstos; fecha manualmente ao atingir 100%, abre o próximo automaticamente. Setores podem ser desativados/reativados sem perder histórico.
+- **Mensal** (`cycleMode:'monthly'`): abre/fecha sozinho por mês corrido, sem exigir cobertura. Opcionalmente tem meta numérica: total simples (`monthlyTargetTotal`), por setor uniforme (`monthlyTargetPerSector`), por setor customizada (`monthlyTargetPerSectorMap`, com fallback pro valor uniforme) ou por grupo de setores via regex (`monthlyTargetGroups`, ex.: Meta 4). Banner e tela Ciclos mostram barra de progresso e placar por setor/grupo quando há meta.
 
 ### Dashboard, Histórico e Setores
-- Dashboard com indicadores, evolução de conformidade, ranking de itens
-  mais não conformes e gráfico de conformidade por setor.
-- Histórico com filtros por setor, ciclo, status e período.
-- Detalhe por setor com tendência e não conformidades recorrentes.
-- **Gerar Relatório** e o **PDF de cada auditoria** têm duas versões:
-  **Resumo** (rápido, só os status) e **Completo** (inclui as
-  observações digitadas e as fotos anexadas de cada item — as fotos só
-  aparecem no PDF; no texto copiado entra a contagem de fotos com
-  indicação de ver o PDF).
+- Indicadores, evolução de conformidade, ranking de itens mais não conformes.
+- Gráfico "Conformidade média": por setor (padrão); por item (`dashboardByItem`, ex.: Meta 4); por categoria/tópico agrupando vários itens (`dashboardGroupBy:'category'`, ex.: Processo Transfusional — 8 tópicos em vez de 37 subcritérios).
+- Histórico com filtros (setor, ciclo, status, período). Detalhe por setor com tendência.
+- **Gerar Relatório** e PDF por auditoria: versão Resumo (só status) e Completo (observações + fotos; texto copiado só lista os itens **Não Conforme**).
 
 ### Perfil e presença
-Cada login tem um perfil básico (nome de exibição, editável), com
-avatar de iniciais. A barra lateral mostra em tempo real quem mais da
-equipe está com o app aberto ("Online agora"), via Supabase Realtime.
+Login com perfil básico (nome, avatar de iniciais) e lista "Online agora" em tempo real (Supabase Realtime).
 
 ## Estrutura de dados (Supabase)
-Tudo fica em duas tabelas simples:
-- `kv_store` (`key text primary key`, `value jsonb`) — guarda, por
-  chave: `audit_index` (índice resumido das auditorias), `audit_<id>`
-  (detalhe completo de cada auditoria), `cycles` (ciclos),
-  `inactive_sectors` (setores desativados) e `sector_carts` (carros/
-  equipamentos cadastrados por setor). Essas chaves são as usadas pelo
-  módulo **Carro de Emergência** (o original, sem prefixo); os demais
-  módulos usam as mesmas chaves com um prefixo próprio —
-  `med_` (Carro de Medicação), `eng_` (Engenharia Clínica), `meta2_`
-  (Meta 2/SBAR) e `meta1_` (Meta 1) — mantendo os dados de cada módulo
-  completamente isolados dentro da mesma tabela.
-- `profiles` (`id` = `auth.users.id`, `name`) — nome de exibição de
-  cada usuário.
+Duas tabelas:
+- `kv_store` (`key text primary key`, `value jsonb`) — por módulo (chave prefixada por `storagePrefix`, ver tabelas acima): `audit_index`, `cycles`, `inactive_sectors`, `sector_carts`. Detalhes de auditoria (`audit_<id>`) **não** levam prefixo — o id já é globalmente único.
+- `profiles` (`id` = `auth.users.id`, `name`).
 
-RLS restringe leitura/escrita a usuários autenticados; ver
-`supabase_schema.sql` para o schema completo e as políticas.
+RLS restringe leitura/escrita a usuários autenticados; ver `supabase_schema.sql`.
 
 ## Histórico de versões
-Ver histórico de commits do git para acompanhar a evolução do app.
+Ver histórico de commits do git.
