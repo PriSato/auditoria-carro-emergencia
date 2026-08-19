@@ -1214,13 +1214,9 @@ const ITEMS_TRANSFUSIONAL = [
  {id:10,cat:'saida',texto:'Número da bolsa registrado'},
  {id:11,cat:'transporte',texto:'Transporte realizado em caixa térmica apropriada'},
  {id:12,cat:'transporte',texto:'Integridade da bolsa preservada'},
- {id:13,cat:'transporte',texto:'Transporte direto, sem interrupções indevidas'},
- {id:14,cat:'transporte',texto:'Tempo de transporte compatível com o protocolo'},
  {id:15,cat:'transporte',texto:'Identificação do responsável pelo transporte'},
- {id:16,cat:'aptidao',texto:'Avaliação clínica prévia registrada'},
  {id:17,cat:'aptidao',texto:'Sinais vitais verificados antes da instalação'},
  {id:18,cat:'aptidao',texto:'Ausência de contraindicação clínica registrada'},
- {id:19,cat:'aptidao',texto:'Comunicação com o banco de sangue quando necessário'},
  {id:20,cat:'instalacao',texto:'Horário de recebimento registrado'},
  {id:21,cat:'instalacao',texto:'Horário de início da transfusão registrado'},
  {id:22,cat:'instalacao',texto:'Intervalo compatível entre recebimento e instalação'},
@@ -1233,7 +1229,6 @@ const ITEMS_TRANSFUSIONAL = [
  {id:29,cat:'tecnica',texto:'Uso de equipo com filtro para transfusão'},
  {id:30,cat:'tecnica',texto:'Acesso venoso pérvio'},
  {id:31,cat:'tecnica',texto:'Técnica asséptica observada'},
- {id:32,cat:'tecnica',texto:'Ausência de improvisações'},
  {id:33,cat:'tecnica',texto:'Profissional habilitado executando o procedimento'},
  {id:34,cat:'hemovigilancia',texto:'Placa de hemovigilância fixada à cabeceira do leito'},
  {id:35,cat:'hemovigilancia',texto:'Equipe orientada quanto aos sinais de reação transfusional'},
@@ -2582,6 +2577,52 @@ const ITEMS_UNIDADES_OPME = [
  ...higieneManutencaoItems(16),
 ];
 
+/* Fase "farmacia" — checklist único para todas as farmácias satélites e
+   centrais (Farmácia Central, Farmácia Satélite PS, Farmácia, Farmácia
+   Satélite CC/CCMI/Pediatria/QT e CAF), enviado pela usuária como uma
+   lista de afirmações objetivas (sem o texto "Verificar/Considerar" dos
+   demais questionários do módulo), transcritas fielmente. */
+const CATEGORIES_UNIDADES_FARMACIA = [
+  ...HIGIENE_MANUTENCAO_CATEGORIES,
+  {id:'infraestrutura', nome:'Infraestrutura e Acesso', icon:'cart'},
+  {id:'estoque', nome:'Armazenamento e Organização de Estoque', icon:'clipboard'},
+  {id:'equipamentos', nome:'Equipamentos e Controle de Temperatura', icon:'wrench'},
+  {id:'protocolos', nome:'Protocolos e Segurança na Medicação', icon:'pill'},
+  {id:'processos', nome:'Processos Farmacêuticos', icon:'drop'},
+  {id:'gestao', nome:'Gestão, Documentação e Indicadores', icon:'clock'},
+  {id:'biosseguranca', nome:'Biossegurança e EPI', icon:'lock'},
+];
+const ITEMS_UNIDADES_FARMACIA = [
+ ...higieneManutencaoItems(1),
+ {id:23,cat:'infraestrutura',texto:'Área física adequada às atividades desenvolvidas, com controle de acesso e fluxo de trabalho definido e sinalizado.'},
+ {id:24,cat:'infraestrutura',texto:'Ambientes organizados, identificados e livres de materiais, equipamentos, medicamentos e objetos desnecessários.'},
+ {id:25,cat:'estoque',texto:'Materiais sem uso, medicamentos vencidos, interditados ou impróprios para uso devidamente segregados e identificados.'},
+ {id:26,cat:'estoque',texto:'Medicamentos e materiais dispostos de forma ordenada, padronizada e de fácil localização.'},
+ {id:27,cat:'estoque',texto:'Equipe cumpre os padrões e rotinas estabelecidos para organização, armazenamento e funcionamento do setor.'},
+ {id:28,cat:'estoque',texto:'Medicamentos armazenados conforme recomendações do fabricante, utilizando o sistema PEPS/FIFO.'},
+ {id:29,cat:'equipamentos',texto:'Controle e registro das temperaturas ambiente e dos refrigeradores realizado conforme rotina estabelecida.'},
+ {id:30,cat:'equipamentos',texto:'Equipamentos de monitoramento de temperatura com funcionamento adequado e calibração/verificação vigente.'},
+ {id:31,cat:'protocolos',texto:'Medicamentos e produtos devidamente identificados, com segregação e identificação diferenciada para medicamentos de alta vigilância e sujeitos a controle especial.'},
+ {id:32,cat:'equipamentos',texto:'Termolábeis armazenados e monitorados adequadamente.'},
+ {id:33,cat:'equipamentos',texto:'Refrigeradores organizados e em condições adequadas de funcionamento.'},
+ {id:34,cat:'protocolos',texto:'Barreiras de segurança implantadas para prevenção de erros de medicação, incluindo dupla checagem quando aplicável.'},
+ {id:35,cat:'processos',texto:'Prescrições analisadas pelo farmacêutico, considerando interações medicamentosas, alergias e demais critérios de segurança aplicáveis.'},
+ {id:36,cat:'processos',texto:'Dispensação realizada mediante conferência e com rastreabilidade por paciente.'},
+ {id:37,cat:'processos',texto:'Controle da validade realizado antes da dispensação.'},
+ {id:38,cat:'protocolos',texto:'Protocolos para medicamentos de maior risco ou situações especiais disponíveis e aplicados pela equipe.'},
+ {id:39,cat:'gestao',texto:'Indicadores relacionados aos processos da farmácia e erros de dispensação monitorados e analisados.'},
+ {id:40,cat:'gestao',texto:'Incidentes relacionados a medicamentos notificados e utilizados para implementação de ações de melhoria.'},
+ {id:41,cat:'processos',texto:'Manipulação de medicamentos realizada conforme requisitos de segurança e boas práticas.'},
+ {id:42,cat:'biosseguranca',texto:'Disponibilidade e utilização adequada de preparação alcoólica e EPIs nas atividades que requerem esses recursos.'},
+ {id:43,cat:'biosseguranca',texto:'Resíduos segregados e acondicionados corretamente.'},
+ {id:44,cat:'gestao',texto:'Farmácia participa das ações institucionais relacionadas à prevenção e controle de IRAS e ao uso racional de antimicrobianos, quando aplicável.'},
+ {id:45,cat:'gestao',texto:'POPs e documentos relacionados aos processos da farmácia atualizados, controlados e acessíveis à equipe.'},
+ {id:46,cat:'gestao',texto:'Não conformidades identificadas possuem plano de ação, acompanhamento e evidência de tratamento.'},
+ {id:47,cat:'gestao',texto:'Auditorias internas e gestão de riscos dos processos da farmácia realizadas conforme planejamento.'},
+ {id:48,cat:'gestao',texto:'Dimensionamento e escala da equipe compatíveis com as atividades desenvolvidas.'},
+ {id:49,cat:'gestao',texto:'Capacitação e integração de novos colaboradores realizadas e documentadas.'},
+];
+
 /* Base comum ("Complexo Oncológico") compartilhada pelas fases "quimioterapia"
    e "radioterapia" — os documentos enviados para os dois setores trazem os
    40 itens abaixo idênticos (com resquícios de "Enfermaria" nas perguntas de
@@ -2750,7 +2791,7 @@ const ITEMS_UNIDADES_RECEPCAOPS = [
 /* Setores da auditoria "Unidades Assistenciais" — cada um recebe o
    questionário correspondente via UNIDADES_ASSISTENCIAIS_FASE_POR_SETOR
    logo abaixo. Cresce conforme novos setores forem enviados. */
-const SETORES_UNIDADES_ASSISTENCIAIS = ['Ambulatório 1 (CENCOR)', 'Ambulatório 2 (Pequenas Cirurgias)', 'Centro Cirúrgico', 'Centro Cirúrgico Materno-Infantil', 'CME', 'Bloco 1', 'Bloco 2', 'Bloco 3', 'Bloco 4', 'Bloco 5', 'Oncologia Ala A', 'Maternidade Ala A', 'Maternidade Ala B', 'PS Adulto', 'PS Infantil', 'UCINCO', 'UTI Adulto 1', 'UTI Adulto 2', 'UTI Neonatal 1', 'UTI Neonatal 2', 'UTI Pediátrica', 'Endoscopia', 'Hemodinâmica', 'SND - Serviço de Nutrição e Dietética', 'Centro de Diagnóstico por Imagem', 'Agência Transfusional', 'Laboratório Clínico', 'OPME', 'Quimioterapia', 'Radioterapia', 'Recepção PS Adulto', 'Recepção PS Infantil'];
+const SETORES_UNIDADES_ASSISTENCIAIS = ['Ambulatório 1 (CENCOR)', 'Ambulatório 2 (Pequenas Cirurgias)', 'Centro Cirúrgico', 'Centro Cirúrgico Materno-Infantil', 'CME', 'Bloco 1', 'Bloco 2', 'Bloco 3', 'Bloco 4', 'Bloco 5', 'Oncologia Ala A', 'Maternidade Ala A', 'Maternidade Ala B', 'PS Adulto', 'PS Infantil', 'UCINCO', 'UTI Adulto 1', 'UTI Adulto 2', 'UTI Neonatal 1', 'UTI Neonatal 2', 'UTI Pediátrica', 'Endoscopia', 'Hemodinâmica', 'SND - Serviço de Nutrição e Dietética', 'Centro de Diagnóstico por Imagem', 'Agência Transfusional', 'Laboratório Clínico', 'OPME', 'Quimioterapia', 'Radioterapia', 'Recepção PS Adulto', 'Recepção PS Infantil', 'Farmácia Central', 'Farmácia Satélite PS', 'Farmácia', 'Farmácia Satélite CC', 'Farmácia Satélite CCMI', 'Farmácia Satélite Pediatria', 'Farmácia Satélite QT', 'CAF'];
 /* Mapa setor -> fase (chave em TIPOS.unidadesAssistenciais.phases). Ambulatório
    1 (CENCOR) e Ambulatório 2 (Pequenas Cirurgias) compartilham o mesmo
    questionário ("ambulatorio"); ao chegar o questionário de um novo setor,
@@ -2788,6 +2829,14 @@ const UNIDADES_ASSISTENCIAIS_FASE_POR_SETOR = {
   'Radioterapia': 'radioterapia',
   'Recepção PS Adulto': 'recepcaops',
   'Recepção PS Infantil': 'recepcaops',
+  'Farmácia Central': 'farmacia',
+  'Farmácia Satélite PS': 'farmacia',
+  'Farmácia': 'farmacia',
+  'Farmácia Satélite CC': 'farmacia',
+  'Farmácia Satélite CCMI': 'farmacia',
+  'Farmácia Satélite Pediatria': 'farmacia',
+  'Farmácia Satélite QT': 'farmacia',
+  'CAF': 'farmacia',
 };
 
 const ICONS = {
@@ -3126,6 +3175,7 @@ const TIPOS = {
       quimioterapia: { categories: CATEGORIES_UNIDADES_QUIMIOTERAPIA, items: ITEMS_UNIDADES_QUIMIOTERAPIA },
       radioterapia: { categories: CATEGORIES_UNIDADES_RADIOTERAPIA, items: ITEMS_UNIDADES_RADIOTERAPIA },
       recepcaops: { categories: CATEGORIES_UNIDADES_RECEPCAOPS, items: ITEMS_UNIDADES_RECEPCAOPS },
+      farmacia: { categories: CATEGORIES_UNIDADES_FARMACIA, items: ITEMS_UNIDADES_FARMACIA },
     },
   },
 };
