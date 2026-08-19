@@ -1252,6 +1252,49 @@ const SETORES_TRANSFUSIONAL = ['Bloco 1','Bloco 2','Bloco 4','Bloco 5','Oncologi
    mesma fase; novos setores com questionário próprio ganham uma fase nova
    à medida que forem enviados.
    ========================================================================= */
+/* Questionário padrão de Higiene e Manutenção — incluído no início do
+   checklist de TODOS os setores de Unidades Assistenciais (auditado junto
+   com o setor, como um subsetor, mas apurado como indicador próprio: ver
+   SUBINDICATOR_CATS mais abaixo, perto de computeScore). Os textos ficam
+   aqui uma única vez; cada fase reaproveita via higieneManutencaoItems(
+   startId), que gera os 22 itens (10 de Higiene + 12 de Manutenção) com
+   ids próprios da fase, sem colidir com os itens específicos do setor. */
+const HIGIENE_PADRAO_TEXTOS = [
+ 'Ambiente, pisos, paredes, portas, tetos, janelas, vidros e demais superfícies encontram-se limpos e livres de sujidades, poeira, mofo ou teias de aranha.',
+ 'Mobiliários, equipamentos e superfícies de alto contato encontram-se limpos e livres de sujidades.',
+ 'Lixeiras encontram-se limpas, íntegras, identificadas, sem transbordamento e com acondicionamento adequado dos resíduos.',
+ 'Resíduos são acondicionados e retirados adequadamente, sem acúmulo ou presença de materiais descartados em locais inadequados.',
+ 'Banheiros, quando aplicável, encontram-se limpos e higienizados, incluindo vasos sanitários, pias, bancadas, espelhos e demais superfícies.',
+ 'Dispensadores de sabonete, papel-toalha e preparação alcoólica encontram-se limpos, abastecidos e em condições adequadas de uso.',
+ 'Não há presença de odores desagradáveis, insetos ou outros sinais de pragas no ambiente.',
+ 'Áreas externas ou de acesso imediato ao setor, quando aplicável, encontram-se limpas e organizadas.',
+ 'Produtos, materiais e equipamentos utilizados pela Higiene encontram-se armazenados de forma adequada e sem exposição indevida nas áreas assistenciais.',
+ 'As condições gerais de higiene e limpeza são compatíveis com a atividade desenvolvida no setor.',
+];
+const MANUTENCAO_PADRAO_TEXTOS = [
+ 'Iluminação, tomadas, interruptores e instalações elétricas encontram-se em condições adequadas e sem fios ou cabos expostos.',
+ 'Portas, fechaduras, maçanetas, dobradiças, janelas e demais elementos de acesso encontram-se íntegros e funcionando adequadamente.',
+ 'Pisos, paredes, tetos/forros e demais estruturas físicas encontram-se íntegros, sem rachaduras, buracos, descascamentos, infiltrações ou outras condições que ofereçam risco.',
+ 'Instalações hidráulicas, incluindo torneiras, registros, pias, lavatórios, descargas, ralos e grelhas, encontram-se íntegras e funcionando adequadamente, quando aplicável.',
+ 'Sistema e equipamentos de climatização encontram-se em condições adequadas de conservação e funcionamento, quando aplicável.',
+ 'Mobiliários, camas, macas, cadeiras, poltronas e demais equipamentos de apoio encontram-se íntegros, seguros e em condições adequadas de funcionamento, quando aplicável.',
+ 'Extintores e demais equipamentos/dispositivos de segurança encontram-se íntegros, acessíveis, sinalizados e sem obstrução, quando aplicável.',
+ 'Rotas de fuga, saídas de emergência e áreas de circulação encontram-se desobstruídas e em condições seguras.',
+ 'Sinalizações de segurança e dispositivos de apoio, como barras de proteção, encontram-se presentes, íntegros e adequados, quando aplicável.',
+ 'Não são identificadas instalações, equipamentos, mobiliários ou condições estruturais que ofereçam risco à segurança de pacientes, acompanhantes ou colaboradores.',
+ 'As não conformidades de manutenção identificadas possuem solicitação/chamado registrado e acompanhamento para resolução, quando aplicável.',
+ 'As manutenções corretivas identificadas anteriormente foram solucionadas dentro do prazo estabelecido.',
+];
+function higieneManutencaoItems(startId){
+  return [
+    ...HIGIENE_PADRAO_TEXTOS.map((texto,i)=>({id:startId+i, cat:'higiene', texto})),
+    ...MANUTENCAO_PADRAO_TEXTOS.map((texto,i)=>({id:startId+HIGIENE_PADRAO_TEXTOS.length+i, cat:'manutencao', texto})),
+  ];
+}
+const HIGIENE_MANUTENCAO_CATEGORIES = [
+  {id:'higiene', nome:'Higiene', icon:'refresh'},
+  {id:'manutencao', nome:'Manutenção', icon:'wrench'},
+];
 /* Fase "ambulatorio" — questionário de inspeção do Ambulatório (CENCOR e
    Pequenas Cirurgias), transcrito do documento enviado. A maioria dos itens
    é graduada (Conforme/Parcial Conforme/Não Conforme, conforme quantos
@@ -1261,6 +1304,7 @@ const SETORES_TRANSFUSIONAL = ['Bloco 1','Bloco 2','Bloco 4','Bloco 5','Oncologi
    item de prontuário (id 7) permite "Não se Aplica" para prontuário
    eletrônico, conforme observação do documento. */
 const CATEGORIES_UNIDADES_AMBULATORIO = [
+  ...HIGIENE_MANUTENCAO_CATEGORIES,
   {id:'infraestrutura', nome:'Infraestrutura e Áreas de Apoio', icon:'cart'},
   {id:'atendimento', nome:'Atendimento e Registros Assistenciais', icon:'clipboard'},
   {id:'emergencia', nome:'Emergência e Medicamentos Controlados', icon:'heart'},
@@ -1313,6 +1357,7 @@ const ITEMS_UNIDADES_AMBULATORIO = [
  {id:39,cat:'gestao',texto:'O Ambulatório divulga um canal de comunicação para reclamações, sugestões e/ou elogios? Verificar: meio de comunicação da Ouvidoria/SAC físico ou digital (caixa, QR code, e-mail ou telefone) disponível. Considerar: Conforme com o item; Não Conforme sem o item.', statusOptions:['conforme','nao-conforme']},
  {id:40,cat:'gestao',texto:'O Ambulatório possui indicadores definidos, específicos para o setor? Verificar: indicador(es) em painel, sistema ou planilha (ex.: taxa de absenteísmo, número de consultas realizadas). Considerar: Conforme com o item; Não Conforme sem o item.', statusOptions:['conforme','nao-conforme']},
  {id:41,cat:'gestao',texto:'Os resultados dos indicadores são utilizados para estabelecer ações de melhorias? Verificar: planos de ação ou atas de reuniões que demonstrem que o setor utiliza os resultados dos indicadores para estabelecer ações de melhoria. Considerar: Conforme com o item; Não Conforme sem o item.', statusOptions:['conforme','nao-conforme']},
+ ...higieneManutencaoItems(42),
 ];
 /* Fase "centrocirurgico" — questionário de inspeção do Centro Cirúrgico,
    transcrito do documento enviado. Mesmas convenções da fase "ambulatorio"
@@ -1320,6 +1365,7 @@ const ITEMS_UNIDADES_AMBULATORIO = [
    quantos subcritérios de "Verificar" foram atendidos) e itens com um único
    subcritério sem opção "Parcial" (statusOptions). */
 const CATEGORIES_UNIDADES_CC = [
+  ...HIGIENE_MANUTENCAO_CATEGORIES,
   {id:'infraestrutura', nome:'Infraestrutura e Áreas de Apoio', icon:'cart'},
   {id:'emergencia', nome:'Emergência, Medicamentos e Refrigeração', icon:'heart'},
   {id:'equipamentos', nome:'Equipamentos e Manutenção', icon:'wrench'},
@@ -1391,6 +1437,7 @@ const ITEMS_UNIDADES_CC = [
  {id:57,cat:'limpeza',texto:'Os profissionais do Centro Cirúrgico descartam os resíduos de forma adequada? Verificar 3 lixeiras quanto ao descarte adequado dos resíduos. Considerar: Conforme com os 3 itens; Parcial Conforme com 2 itens; Não Conforme com 1 ou nenhum item.'},
  {id:58,cat:'limpeza',texto:'No Centro Cirúrgico é realizada a segregação adequada dos resíduos químicos (Grupo B)? Verificar: segregação de resíduos químicos em sacos e/ou recipientes de cor laranja identificados com símbolo específico. Considerar: Conforme com o item; Não Conforme sem o item.', statusOptions:['conforme','nao-conforme']},
  {id:59,cat:'limpeza',texto:'No Centro Cirúrgico é realizada a segregação adequada dos Rejeitos Perfurocortantes (Grupo E)? Verificar: recipientes rígidos, resistentes à punctura, ruptura e vazamento, com tampa, devidamente identificados; recipientes identificados com símbolo internacional de risco biológico acrescido da inscrição "PERFUROCORTANTE"; nível de preenchimento do recipiente com no máximo 3/4 da capacidade ou conforme sinalização do fabricante. Considerar: Conforme com os 3 itens; Parcial Conforme com 2 itens; Não Conforme com 1 ou nenhum item.'},
+ ...higieneManutencaoItems(60),
 ];
 
 /* Fase "ccmi" — questionário de inspeção do Centro Cirúrgico Materno-Infantil,
@@ -1401,6 +1448,7 @@ const ITEMS_UNIDADES_CC = [
    Conforme/Não Conforme) e itens de subcritério único sem opção "Parcial"
    (statusOptions). */
 const CATEGORIES_UNIDADES_CCMI = [
+  ...HIGIENE_MANUTENCAO_CATEGORIES,
   {id:'infraestrutura', nome:'Infraestrutura e Áreas de Apoio', icon:'cart'},
   {id:'emergencia', nome:'Emergência, Medicamentos e Refrigeração', icon:'heart'},
   {id:'equipamentos', nome:'Equipamentos e Manutenção', icon:'wrench'},
@@ -1466,6 +1514,7 @@ const ITEMS_UNIDADES_CCMI = [
  {id:51,cat:'limpeza',texto:'Os profissionais do Centro Obstétrico descartam os resíduos de forma adequada? Verificar 3 lixeiras quanto ao descarte adequado dos resíduos. Considerar: Conforme com os 3 itens; Parcial Conforme com 2 itens; Não Conforme com 1 ou nenhum item.'},
  {id:52,cat:'limpeza',texto:'No Centro Obstétrico é realizada a segregação adequada dos resíduos químicos (Grupo B)? Verificar: segregação de resíduos químicos em sacos e/ou recipientes de cor laranja identificados com símbolo específico. Considerar: Conforme com o item; Não Conforme sem o item.', statusOptions:['conforme','nao-conforme']},
  {id:53,cat:'limpeza',texto:'No Centro Obstétrico é realizada a segregação adequada dos Rejeitos Perfurocortantes (Grupo E)? Verificar: recipientes rígidos, resistentes à punctura, ruptura e vazamento, com tampa, devidamente identificados; recipientes identificados com símbolo internacional de risco biológico acrescido da inscrição "PERFUROCORTANTE"; nível de preenchimento do recipiente com no máximo 3/4 da capacidade ou conforme sinalização do fabricante. Considerar: Conforme com os 3 itens; Parcial Conforme com 2 itens; Não Conforme com 1 ou nenhum item.'},
+ ...higieneManutencaoItems(54),
 ];
 
 /* Fase "cme" — questionário de inspeção da CME (Central de Material e
@@ -1478,6 +1527,7 @@ const ITEMS_UNIDADES_CCMI = [
    pergunta nos questionários de Ambulatório/Centro Cirúrgico/CCMI — vale
    confirmar com quem redigiu o documento original. */
 const CATEGORIES_UNIDADES_CME = [
+  ...HIGIENE_MANUTENCAO_CATEGORIES,
   {id:'infraestrutura', nome:'Infraestrutura e Áreas de Apoio', icon:'cart'},
   {id:'equipamentos', nome:'Equipamentos e Manutenção', icon:'wrench'},
   {id:'processamento', nome:'Processamento de Materiais e Esterilização', icon:'clock'},
@@ -1532,6 +1582,7 @@ const ITEMS_UNIDADES_CME = [
  {id:43,cat:'limpeza',texto:'A CME possui registros de limpeza terminal e concorrente? Verificar: registro do mês vigente de limpeza concorrente; registro do mês vigente de limpeza terminal. Considerar: Conforme com os 2 itens; Parcial Conforme com 1 item; Não Conforme com nenhum item.'},
  {id:44,cat:'limpeza',texto:'A CME descarta os resíduos de forma adequada? Verificar 3 lixeiras quanto ao descarte adequado dos resíduos. Considerar: Conforme com os 3 itens; Parcial Conforme com 2 itens; Não Conforme com 1 ou nenhum item.'},
  {id:45,cat:'limpeza',texto:'Na CME é realizada a segregação adequada dos Rejeitos Perfurocortantes (Grupo E)? Verificar: recipientes rígidos, resistentes à punctura, ruptura e vazamento, com tampa, devidamente identificados; recipientes identificados com símbolo internacional de risco biológico acrescido da inscrição "PERFUROCORTANTE"; nível de preenchimento do recipiente com no máximo 3/4 da capacidade ou conforme sinalização do fabricante. Considerar: Conforme com os 3 itens; Parcial Conforme com 2 itens; Não Conforme com 1 ou nenhum item.'},
+ ...higieneManutencaoItems(46),
 ];
 
 /* Fase "enfermaria" — questionário de inspeção da Unidade de Internação,
@@ -1542,6 +1593,7 @@ const ITEMS_UNIDADES_CME = [
    (guarda de medicamentos por paciente) admite "Não se Aplica" quando a
    unidade tem farmácia satélite, conforme observação do documento. */
 const CATEGORIES_UNIDADES_ENFERMARIA = [
+  ...HIGIENE_MANUTENCAO_CATEGORIES,
   {id:'infraestrutura', nome:'Infraestrutura e Áreas de Apoio', icon:'cart'},
   {id:'emergencia', nome:'Emergência, Medicamentos e Refrigeração', icon:'heart'},
   {id:'equipamentos', nome:'Equipamentos e Manutenção', icon:'wrench'},
@@ -1605,6 +1657,7 @@ const ITEMS_UNIDADES_ENFERMARIA = [
  {id:50,cat:'protocolos',texto:'Na Enfermaria, os profissionais de enfermagem possuem conhecimento dos passos principais para a administração de medicamentos? Entrevistar 3 profissionais: citar no mínimo cinco passos principais (medicamento certo, dose certa, via certa, horário certo, paciente certo). Considerar: Conforme com os 3 profissionais citando os 5 passos; Parcial Conforme com 2 profissionais; Não Conforme com 1 ou nenhum profissional.'},
  {id:51,cat:'protocolos',texto:'Na Enfermaria, os profissionais sabem identificar os medicamentos de alta vigilância? Entrevistar 3 profissionais: verificar se sabem identificar os medicamentos de alta vigilância na unidade. Considerar: Conforme com os 3 profissionais; Parcial Conforme com 2 profissionais; Não Conforme com 1 ou nenhum profissional.'},
  {id:52,cat:'protocolos',texto:'Os medicamentos multidoses em uso são identificados de acordo com a sua estabilidade? Verificar: medicamentos multidoses identificados com data de abertura e validade (estabilidade); documento informativo com a estabilidade de todos os medicamentos multidoses presente na área. Considerar: Conforme com os 2 itens; Parcial Conforme com 1 item; Não Conforme com nenhum item.'},
+ ...higieneManutencaoItems(53),
 ];
 
 /* Fase "alojamentoconjunto" — questionário de inspeção da Maternidade,
@@ -1614,6 +1667,7 @@ const ITEMS_UNIDADES_ENFERMARIA = [
    (Ambulatório 1/2) e "enfermaria" (Blocos 1-5/Oncologia Ala A). Mesmas
    convenções das fases anteriores. */
 const CATEGORIES_UNIDADES_ALOJAMENTO = [
+  ...HIGIENE_MANUTENCAO_CATEGORIES,
   {id:'infraestrutura', nome:'Infraestrutura e Áreas de Apoio', icon:'cart'},
   {id:'emergencia', nome:'Emergência, Medicamentos e Refrigeração', icon:'heart'},
   {id:'equipamentos', nome:'Equipamentos e Manutenção', icon:'wrench'},
@@ -1678,6 +1732,7 @@ const ITEMS_UNIDADES_ALOJAMENTO = [
  {id:50,cat:'protocolos',texto:'Os profissionais de enfermagem possuem conhecimento dos passos principais para administração de medicamentos? Entrevistar 3 profissionais: citar no mínimo cinco passos principais (medicamento certo, dose certa, via certa, horário certo, paciente certo). Considerar: Conforme com os 3 profissionais citando os 5 passos; Parcial Conforme com 2 profissionais; Não Conforme com 1 ou nenhum profissional.'},
  {id:51,cat:'protocolos',texto:'Os profissionais sabem identificar os medicamentos de alta vigilância? Entrevistar 3 profissionais: verificar se sabem identificar os medicamentos de alta vigilância na unidade. Considerar: Conforme com os 3 profissionais; Parcial Conforme com 2 profissionais; Não Conforme com 1 ou nenhum profissional.'},
  {id:52,cat:'protocolos',texto:'Os medicamentos multidoses em uso são identificados de acordo com a sua estabilidade? Verificar: medicamentos multidoses identificados com data de abertura e validade (estabilidade); documento informativo com a estabilidade de todos os medicamentos multidoses presente na área. Considerar: Conforme com os 2 itens; Parcial Conforme com 1 item; Não Conforme com nenhum item.'},
+ ...higieneManutencaoItems(53),
 ];
 
 /* Fase "prontosocorro" — questionário de inspeção do Pronto Socorro,
@@ -1687,6 +1742,7 @@ const ITEMS_UNIDADES_ALOJAMENTO = [
    das fases anteriores; o item 8 (guarda de medicamentos por paciente)
    admite "Não se Aplica" quando a unidade tem farmácia satélite. */
 const CATEGORIES_UNIDADES_PS = [
+  ...HIGIENE_MANUTENCAO_CATEGORIES,
   {id:'infraestrutura', nome:'Infraestrutura e Áreas de Apoio', icon:'cart'},
   {id:'emergencia', nome:'Emergência, Medicamentos e Refrigeração', icon:'heart'},
   {id:'equipamentos', nome:'Equipamentos e Manutenção', icon:'wrench'},
@@ -1753,6 +1809,7 @@ const ITEMS_UNIDADES_PS = [
  {id:53,cat:'protocolos',texto:'No Pronto Socorro, os profissionais de enfermagem possuem conhecimento dos passos principais para administração de medicamentos? Entrevistar 3 profissionais: citar no mínimo cinco passos principais (medicamento certo, dose certa, via certa, horário certo, paciente certo). Considerar: Conforme com os 3 profissionais citando os 5 passos; Parcial Conforme com 2 profissionais; Não Conforme com 1 ou nenhum profissional.'},
  {id:54,cat:'protocolos',texto:'No Pronto Socorro, os profissionais sabem identificar os medicamentos de alta vigilância? Entrevistar 3 profissionais: verificar se sabem identificar os medicamentos de alta vigilância na unidade. Considerar: Conforme com os 3 profissionais; Parcial Conforme com 2 profissionais; Não Conforme com 1 ou nenhum profissional.'},
  {id:55,cat:'protocolos',texto:'Os medicamentos multidoses em uso são identificados de acordo com a sua estabilidade? Verificar: medicamentos multidoses identificados com data de abertura e validade (estabilidade); documento informativo com a estabilidade de todos os medicamentos multidoses presente na área. Considerar: Conforme com os 2 itens; Parcial Conforme com 1 item; Não Conforme com nenhum item.'},
+ ...higieneManutencaoItems(56),
 ];
 
 /* Fase "ucinco" — questionário de inspeção da UCINCO (Unidade de Cuidado
@@ -1767,6 +1824,7 @@ const ITEMS_UNIDADES_PS = [
    contrário do padrão dos demais itens de indicador nos outros
    questionários, que são C/NC de item único. */
 const CATEGORIES_UNIDADES_UCINCO = [
+  ...HIGIENE_MANUTENCAO_CATEGORIES,
   {id:'infraestrutura', nome:'Infraestrutura e Áreas de Apoio', icon:'cart'},
   {id:'emergencia', nome:'Emergência, Medicamentos e Refrigeração', icon:'heart'},
   {id:'equipamentos', nome:'Equipamentos e Manutenção', icon:'wrench'},
@@ -1844,6 +1902,7 @@ const ITEMS_UNIDADES_UCINCO = [
  {id:63,cat:'protocolos',texto:'Os profissionais de enfermagem da UCINCO possuem conhecimento dos passos principais para administração de medicamentos? Entrevistar 3 profissionais: citar no mínimo cinco passos principais (medicamento certo, dose certa, via certa, horário certo, paciente certo). Considerar: Conforme com os 3 profissionais citando os 5 passos; Parcial Conforme com 2 profissionais; Não Conforme com 1 ou nenhum profissional.'},
  {id:64,cat:'protocolos',texto:'Os profissionais da UCINCO sabem identificar os medicamentos de alta vigilância? Entrevistar 3 profissionais: verificar se sabem identificar os medicamentos de alta vigilância na unidade. Considerar: Conforme com os 3 profissionais; Parcial Conforme com 2 profissionais; Não Conforme com 1 ou nenhum profissional.'},
  {id:65,cat:'protocolos',texto:'Os medicamentos multidoses em uso são identificados de acordo com a sua estabilidade? Verificar: medicamentos multidoses identificados com data de abertura e validade (estabilidade); documento informativo com a estabilidade de todos os medicamentos multidoses presente na área. Considerar: Conforme com os 2 itens; Parcial Conforme com 1 item; Não Conforme com nenhum item.'},
+ ...higieneManutencaoItems(66),
 ];
 
 /* Fase "utiadulto" — questionário de inspeção da UTI Adulto, transcrito do
@@ -1857,6 +1916,7 @@ const ITEMS_UNIDADES_UCINCO = [
    fase "ucinco". Os itens 7 (guarda de medicamentos por paciente) e 45
    (recomendações do farmacêutico clínico) admitem "Não se Aplica". */
 const CATEGORIES_UNIDADES_UTIADULTO = [
+  ...HIGIENE_MANUTENCAO_CATEGORIES,
   {id:'infraestrutura', nome:'Infraestrutura e Áreas de Apoio', icon:'cart'},
   {id:'emergencia', nome:'Emergência, Medicamentos e Refrigeração', icon:'heart'},
   {id:'equipamentos', nome:'Equipamentos e Manutenção', icon:'wrench'},
@@ -1931,6 +1991,7 @@ const ITEMS_UNIDADES_UTIADULTO = [
  {id:60,cat:'protocolos',texto:'Os profissionais de enfermagem da UTIA possuem conhecimento dos passos principais para administração de medicamentos? Entrevistar 3 profissionais: citar no mínimo cinco passos principais (medicamento certo, dose certa, via certa, horário certo, paciente certo). Considerar: Conforme com os 3 profissionais citando os 5 passos; Parcial Conforme com 2 profissionais; Não Conforme com 1 ou nenhum profissional.'},
  {id:61,cat:'protocolos',texto:'Os profissionais da UTIA sabem identificar os medicamentos de alta vigilância? Entrevistar 3 profissionais: verificar se sabem identificar os medicamentos de alta vigilância na unidade. Considerar: Conforme com os 3 profissionais; Parcial Conforme com 2 profissionais; Não Conforme com 1 ou nenhum profissional.'},
  {id:62,cat:'protocolos',texto:'Os medicamentos multidoses em uso são identificados de acordo com a sua estabilidade? Verificar: medicamentos multidoses identificados com data de abertura e validade (estabilidade); documento informativo com a estabilidade de todos os medicamentos multidoses presente na área. Considerar: Conforme com os 2 itens; Parcial Conforme com 1 item; Não Conforme com nenhum item.'},
+ ...higieneManutencaoItems(63),
 ];
 
 /* Fase "utineonatal" — questionário de inspeção da UTI Neonatal,
@@ -1948,6 +2009,7 @@ const ITEMS_UNIDADES_UTIADULTO = [
    de medicamentos por paciente) e 47 (recomendações do farmacêutico
    clínico) admitem "Não se Aplica". */
 const CATEGORIES_UNIDADES_UTINEO = [
+  ...HIGIENE_MANUTENCAO_CATEGORIES,
   {id:'infraestrutura', nome:'Infraestrutura e Áreas de Apoio', icon:'cart'},
   {id:'emergencia', nome:'Emergência, Medicamentos e Refrigeração', icon:'heart'},
   {id:'equipamentos', nome:'Equipamentos e Manutenção', icon:'wrench'},
@@ -2025,6 +2087,7 @@ const ITEMS_UNIDADES_UTINEO = [
  {id:63,cat:'protocolos',texto:'Os profissionais de enfermagem da UTI Neo possuem conhecimento dos passos principais para administração de medicamentos? Entrevistar 3 profissionais: citar no mínimo cinco passos principais (medicamento certo, dose certa, via certa, horário certo, paciente certo). Considerar: Conforme com os 3 profissionais citando os 5 passos; Parcial Conforme com 2 profissionais; Não Conforme com 1 ou nenhum profissional.'},
  {id:64,cat:'protocolos',texto:'Os profissionais da UTI Neo sabem identificar os medicamentos de alta vigilância? Entrevistar 3 profissionais: verificar se sabem identificar os medicamentos de alta vigilância na unidade. Considerar: Conforme com os 3 profissionais; Parcial Conforme com 2 profissionais; Não Conforme com 1 ou nenhum profissional.'},
  {id:65,cat:'protocolos',texto:'Os medicamentos multidoses em uso são identificados de acordo com a sua estabilidade? Verificar: medicamentos multidoses identificados com data de abertura e validade (estabilidade); documento informativo com a estabilidade de todos os medicamentos multidoses presente na área. Considerar: Conforme com os 2 itens; Parcial Conforme com 1 item; Não Conforme com nenhum item.'},
+ ...higieneManutencaoItems(66),
 ];
 
 /* Fase "utipediatrica" — questionário de inspeção da UTI Pediátrica,
@@ -2041,6 +2104,7 @@ const ITEMS_UNIDADES_UTINEO = [
    medicamentos por paciente) e 45 (recomendações do farmacêutico clínico)
    admitem "Não se Aplica". */
 const CATEGORIES_UNIDADES_UTIPED = [
+  ...HIGIENE_MANUTENCAO_CATEGORIES,
   {id:'infraestrutura', nome:'Infraestrutura e Áreas de Apoio', icon:'cart'},
   {id:'emergencia', nome:'Emergência, Medicamentos e Refrigeração', icon:'heart'},
   {id:'equipamentos', nome:'Equipamentos e Manutenção', icon:'wrench'},
@@ -2117,6 +2181,7 @@ const ITEMS_UNIDADES_UTIPED = [
  {id:62,cat:'protocolos',texto:'Os profissionais de enfermagem da UTIPed possuem conhecimento dos passos principais para administração de medicamentos? Entrevistar 3 profissionais: citar no mínimo cinco passos principais (medicamento certo, dose certa, via certa, horário certo, paciente certo). Considerar: Conforme com os 3 profissionais citando os 5 passos; Parcial Conforme com 2 profissionais; Não Conforme com 1 ou nenhum profissional.'},
  {id:63,cat:'protocolos',texto:'Os profissionais da UTIPed sabem identificar os medicamentos de alta vigilância? Entrevistar 3 profissionais: verificar se sabem identificar os medicamentos de alta vigilância na unidade. Considerar: Conforme com os 3 profissionais; Parcial Conforme com 2 profissionais; Não Conforme com 1 ou nenhum profissional.'},
  {id:64,cat:'protocolos',texto:'Os medicamentos multidoses em uso são identificados de acordo com a sua estabilidade? Verificar: medicamentos multidoses identificados com data de abertura e validade (estabilidade); documento informativo com a estabilidade de todos os medicamentos multidoses presente na área. Considerar: Conforme com os 2 itens; Parcial Conforme com 1 item; Não Conforme com nenhum item.'},
+ ...higieneManutencaoItems(65),
 ];
 
 /* Fase "endoscopia" — questionário de inspeção do Setor de Endoscopia,
@@ -2132,6 +2197,7 @@ const ITEMS_UNIDADES_UTIPED = [
    os itens específicos de reprocessamento de endoscópios (ausente nos
    demais questionários). */
 const CATEGORIES_UNIDADES_ENDOSCOPIA = [
+  ...HIGIENE_MANUTENCAO_CATEGORIES,
   {id:'infraestrutura', nome:'Infraestrutura e Salas de Exame', icon:'cart'},
   {id:'processamento', nome:'Processamento de Endoscópios', icon:'drop'},
   {id:'emergencia', nome:'Emergência, Medicamentos e Sedação', icon:'heart'},
@@ -2185,6 +2251,7 @@ const ITEMS_UNIDADES_ENDOSCOPIA = [
  {id:39,cat:'protocolos',texto:'Os profissionais de enfermagem possuem conhecimento dos passos principais para administração de medicamentos? Entrevistar 3 profissionais: citar no mínimo cinco passos principais (medicamento certo, dose certa, via certa, horário certo, paciente certo). Considerar: Conforme com os 3 profissionais citando os 5 passos; Parcial Conforme com 2 profissionais; Não Conforme com 1 ou nenhum profissional.'},
  {id:40,cat:'protocolos',texto:'Os profissionais sabem identificar os medicamentos de alta vigilância? Entrevistar 3 profissionais: verificar se sabem identificar os medicamentos de alta vigilância na unidade. Considerar: Conforme com os 3 profissionais; Parcial Conforme com 2 profissionais; Não Conforme com 1 ou nenhum profissional.'},
  {id:41,cat:'protocolos',texto:'Os medicamentos multidoses em uso são identificados de acordo com a sua estabilidade? Verificar: medicamentos multidoses identificados com data de abertura e validade (estabilidade); documento informativo com a estabilidade de todos os medicamentos multidoses presente na área. Considerar: Conforme com os 2 itens; Parcial Conforme com 1 item; Não Conforme com nenhum item.'},
+ ...higieneManutencaoItems(42),
 ];
 
 /* Fase "hemodinamica" — questionário de inspeção do Serviço de
@@ -2200,6 +2267,7 @@ const ITEMS_UNIDADES_ENDOSCOPIA = [
    da montagem do arquivo. Vale pedir um documento completo de Hemodinâmica
    para completar essas seções depois. */
 const CATEGORIES_UNIDADES_HEMODINAMICA = [
+  ...HIGIENE_MANUTENCAO_CATEGORIES,
   {id:'infraestrutura', nome:'Infraestrutura e Áreas de Apoio', icon:'cart'},
   {id:'emergencia', nome:'Emergência e Medicamentos', icon:'heart'},
   {id:'equipamentos', nome:'Equipamentos e Manutenção', icon:'wrench'},
@@ -2233,6 +2301,7 @@ const ITEMS_UNIDADES_HEMODINAMICA = [
  {id:23,cat:'atendimento',texto:'O Serviço de Hemodinâmica possui protocolos clínicos e multidisciplinares? Verificar (validade de 3 anos): no mínimo 2 protocolos clínicos e multidisciplinares (conforme norma zero institucional e validação das áreas pertinentes); disponíveis para consulta por meios físicos ou digitais. Considerar: Conforme com os 2 itens; Parcial Conforme com 1 item; Não Conforme com nenhum item.'},
  {id:24,cat:'atendimento',texto:'No Serviço de Hemodinâmica, os registros da equipe médica são realizados adequadamente? Verificar 3 prontuários de pacientes: descrição do procedimento; prescrição médica; data, assinatura e conselho de classe. Considerar: Conforme com os 3 prontuários com os 3 itens; Parcial Conforme com os 3 prontuários com 2 itens; Não Conforme com prontuários com 1 ou menos itens.'},
  {id:25,cat:'atendimento',texto:'Há Termos de Consentimento do paciente para os procedimentos realizados no Serviço de Hemodinâmica? Verificar em 3 prontuários: Termo de Consentimento Livre e Esclarecido (TCLE) para os procedimentos, preenchido e assinado pelo médico e pelo paciente e/ou responsável. Considerar: Conforme com os 3 itens; Parcial Conforme com 2 itens; Não Conforme com 1 ou nenhum item.'},
+ ...higieneManutencaoItems(26),
 ];
 
 /* Fase "snd" — questionário de inspeção do Serviço de Nutrição e
@@ -2244,6 +2313,7 @@ const ITEMS_UNIDADES_HEMODINAMICA = [
    adequadamente?") mas com o conteúdo já sendo sobre indicadores de
    nutrição — foi renomeado aqui para refletir o conteúdo real. */
 const CATEGORIES_UNIDADES_SND = [
+  ...HIGIENE_MANUTENCAO_CATEGORIES,
   {id:'infraestrutura', nome:'Infraestrutura e Áreas Mínimas', icon:'cart'},
   {id:'gestao', nome:'Gestão e Indicadores', icon:'clock'},
   {id:'limpeza', nome:'Limpeza e Descarte de Resíduos', icon:'refresh'},
@@ -2288,6 +2358,7 @@ const ITEMS_UNIDADES_SND = [
  {id:32,cat:'protocolos',texto:'Entrevista 2: o profissional do Serviço de Nutrição e Dietética tem conhecimento dos seis protocolos de segurança do paciente? Entrevistar 1 profissional da equipe e pedir para citar os seis protocolos (Identificação do Paciente, Comunicação Segura, Segurança na Prescrição/Uso/Administração de Medicamentos, Cirurgia Segura, Higienização das Mãos, Prevenção de Quedas e Lesão por Pressão). Considerar: Conforme ao citar os 6 protocolos; Parcial Conforme ao citar 5, 4 ou 3 protocolos; Não Conforme ao citar 2, 1 ou nenhum protocolo.'},
  {id:33,cat:'protocolos',texto:'Entrevista 3: o profissional do Serviço de Nutrição e Dietética tem conhecimento dos seis protocolos de segurança do paciente? Entrevistar 1 profissional da equipe e pedir para citar os seis protocolos (Identificação do Paciente, Comunicação Segura, Segurança na Prescrição/Uso/Administração de Medicamentos, Cirurgia Segura, Higienização das Mãos, Prevenção de Quedas e Lesão por Pressão). Considerar: Conforme ao citar os 6 protocolos; Parcial Conforme ao citar 5, 4 ou 3 protocolos; Não Conforme ao citar 2, 1 ou nenhum protocolo.'},
  {id:34,cat:'protocolos',texto:'Os profissionais do Serviço de Nutrição e Dietética notificam eventos adversos ou incidentes assistenciais? Entrevistar 3 profissionais: realizar a simulação de uma notificação. Considerar: Conforme com os 3 profissionais simulando a notificação; Parcial Conforme com 2 profissionais; Não Conforme com 1 ou nenhum profissional.'},
+ ...higieneManutencaoItems(35),
 ];
 
 /* Fase "cdi" — questionário de inspeção do Centro de Diagnóstico por
@@ -2300,6 +2371,7 @@ const ITEMS_UNIDADES_SND = [
    medicamentos multidoses (por isso a categoria de protocolos tem 5 itens
    em vez dos 7 usuais) — transcrito fielmente, sem completar. */
 const CATEGORIES_UNIDADES_CDI = [
+  ...HIGIENE_MANUTENCAO_CATEGORIES,
   {id:'infraestrutura', nome:'Infraestrutura e Áreas de Apoio', icon:'cart'},
   {id:'emergencia', nome:'Emergência e Medicamentos', icon:'heart'},
   {id:'equipamentos', nome:'Equipamentos e Manutenção', icon:'wrench'},
@@ -2360,6 +2432,7 @@ const ITEMS_UNIDADES_CDI = [
  {id:46,cat:'protocolos',texto:'Entrevista 3: o profissional do Serviço de Diagnóstico por Imagem tem conhecimento dos seis protocolos de segurança do paciente? Entrevistar 1 profissional da equipe multiprofissional e pedir para citar os seis protocolos (Identificação do Paciente, Comunicação Segura, Segurança na Prescrição/Uso/Administração de Medicamentos, Cirurgia Segura, Higienização das Mãos, Prevenção de Quedas e Lesão por Pressão). Considerar: Conforme ao citar os 6 protocolos; Parcial Conforme ao citar 5, 4 ou 3 protocolos; Não Conforme ao citar 2, 1 ou nenhum protocolo.'},
  {id:47,cat:'protocolos',texto:'Os profissionais do Serviço de Diagnóstico por Imagem notificam eventos adversos ou incidentes assistenciais? Entrevistar 3 profissionais: realizar a simulação de uma notificação. Considerar: Conforme com os 3 profissionais simulando a notificação; Parcial Conforme com 2 profissionais; Não Conforme com 1 ou nenhum profissional.'},
  {id:48,cat:'protocolos',texto:'Os profissionais de enfermagem possuem conhecimento dos passos principais para administração de medicamentos? Entrevistar 3 profissionais: citar no mínimo cinco passos principais (medicamento certo, dose certa, via certa, horário certo, paciente certo). Considerar: Conforme com os 3 profissionais citando os 5 passos; Parcial Conforme com 2 profissionais; Não Conforme com 1 ou nenhum profissional.'},
+ ...higieneManutencaoItems(49),
 ];
 
 /* Fase "agenciatransfusional" — questionário de inspeção da Agência
@@ -2369,6 +2442,7 @@ const ITEMS_UNIDADES_CDI = [
    corrigido aqui para "sangue e hemoderivados", coerente com o restante do
    documento (refrigerador exclusivo do item 3). */
 const CATEGORIES_UNIDADES_AGENCIATRANSFUSIONAL = [
+  ...HIGIENE_MANUTENCAO_CATEGORIES,
   {id:'infraestrutura', nome:'Infraestrutura e Áreas de Apoio', icon:'cart'},
   {id:'equipamentos', nome:'Equipamentos e Manutenção', icon:'wrench'},
   {id:'limpeza', nome:'Limpeza e Descarte de Resíduos', icon:'refresh'},
@@ -2413,11 +2487,13 @@ const ITEMS_UNIDADES_AGENCIATRANSFUSIONAL = [
  {id:32,cat:'gestao',texto:'Os resultados dos indicadores são utilizados para estabelecer ações de melhorias? Verificar: planos de ação ou atas de reuniões que demonstrem que o setor utiliza os resultados dos indicadores para estabelecer ações de melhoria. Considerar: Conforme com o item; Não Conforme sem o item.', statusOptions:['conforme','nao-conforme']},
  {id:33,cat:'gestao',texto:'A instituição possui o Comitê Transfusional? Verificar (validade de 3 anos): portaria atualizada; regimento interno atualizado; atas das 3 últimas reuniões; listas de presença. Considerar: Conforme com os 4 itens; Parcial Conforme com 3 ou 2 itens; Não Conforme com 1 ou nenhum item.'},
  {id:34,cat:'gestao',texto:'O Comitê Transfusional está implementado? Verificar: relatório com resultados analisados; divulgação interna dos resultados; planos de ação com melhorias. Considerar: Conforme com os 3 itens; Parcial Conforme com 2 itens; Não Conforme com 1 ou nenhum item.'},
+ ...higieneManutencaoItems(35),
 ];
 
 /* Fase "laboratorio" — questionário de inspeção do Laboratório Clínico,
    transcrito do documento enviado. */
 const CATEGORIES_UNIDADES_LABORATORIO = [
+  ...HIGIENE_MANUTENCAO_CATEGORIES,
   {id:'infraestrutura', nome:'Infraestrutura e Áreas de Apoio', icon:'cart'},
   {id:'equipamentos', nome:'Equipamentos e Manutenção', icon:'wrench'},
   {id:'limpeza', nome:'Limpeza e Descarte de Resíduos', icon:'refresh'},
@@ -2470,6 +2546,7 @@ const ITEMS_UNIDADES_LABORATORIO = [
  {id:39,cat:'processos',texto:'Existe controle de lotes de reagentes em uso? Verificar: registro do lote atual em uso; rastreabilidade dos resultados ao lote. Considerar: Conforme com os 2 itens; Parcial Conforme com 1 item; Não Conforme com nenhum item.'},
  {id:40,cat:'processos',texto:'Existe processo definido para revisão crítica dos resultados antes da liberação? Verificar: registro de dupla checagem ou revisão técnica; POP descrevendo o processo. Considerar: Conforme com os 2 itens; Parcial Conforme com 1 item; Não Conforme com nenhum item.'},
  {id:41,cat:'processos',texto:'Há rastreabilidade de correções e retificações de laudos? Verificar: registro de laudos retificados; justificativa e assinatura do responsável. Considerar: Conforme com os 2 itens; Parcial Conforme com 1 item; Não Conforme com nenhum item.'},
+ ...higieneManutencaoItems(42),
 ];
 
 /* Fase "opme" — questionário de gestão de Órteses, Próteses e Materiais
@@ -2480,6 +2557,7 @@ const ITEMS_UNIDADES_LABORATORIO = [
    possivelmente um item duplicado; transcritos fielmente, sem remover
    nenhum. */
 const CATEGORIES_UNIDADES_OPME = [
+  ...HIGIENE_MANUTENCAO_CATEGORIES,
   {id:'infraestrutura', nome:'Infraestrutura e Controle de Acesso', icon:'cart'},
   {id:'processos', nome:'Processos de Controle e Rastreabilidade', icon:'drop'},
   {id:'gestao', nome:'Gestão, Documentação e Indicadores', icon:'clock'},
@@ -2501,6 +2579,7 @@ const ITEMS_UNIDADES_OPME = [
  {id:13,cat:'infraestrutura',texto:'Há controle de acesso ao setor? Verificar: acesso restrito; registro de entrada; profissionais autorizados identificados. Considerar: Conforme com os 3 itens; Parcial Conforme com 2 itens; Não Conforme com 1 ou nenhum item.'},
  {id:14,cat:'gestao',texto:'Existe monitoramento de indicadores do setor? Verificar: indicador de perdas; indicador de vencimento; taxa de devolução; relatórios periódicos; análise crítica documentada. Considerar: Conforme com os 5 itens; Parcial Conforme com 4 ou 3 itens; Não Conforme com 2, 1 ou nenhum item.'},
  {id:15,cat:'processos',texto:'Há controle rigoroso de validade dos materiais? Verificar: planilha ou sistema com controle de vencimento; identificação visual de materiais próximos ao vencimento; ausência de materiais vencidos; conferência periódica registrada. Considerar: Conforme com os 4 itens; Parcial Conforme com 3 itens; Não Conforme com 2, 1 ou nenhum item.'},
+ ...higieneManutencaoItems(16),
 ];
 
 /* Base comum ("Complexo Oncológico") compartilhada pelas fases "quimioterapia"
@@ -2510,6 +2589,7 @@ const ITEMS_UNIDADES_OPME = [
    Oncológico"), seguidos de um bloco de itens específicos de cada setor.
    Reaproveitada via spread para não duplicar o texto. */
 const CATEGORIES_UNIDADES_COMPLEXO_ONCOLOGICO_BASE = [
+  ...HIGIENE_MANUTENCAO_CATEGORIES,
   {id:'infraestrutura', nome:'Infraestrutura e Áreas de Apoio', icon:'cart'},
   {id:'emergencia', nome:'Emergência, Medicamentos e Refrigeração', icon:'heart'},
   {id:'equipamentos', nome:'Equipamentos e Manutenção', icon:'wrench'},
@@ -2580,6 +2660,7 @@ const ITEMS_UNIDADES_QUIMIOTERAPIA = [
  {id:47,cat:'quimioterapia',texto:'A farmácia oncológica possui processo padronizado para recebimento de quimioterápicos? Verificar: conferência de lote, validade e integridade; registro formal do recebimento; armazenamento imediato conforme especificação do fabricante. Considerar: Conforme com os 3 itens; Parcial Conforme com 2 itens; Não Conforme com 1 ou nenhum item.'},
  {id:48,cat:'quimioterapia',texto:'O armazenamento dos quimioterápicos segue processo seguro e controlado? Verificar: controle de temperatura e umidade; separação de medicamentos de alto risco; identificação adequada dos medicamentos. Considerar: Conforme com os 3 itens; Parcial Conforme com 2 itens; Não Conforme com 1 ou nenhum item.'},
  {id:49,cat:'quimioterapia',texto:'A administração de hemocomponentes em pacientes oncológicos segue protocolo institucional? Verificar: prescrição médica adequada; identificação segura do paciente; registro completo da transfusão. Considerar: Conforme com os 3 itens; Parcial Conforme com 2 itens; Não Conforme com 1 ou nenhum item.'},
+ ...higieneManutencaoItems(50),
 ];
 
 /* Fase "radioterapia" — base do Complexo Oncológico + itens específicos do
@@ -2598,22 +2679,26 @@ const ITEMS_UNIDADES_RADIOTERAPIA = [
  {id:45,cat:'radioterapia',texto:'As reações adversas à radioterapia são monitoradas e registradas sistematicamente? Verificar: registro de avaliação de reações adversas; evolução assistencial relacionada à radioterapia; condutas registradas frente às intercorrências. Considerar: Conforme com os 3 itens; Parcial Conforme com 2 itens; Não Conforme com 1 ou nenhum item.'},
  {id:46,cat:'radioterapia',texto:'Existe processo formal para notificação e análise de eventos adversos relacionados à radioterapia? Verificar: registro de notificação de eventos adversos; análise do evento registrada; definição e acompanhamento de ações corretivas. Considerar: Conforme com os 3 itens; Parcial Conforme com 2 itens; Não Conforme com 1 ou nenhum item.'},
  {id:47,cat:'radioterapia',texto:'O paciente recebe orientações formais sobre o tratamento radioterápico antes e durante as sessões? Verificar: registro de orientação pré-tratamento; registro de orientações durante o tratamento; comprovação de ciência do paciente (assinatura ou registro em prontuário). Considerar: Conforme com os 3 itens; Parcial Conforme com 2 itens; Não Conforme com 1 ou nenhum item.'},
+ ...higieneManutencaoItems(48),
 ];
 
 /* Fase "recepcaops" — checklist da Recepção dos Prontos Socorros (Adulto e
    Infantil), compartilhado pelos dois setores porque os documentos
-   enviados para cada um trazem o mesmo formulário, com pequenas falhas de
-   diagramação diferentes em cada arquivo: o documento da Recepção PSA
-   perdeu o cabeçalho "D) Segurança do Paciente" (célula em branco) e o
-   item 15/B ("Cumprimento do cronograma de manutenção preventiva, com
-   registros atualizados"), presentes no documento da Recepção PSI — a
-   versão abaixo reúne as duas, sem nenhum conteúdo faltando. Diferente
-   dos demais questionários do módulo, este veio em formato de tabela
-   pontuada por item curto (sem o texto "Verificar/Considerar"), então os
-   itens foram transcritos como afirmações objetivas. */
+   enviados para cada um traziam o mesmo formulário. As seções de Higiene
+   e Manutenção usam o questionário padrão do módulo (HIGIENE_MANUTENCAO_
+   CATEGORIES/higieneManutencaoItems, ver comentário acima da fase
+   "ambulatorio") em vez do formulário específico de PSA/PSI originalmente
+   enviado para essas duas seções — pedido explícito da usuária. As demais
+   seções (Estrutura, Segurança do Paciente, Fluxista, Qualidade e Gestão
+   Documental) continuam vindo do documento original de cada recepção, que
+   veio em formato de tabela pontuada por item curto (sem o texto
+   "Verificar/Considerar"), então os itens foram transcritos como
+   afirmações objetivas. Os documentos da PSA e da PSI traziam pequenas
+   falhas de diagramação diferentes um do outro nessas seções — o cabeçalho
+   "D) Segurança do Paciente" veio em branco no da PSA — corrigidas ao
+   unificar num questionário só, compartilhado pelos dois setores. */
 const CATEGORIES_UNIDADES_RECEPCAOPS = [
-  {id:'higiene', nome:'Higiene', icon:'refresh'},
-  {id:'manutencao', nome:'Manutenção', icon:'wrench'},
+  ...HIGIENE_MANUTENCAO_CATEGORIES,
   {id:'estrutura', nome:'Estrutura e Ambiente', icon:'cart'},
   {id:'segurancapaciente', nome:'Segurança do Paciente', icon:'pin'},
   {id:'fluxista', nome:'Fluxista e Gestão de Leitos', icon:'bed'},
@@ -2621,23 +2706,6 @@ const CATEGORIES_UNIDADES_RECEPCAOPS = [
   {id:'documental', nome:'Gestão Documental', icon:'clipboard'},
 ];
 const ITEMS_UNIDADES_RECEPCAOPS = [
- {id:1,cat:'higiene',texto:'Limpeza e conservação da recepção, contemplando pisos, balcão de atendimento, mesas, bancadas, cadeiras, longarinas, portas, maçanetas, corrimãos, vidros, divisórias e demais mobiliários, livres de poeira, manchas e resíduos.'},
- {id:2,cat:'higiene',texto:'Lixeiras limpas, íntegras, identificadas, com sacos adequados, sem transbordamento e com coleta de resíduos realizada conforme rotina.'},
- {id:3,cat:'higiene',texto:'Disponibilidade de materiais e insumos para higiene e limpeza, incluindo dispensadores de álcool 70% para usuários e colaboradores.'},
- {id:4,cat:'higiene',texto:'Preenchimento dos registros e checklists de limpeza, conforme rotina estabelecida.'},
- {id:5,cat:'higiene',texto:'Utilização correta dos EPIs pela equipe de higiene durante a execução das atividades.'},
- {id:6,cat:'higiene',texto:'Sinalização adequada durante a execução da limpeza, incluindo placas de piso molhado e organização dos materiais de limpeza, sem obstrução das áreas de circulação.'},
- {id:7,cat:'higiene',texto:'Ausência de odores desagradáveis, evidenciando condições adequadas de higiene e conservação do ambiente.'},
- {id:8,cat:'higiene',texto:'Tempo de resposta às solicitações de limpeza da recepção, conforme fluxo institucional.'},
- {id:9,cat:'manutencao',texto:'Integridade e conservação da estrutura física da recepção, contemplando pisos, paredes, tetos, forro, portas, fechaduras, maçanetas, vidros, janelas, divisórias e balcão de atendimento, livres de rachaduras, infiltrações ou outros danos.'},
- {id:10,cat:'manutencao',texto:'Funcionamento das instalações elétricas e climatização, incluindo iluminação, iluminação de emergência, tomadas, interruptores, luminárias e sistema de climatização/ventilação.'},
- {id:11,cat:'manutencao',texto:'Funcionamento das instalações hidráulicas, incluindo ausência de vazamentos e pleno funcionamento dos pontos hidráulicos existentes na recepção.'},
- {id:12,cat:'manutencao',texto:'Conservação e funcionamento do mobiliário e equipamentos sob responsabilidade da manutenção, incluindo cadeiras, mesas, armários, bancadas, macas, cadeiras de rodas, relógios e demais equipamentos fixos da recepção.'},
- {id:13,cat:'manutencao',texto:'Condições de segurança da recepção, contemplando extintores, sinalização de combate a incêndio, rotas de fuga e sinalização de emergência.'},
- {id:14,cat:'manutencao',texto:'Disponibilidade e funcionamento do gerador de energia, conforme rotina de testes e manutenção.'},
- {id:15,cat:'manutencao',texto:'Cumprimento do cronograma de manutenção preventiva, com registros atualizados.'},
- {id:16,cat:'manutencao',texto:'Registro, acompanhamento e tempo de resposta das ordens de serviço de manutenção corretiva, conforme prazos estabelecidos.'},
- {id:17,cat:'manutencao',texto:'Comunicação efetiva entre a equipe de manutenção e a equipe da recepção, minimizando impactos no atendimento durante intervenções.'},
  {id:18,cat:'estrutura',texto:'Ambiente limpo e organizado.'},
  {id:19,cat:'estrutura',texto:'Ambiente sem acúmulo de materiais desnecessários.'},
  {id:20,cat:'estrutura',texto:'Sinalização adequada e visível.'},
@@ -2676,6 +2744,7 @@ const ITEMS_UNIDADES_RECEPCAOPS = [
  {id:53,cat:'documental',texto:'Capacitação em segurança do paciente.'},
  {id:54,cat:'documental',texto:'Treinamentos registrados.'},
  {id:55,cat:'documental',texto:'Conhecimento do acesso ao Qualiex (abordar 3 profissionais).'},
+ ...higieneManutencaoItems(56),
 ];
 
 /* Setores da auditoria "Unidades Assistenciais" — cada um recebe o
@@ -4765,28 +4834,63 @@ function updateProgress(){
   });
 }
 
+/* Categorias tratadas como "subindicadores": os itens existem dentro do
+   checklist do setor (ex.: Higiene e Manutenção nas Recepções de Pronto
+   Socorro, em Unidades Assistenciais — auditadas junto com o setor, mas
+   como subsetores) porém são apurados como indicadores próprios, à parte.
+   Não entram na contagem, no percentual nem no resultado geral do setor
+   (computeScore/computeCounts os excluem); computeSubIndicators calcula a
+   apuração independente de cada um. O vínculo com o setor/auditoria onde
+   foram preenchidos não muda — a separação é só na apuração/apresentação. */
+const SUBINDICATOR_CATS = ['higiene','manutencao'];
+const SUBINDICATOR_LABELS = {higiene:'Higiene', manutencao:'Manutenção'};
+function subIndicatorItemIds(){
+  return new Set(ITEMS.filter(i=>SUBINDICATOR_CATS.includes(i.cat)).map(i=>i.id));
+}
+
 /* Itens marcados "Não se Aplica" (Engenharia Clínica) são excluídos tanto
    do numerador quanto do denominador — não contam como conformidade nem
-   como não conformidade, para não distorcer a taxa final. */
+   como não conformidade, para não distorcer a taxa final. Itens de
+   subindicador (ver acima) também ficam de fora do resultado do setor. */
 function computeScore(audit){
-  const applicable = audit.items.filter(i=>i.status && i.status!=='nao-aplica');
+  const subIds = subIndicatorItemIds();
+  const applicable = audit.items.filter(i=>i.status && i.status!=='nao-aplica' && !subIds.has(i.id));
   if(applicable.length===0) return 0;
   const sum = applicable.reduce((s,i)=> s+SCORE_VALUE[i.status], 0);
   return sum/applicable.length;
 }
 function computeCounts(audit){
+  const subIds = subIndicatorItemIds();
   const c = {conforme:0,parcial:0,'nao-conforme':0,'nao-aplica':0, pendente:0};
-  audit.items.forEach(i=>{ if(i.status) c[i.status]++; else c.pendente++; });
+  audit.items.forEach(i=>{ if(subIds.has(i.id)) return; if(i.status) c[i.status]++; else c.pendente++; });
   return c;
 }
 /* Conformidade de uma categoria específica (usado na Meta 2/SBAR para os
-   indicadores separados de Origem e Destino no dashboard). */
+   indicadores separados de Origem e Destino, e para os subindicadores de
+   Higiene/Manutenção, no dashboard). */
 function computeCategoryScore(audit, catId){
   const catItemIds = new Set(ITEMS.filter(i=>i.cat===catId).map(i=>i.id));
   const applicable = audit.items.filter(i=> catItemIds.has(i.id) && i.status && i.status!=='nao-aplica');
   if(applicable.length===0) return 0;
   const sum = applicable.reduce((s,i)=> s+SCORE_VALUE[i.status], 0);
   return sum/applicable.length;
+}
+function computeCategoryCounts(audit, catId){
+  const catItemIds = new Set(ITEMS.filter(i=>i.cat===catId).map(i=>i.id));
+  const c = {conforme:0,parcial:0,'nao-conforme':0,'nao-aplica':0, pendente:0};
+  audit.items.forEach(i=>{ if(!catItemIds.has(i.id)) return; if(i.status) c[i.status]++; else c.pendente++; });
+  return c;
+}
+/* Apuração independente de cada subindicador presente no setor da
+   auditoria (Higiene/Manutenção) — score e contagem próprios, sem entrar
+   no resultado geral. Retorna {} quando o setor não tem subindicadores. */
+function computeSubIndicators(audit){
+  const result = {};
+  SUBINDICATOR_CATS.forEach(catId=>{
+    if(!ITEMS.some(i=>i.cat===catId)) return;
+    result[catId] = { score: computeCategoryScore(audit, catId), counts: computeCategoryCounts(audit, catId) };
+  });
+  return result;
 }
 
 async function persistAudit(finalize){
@@ -4832,6 +4936,7 @@ async function persistAudit(finalize){
     currentAudit.scoreOrigem = computeCategoryScore(currentAudit, 'origem');
     currentAudit.scoreDestino = computeCategoryScore(currentAudit, 'destino');
   }
+  currentAudit.subIndicators = computeSubIndicators(currentAudit);
   currentAudit.updatedAt = Date.now();
 
   if(TIPOS[currentTipo].cycleMode!=='monthly') await ensureSectorInCycle(currentAudit.cicloId, trackKey(h.setor, h.carro));
@@ -4854,7 +4959,11 @@ async function persistAudit(finalize){
     createdAt: currentAudit.createdAt, updatedAt: currentAudit.updatedAt,
     status: currentAudit.status, score: currentAudit.score, counts: currentAudit.counts,
     scoreOrigem: currentAudit.scoreOrigem, scoreDestino: currentAudit.scoreDestino,
-    itemStatus: currentAudit.items.map(i=>({id:i.id, status:i.status})),
+    subIndicators: currentAudit.subIndicators,
+    // Itens de subindicador (Higiene/Manutenção) ficam fora daqui — assim
+    // os rankings de não conformidade do dashboard, que somam itemStatus
+    // entre auditorias, também não os misturam ao resultado geral do setor.
+    itemStatus: currentAudit.items.filter(i=>!subIndicatorItemIds().has(i.id)).map(i=>({id:i.id, status:i.status})),
   };
   const ok = await updateIndex(idx=>{
     const filtered = idx.filter(a=>a.id!==currentAudit.id);
@@ -5137,16 +5246,23 @@ async function openAuditDetail(id){
   document.getElementById('detSub').innerHTML = `Auditor: ${escapeHtml(full.header.auditor)}${enfermeiroLine}${full.header.carroIndisponivel? ' <span class="tag tag-bad">Carro não disponível</span>':''}`;
 
   const sc = scoreColor(full.score||0);
+  // Higiene/Manutenção (subindicadores) entram como mini-stats extras,
+  // fora da conformidade geral/contagens do setor — ver SUBINDICATOR_CATS.
+  const subMiniStats = Object.keys(full.subIndicators||{}).map(cat=>
+    `<div class="mini-stat"><div class="l">Conformidade ${SUBINDICATOR_LABELS[cat]}</div><div class="v">${pct(full.subIndicators[cat].score||0)}</div></div>`
+  ).join('');
   document.getElementById('detMetaGrid').innerHTML = TIPOS[currentTipo].hasSetorDestino ? `
     <div class="mini-stat"><div class="l">Conformidade Geral</div><div class="v" style="color:${sc.c}">${pct(full.score||0)}</div></div>
     <div class="mini-stat"><div class="l">Conformidade Origem</div><div class="v">${pct(full.scoreOrigem||0)}</div></div>
     <div class="mini-stat"><div class="l">Conformidade Destino</div><div class="v">${pct(full.scoreDestino||0)}</div></div>
+    ${subMiniStats}
   ` : `
     <div class="mini-stat"><div class="l">Conformidade</div><div class="v" style="color:${sc.c}">${pct(full.score||0)}</div></div>
     <div class="mini-stat"><div class="l">Conforme</div><div class="v">${full.counts?full.counts.conforme:0}</div></div>
     <div class="mini-stat"><div class="l">Parcial</div><div class="v">${full.counts?full.counts.parcial:0}</div></div>
     <div class="mini-stat"><div class="l">Não Conforme</div><div class="v">${full.counts?full.counts['nao-conforme']:0}</div></div>
     ${full.counts && full.counts['nao-aplica'] ? `<div class="mini-stat"><div class="l">Não se Aplica</div><div class="v">${full.counts['nao-aplica']}</div></div>` : ``}
+    ${subMiniStats}
   `;
 
   const wrap = document.getElementById('detItemsWrap');
@@ -5222,11 +5338,20 @@ async function openSectorDetail(name){
   const last = fin[fin.length-1];
   const first = fin[0];
   const trend = fin.length>1 ? (last.score-first.score) : 0;
+  // Higiene/Manutenção (quando o setor os tiver — ver SUBINDICATOR_CATS)
+  // ganham seu próprio card de conformidade, à parte do resultado
+  // principal do setor, mas calculado só com as auditorias deste setor.
+  const subCardsHtml = SUBINDICATOR_CATS.filter(cat=> fin.some(a=>a.subIndicators && a.subIndicators[cat])).map(cat=>{
+    const vals = fin.filter(a=>a.subIndicators && a.subIndicators[cat]).map(a=>a.subIndicators[cat].score);
+    const avgSub = vals.length? vals.reduce((x,y)=>x+y,0)/vals.length : 0;
+    return kpiCard('Conformidade — '+SUBINDICATOR_LABELS[cat], pct(avgSub), avgSub>=0.85?'Bom desempenho':'Atenção necessária');
+  }).join('');
   document.getElementById('secKpiGrid').innerHTML = `
     ${kpiCard('Conformidade Média', pct(avg), fin.length+' auditorias')}
     ${kpiCard('Última Auditoria', last?pct(last.score):'—', last?fmtDate(last.data):'sem registros')}
     ${kpiCard('Tendência', fin.length>1?((trend>=0?'+':'')+Math.round(trend*100)+' p.p.'):'—', 'desde a primeira auditoria')}
     ${kpiCard('Não Conformidades', fin.reduce((s,a)=>s+(a.counts?a.counts['nao-conforme']:0),0), 'total acumulado')}
+    ${subCardsHtml}
   `;
 
   const ctx = document.getElementById('chartSectorTrend').getContext('2d');
