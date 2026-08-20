@@ -3072,9 +3072,9 @@ const TIPOS = {
     cartProfiles: {}, defaultSectorCarts: {},
     storagePrefix: 'meta1adesao_', carroLabel: 'Carro', requireCarroSelection: false,
     hasCarts: false, cycleMode: 'monthly', monthlyTargetPerSector: 20, monthlyTargetTotal: 140,
-    // PS Adulto reduzido e UTI 1/2 aumentadas; os demais setores mantêm os
-    // 20/mês padrão (soma continua em 140).
-    monthlyTargetPerSectorMap: { 'PS Adulto': 10, 'UTI 1': 25, 'UTI 2': 25 },
+    // Todos os 7 setores usam a meta padrão de 20/mês (soma 140) — PS
+    // Adulto tinha meta reduzida e UTI 1/2 aumentadas, ajustado a pedido
+    // da usuária para as 3 ficarem iguais às demais.
   },
   meta2censo: {
     key:'meta2censo', label:'Meta 2 (censo)', labelPlural:'Meta 2 (censo)', icon:'refresh',
@@ -3545,9 +3545,19 @@ async function fetchIndexSafe(){
   return idx || [];
 }
 
-/* Atualiza o índice de forma segura: lê o estado mais recente do servidor,
-   funde com a cópia em memória (união por id — nunca descarta itens
-   silenciosamente) e só então aplica a função de mutação e salva. */
+/* Atualiza o índice de forma segura: lê o estado mais recente do servidor e
+   só então aplica a função de mutação e salva. Quando a leitura funciona,
+   o servidor é a fonte da verdade — NÃO funde com a cópia em memória desta
+   aba/dispositivo. (Bug corrigido aqui: a versão anterior fazia essa fusão
+   por união de ids, "recuperando" para o índice qualquer auditoria que
+   existisse na memória local mas não no servidor — o que parecia proteger
+   contra uma gravação anterior que tivesse falhado parcialmente, mas na
+   prática também ressuscitava auditorias excluídas por OUTRA aba/sessão
+   que ainda não tinha recarregado: bastava essa outra aba navegar entre
+   telas para ela regravar o índice "curando" de volta o item já excluído.
+   Isso é exatamente o que causava exclusões que "não pegavam".) Só cai
+   para a cópia local quando a leitura de fato falha (fetched===undefined),
+   nunca quando ela só devolve menos itens do que a memória tinha. */
 async function updateIndex(mutatorFn, opts){
   opts = opts || {};
   const fetched = await fetchIndexSafe();
@@ -3558,7 +3568,7 @@ async function updateIndex(mutatorFn, opts){
     base = allAudits.slice();
     toast('Não foi possível confirmar o histórico mais recente. Usando última cópia local para não perder dados.','bad');
   } else {
-    base = unionById(fetched, allAudits);
+    base = fetched;
   }
   const newIdx = mutatorFn(base);
   const ok = await storageSet(skey('audit_index'), newIdx);
@@ -3569,25 +3579,15 @@ async function updateIndex(mutatorFn, opts){
   allAudits = newIdx;
   return true;
 }
-function unionById(primary, secondary){
-  const map = new Map();
-  (primary||[]).forEach(a=> map.set(a.id, a));
-  (secondary||[]).forEach(a=>{ if(!map.has(a.id)) map.set(a.id, a); });
-  return [...map.values()];
-}
 /* Usado ao entrar em telas de listagem: garante que allAudits reflita o
-   estado salvo, sem nunca substituir por um resultado menor/vazio caso a
-   leitura falhe ou esteja divergente — sempre une, nunca subtrai. */
+   estado salvo. Mesmo raciocínio de updateIndex — confia no servidor
+   quando a leitura funciona (nunca "cura"/regrava com itens que só existem
+   na memória local, para não ressuscitar exclusões feitas por outra aba);
+   só mantém a cópia em memória se a leitura falhar de verdade. */
 async function refreshAuditsFromStorage(){
   const fetched = await fetchIndexSafe();
   if(fetched===undefined) return; // mantém o que já está em memória
-  const merged = unionById(fetched, allAudits);
-  if(merged.length !== fetched.length){
-    // Havia auditorias na memória que não estavam no servidor (ex.: uma
-    // gravação anterior falhou parcialmente) — regrava a união para curar.
-    await storageSet(skey('audit_index'), merged);
-  }
-  allAudits = merged;
+  allAudits = fetched;
 }
 
 /* =========================================================================
@@ -3776,6 +3776,14 @@ async function reactivateSector(setorName){
    setores cobertos). Nos módulos de ciclo mensal (Meta 4, Processo
    Transfusional), fecha automaticamente o ciclo do mês anterior e abre o
    do mês corrente sempre que a data virar — sem exigir cobertura. */
+/* A virada do mês só particiona os dados (fecha o registro do ciclo
+   anterior — nunca há dois ciclos "aberto" ao mesmo tempo — e abre um novo
+   para o mês corrente); não é mais o critério de "ciclo bem-sucedido".
+   Auditorias continuam entrando no ciclo do mês corrente até essa virada,
+   independentemente de a meta já ter sido atingida — quem decide se um
+   ciclo mensal foi bem-sucedido é cycleProgress().metaAtingida (todos os
+   setores/grupos atingiram o mínimo estabelecido), usado no banner, no
+   card do ciclo atual e no histórico de ciclos encerrados. */
 async function ensureCurrentCycle(){
   const cfg = TIPOS[currentTipo];
   const fetched = await fetchCyclesSafe();
@@ -3856,7 +3864,12 @@ function cycleProgress(cycle){
       // monthlyTargetPerSector como padrão.
       groups = cfg.setores.map(s=> ({ label: s, done: bySector[s]||0, target: (cfg.monthlyTargetPerSectorMap && cfg.monthlyTargetPerSectorMap[s]) || cfg.monthlyTargetPerSector }));
     }
-    return { done, total, pct, doneSectors: [], pendingSectors: [], bySector, groups };
+    // Ciclo mensal "encerrado" não é mais definido pela virada do mês (a
+    // virada só cria um novo ciclo em paralelo — auditorias continuam
+    // entrando neste até isso acontecer), e sim por ter atingido a meta
+    // mínima estabelecida em TODOS os setores/grupos do ciclo.
+    const metaAtingida = groups.length>0 && groups.every(g=> g.done>=g.target);
+    return { done, total, pct, doneSectors: [], pendingSectors: [], bySector, groups, metaAtingida };
   }
   const doneSet = new Set(
     allAudits.filter(a=>a.status==='finalizada' && a.cicloId===cycle.id).map(a=>trackKey(a.setor, a.carro))
@@ -3915,7 +3928,7 @@ function renderCycleBanner(){
       <div class="cycle-banner-head">
         <div>
           <div class="section-title" style="margin:0;"><h2 style="font-size:15px;">Ciclo Atual — ${monthLabel(current.mes)}</h2></div>
-          <div class="cycle-progress-label" style="margin-top:2px;">${label}</div>
+          <div class="cycle-progress-label" style="margin-top:2px;">${label}${prog.metaAtingida ? ' · <span style="color:var(--ok);font-weight:700;">✓ meta do ciclo atingida em todos os setores</span>' : ''}</div>
         </div>
         <button class="btn btn-secondary btn-sm" id="btnGoToCycles">Ver ciclos</button>
       </div>
@@ -3977,6 +3990,7 @@ function renderCycles(){
       </div>
       ${prog.total ? `<div class="progress-bar-bg" style="margin-top:14px;"><div class="progress-bar-fg" style="width:${Math.round(prog.pct*100)}%"></div></div>` : ''}
       <div class="cycle-progress-label" style="margin-top:${prog.total?8:14}px;">${summaryLabel}${prog.done? ' · conformidade média '+pct(avg) : ''}</div>
+      ${prog.metaAtingida ? `<div class="tag tag-ok" style="margin-top:10px;display:inline-block;">✓ Meta atingida em todos os setores</div>` : ''}
       ${chips ? `<div class="cycle-sector-grid">${chips}</div>` : ''}
     `;
   } else if(current){
@@ -4034,11 +4048,17 @@ function renderCycles(){
     const durDays = Math.max(0, Math.round((new Date(c.concluidoEm)-new Date(c.iniciadoEm))/86400000));
     const cicloLabel = cfg.cycleMode==='monthly' ? monthLabel(c.mes) : ('Ciclo '+c.numero);
     const countCell = cfg.cycleMode==='monthly' ? (p.total? `${p.done}/${p.total}` : p.done) : `${p.done}/${p.total}`;
+    // Ciclo mensal fecha sempre na virada do mês (ver ensureCurrentCycle),
+    // atingindo ou não a meta de todos os setores — o selo aqui é o que
+    // efetivamente distingue um ciclo bem-sucedido de um incompleto.
+    const metaBadge = cfg.cycleMode==='monthly'
+      ? (p.metaAtingida ? ' <span class="tag tag-ok">✓ meta atingida</span>' : ' <span class="tag tag-bad">incompleto</span>')
+      : '';
     return `<tr onclick="viewCycleAudits('${c.id}')" style="cursor:pointer;">
       <td>${cicloLabel}</td>
       <td>${fmtDateShort(c.iniciadoEm)} – ${fmtDateShort(c.concluidoEm)}</td>
       <td>${durDays} dia${durDays===1?'':'s'}</td>
-      <td>${countCell}</td>
+      <td>${countCell}${metaBadge}</td>
       <td><span class="score-pill" style="background:${sc.bg};color:${sc.c};">${pct(avg)}</span></td>
       <td style="text-align:right;"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();viewCycleAudits('${c.id}')">Ver auditorias</button></td>
     </tr>`;
