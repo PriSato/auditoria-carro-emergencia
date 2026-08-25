@@ -722,7 +722,7 @@ input,select,textarea{font-family:inherit;}
         <div class="card card-pad" id="currentCycleCard" style="margin-bottom:22px;"></div>
         <div class="card card-pad" id="inactiveSectorsCard" style="margin-bottom:22px;display:none;"></div>
         <div class="card card-pad" id="dataIntegrityCard" style="margin-bottom:22px;display:none;"></div>
-        <div class="section-title"><h2>Histórico de Ciclos</h2><span class="hint">Ciclos concluídos</span></div>
+        <div class="section-title"><h2>Histórico de Ciclos</h2><button type="button" class="btn btn-ghost btn-sm" id="btnRemoveEmptyCycles">Remover ciclos vazios (todos os módulos)</button></div>
         <div class="card" style="overflow:auto;">
           <table class="audit-table" id="cyclesHistoryTable">
             <thead><tr><th>Ciclo</th><th>Período</th><th>Duração</th><th id="thCyclesCount">Setores</th><th>Conformidade média</th><th></th></tr></thead>
@@ -3854,18 +3854,27 @@ function cycleNumeroById(id){
   const c = allCycles.find(c=>c.id===id);
   return c ? c.numero : null;
 }
-/* Em ciclos mensais, uma auditoria pertence ao ciclo pelo MÊS da data
-   preenchida, não pelo cicloId gravado na criação. cicloId ainda é
-   guardado (rótulo "Ciclo Nº" no histórico/detalhe), mas não é mais usado
-   para contar o progresso do mês: se duas sessões correrem
-   ensureCurrentCycle quase ao mesmo tempo na virada do mês, cada uma pode
-   carimbar suas auditorias com o id de um registro de ciclo diferente
-   antes de uma das gravações "vencer" a outra — usar o mês da data em vez
-   do id torna a contagem imune a essa corrida, presente ou passada. Ciclos
+/* Em ciclos mensais, uma auditoria pertence ao ciclo pelo INTERVALO de
+   datas do ciclo (iniciadoEm até concluidoEm, ou até hoje se ainda estiver
+   aberto), não pelo cicloId gravado na criação. cicloId ainda é guardado
+   (rótulo "Ciclo Nº" no histórico/detalhe), mas não é mais usado para
+   contar o progresso: se duas sessões correrem ensureCurrentCycle quase ao
+   mesmo tempo na virada do mês, cada uma pode carimbar suas auditorias com
+   o id de um registro de ciclo diferente antes de uma das gravações
+   "vencer" a outra — usar o intervalo de datas em vez do id torna a
+   contagem imune a essa corrida, presente ou passada. O intervalo (em vez
+   de só o mês) também é o que permite finalizar um ciclo manualmente no
+   meio do mês (ver btnFinalizeMonthlyCycle) e começar o próximo com
+   contagem zerada, mesmo os dois sendo do mesmo mês-calendário. Ciclos
    não-mensais (fechados manualmente pelo botão "Concluir Ciclo") não têm
    essa corrida — permanecem no cicloId. */
 function auditBelongsToCycle(audit, cycle){
-  if(TIPOS[currentTipo].cycleMode==='monthly') return !!audit.data && audit.data.slice(0,7)===cycle.mes;
+  if(TIPOS[currentTipo].cycleMode==='monthly'){
+    if(!audit.data) return false;
+    if(audit.data < String(cycle.iniciadoEm).slice(0,10)) return false;
+    if(cycle.concluidoEm && audit.data >= String(cycle.concluidoEm).slice(0,10)) return false;
+    return true;
+  }
   return audit.cicloId===cycle.id;
 }
 function cycleProgress(cycle){
@@ -3927,6 +3936,27 @@ async function closeCycleAndStartNew(){
   const updated = allCycles.map(c=> c.id===current.id ? closed : c).concat([novo]);
   const ok = await storageSet(skey('cycles'), updated);
   if(!ok){ toast('Erro ao concluir o ciclo. Tente novamente.','bad'); return false; }
+  allCycles = updated;
+  return true;
+}
+/* Finaliza o ciclo mensal atual na hora, independentemente do mês ter
+   virado ou da meta ter sido atingida (botão "Finalizar Ciclo Agora"), e
+   abre o próximo imediatamente. O novo ciclo mantém o mesmo "mes" quando
+   ainda estamos no mesmo mês-calendário — quem separa as auditorias de um
+   ciclo para o outro é o intervalo de datas (iniciadoEm/concluidoEm, ver
+   auditBelongsToCycle), não o rótulo do mês. */
+async function closeMonthlyCycleAndStartNew(){
+  const current = getCurrentCycle();
+  if(!current) return false;
+  const now = new Date().toISOString();
+  const closed = { ...current, status:'concluido', concluidoEm: now };
+  const novo = {
+    id: uid(), numero: current.numero+1, mes: currentMonthKey(),
+    iniciadoEm: now, concluidoEm: null, status:'aberto', setores: [],
+  };
+  const updated = allCycles.map(c=> c.id===current.id ? closed : c).concat([novo]);
+  const ok = await storageSet(skey('cycles'), updated);
+  if(!ok){ toast('Erro ao finalizar o ciclo. Tente novamente.','bad'); return false; }
   allCycles = updated;
   return true;
 }
@@ -4022,7 +4052,16 @@ function renderCycles(){
       <div class="cycle-progress-label" style="margin-top:${prog.total?8:14}px;">${summaryLabel}${prog.done? ' · conformidade média '+pct(avg) : ''}</div>
       ${prog.metaAtingida ? `<div class="tag tag-ok" style="margin-top:10px;display:inline-block;">✓ Meta atingida em todos os setores</div>` : ''}
       ${chips ? `<div class="cycle-sector-grid">${chips}</div>` : ''}
+      <button class="btn btn-secondary btn-sm" id="btnFinalizeMonthlyCycle" style="margin-top:14px;">Finalizar Ciclo Agora</button>
     `;
+    document.getElementById('btnFinalizeMonthlyCycle').addEventListener('click', ()=>{
+      openConfirm('Finalizar ciclo agora',
+        `Encerra o ciclo de ${monthLabel(current.mes)} agora mesmo (${prog.done} auditoria${prog.done===1?'':'s'} registrada${prog.done===1?'':'s'} até aqui) e inicia um novo ciclo em seguida, independentemente do mês ainda não ter virado ou da meta não ter sido atingida. O histórico deste ciclo é mantido. Deseja continuar?`,
+        async ()=>{
+          const ok = await closeMonthlyCycleAndStartNew();
+          if(ok){ toast('Ciclo finalizado. Novo ciclo iniciado.','ok'); renderCycles(); renderCycleBanner(); }
+        });
+    });
   } else if(current){
     const prog = cycleProgress(current);
     const pctVal = Math.round(prog.pct*100);
@@ -4146,6 +4185,63 @@ function renderDataIntegrityCard(){
     );
   });
 }
+
+/* Ciclos "vazios" — fechados sem nenhuma auditoria dentro do seu
+   intervalo — normalmente são resíduo de bugs já corrigidos (corrida de
+   sessões criando ciclos duplicados na virada do mês). Verifica e remove
+   em TODOS os módulos com ciclo, não só o atual, direto nas chaves de
+   armazenamento de cada um (sem precisar trocar de módulo/UI). Nunca mexe
+   no ciclo atualmente aberto de nenhum módulo, mesmo que esteja vazio —
+   só ciclos já fechados contam como "vazios" removíveis. */
+async function findEmptyCyclesAllTypes(){
+  const results = [];
+  for(const cfg of Object.values(TIPOS)){
+    if(cfg.hasCycles===false) continue;
+    const cyclesKey = cfg.storagePrefix ? cfg.storagePrefix+'cycles' : 'cycles';
+    const idxKey = cfg.storagePrefix ? cfg.storagePrefix+'audit_index' : 'audit_index';
+    const cyclesData = await storageGet(cyclesKey);
+    if(!cyclesData || !cyclesData.length) continue;
+    const auditsData = (await storageGet(idxKey)) || [];
+    const fin = auditsData.filter(a=>a.status==='finalizada');
+    const empty = cyclesData.filter(c=>{
+      if(c.status==='aberto') return false;
+      const hasAny = cfg.cycleMode==='monthly'
+        ? fin.some(a=> a.data && a.data>=String(c.iniciadoEm).slice(0,10) && (!c.concluidoEm || a.data<String(c.concluidoEm).slice(0,10)))
+        : fin.some(a=>a.cicloId===c.id);
+      return !hasAny;
+    });
+    if(empty.length) results.push({ cfg, cyclesKey, allCyclesRaw: cyclesData, emptyIds: new Set(empty.map(c=>c.id)), emptyCount: empty.length });
+  }
+  return results;
+}
+async function removeEmptyCyclesAllTypes(results){
+  let totalRemoved = 0;
+  for(const r of results){
+    const kept = r.allCyclesRaw.filter(c=>!r.emptyIds.has(c.id));
+    const ok = await storageSet(r.cyclesKey, kept);
+    if(ok){
+      totalRemoved += r.emptyCount;
+      if(r.cfg.key===currentTipo) allCycles = kept;
+    }
+  }
+  return totalRemoved;
+}
+document.getElementById('btnRemoveEmptyCycles').addEventListener('click', async ()=>{
+  const btn = document.getElementById('btnRemoveEmptyCycles');
+  btn.disabled = true;
+  const results = await findEmptyCyclesAllTypes();
+  btn.disabled = false;
+  const total = results.reduce((s,r)=>s+r.emptyCount,0);
+  if(total===0){ toast('Nenhum ciclo vazio encontrado.','ok'); return; }
+  const breakdown = results.map(r=> `${r.cfg.labelPlural}: ${r.emptyCount}`).join(' · ');
+  openConfirm('Remover ciclos vazios',
+    `Encontrados ${total} ciclo(s) vazio(s) em ${results.length} módulo(s) — ${breakdown}. Remove só o registro do ciclo (nunca o ciclo atualmente aberto, nem nenhuma auditoria). Esta ação não pode ser desfeita. Deseja continuar?`,
+    async ()=>{
+      const removed = await removeEmptyCyclesAllTypes(results);
+      toast(`${removed} ciclo(s) vazio(s) removido(s).`,'ok');
+      renderCycles();
+    });
+});
 
 function confirmDeactivateSector(setorName){
   openConfirm('Desativar setor', `"${setorName}" deixará de contar nos indicadores e no progresso dos ciclos (atual e futuros). O histórico de auditorias já feitas para esse setor é mantido, e você pode reativá-lo depois.`, async ()=>{
