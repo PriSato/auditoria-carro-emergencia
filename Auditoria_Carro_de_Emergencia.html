@@ -3854,25 +3854,31 @@ function cycleNumeroById(id){
   const c = allCycles.find(c=>c.id===id);
   return c ? c.numero : null;
 }
-/* Em ciclos mensais, uma auditoria pertence ao ciclo pelo INTERVALO de
-   datas do ciclo (iniciadoEm até concluidoEm, ou até hoje se ainda estiver
-   aberto), não pelo cicloId gravado na criação. cicloId ainda é guardado
-   (rótulo "Ciclo Nº" no histórico/detalhe), mas não é mais usado para
-   contar o progresso: se duas sessões correrem ensureCurrentCycle quase ao
-   mesmo tempo na virada do mês, cada uma pode carimbar suas auditorias com
-   o id de um registro de ciclo diferente antes de uma das gravações
-   "vencer" a outra — usar o intervalo de datas em vez do id torna a
-   contagem imune a essa corrida, presente ou passada. O intervalo (em vez
-   de só o mês) também é o que permite finalizar um ciclo manualmente no
-   meio do mês (ver btnFinalizeMonthlyCycle) e começar o próximo com
-   contagem zerada, mesmo os dois sendo do mesmo mês-calendário. Ciclos
-   não-mensais (fechados manualmente pelo botão "Concluir Ciclo") não têm
-   essa corrida — permanecem no cicloId. */
+/* Em ciclos mensais, uma auditoria pertence ao ciclo pelo INSTANTE em que
+   foi finalizada (audit.updatedAt/createdAt — timestamp real da gravação)
+   comparado ao intervalo do ciclo (iniciadoEm até concluidoEm, ou até
+   agora se ainda estiver aberto), não pelo cicloId gravado na criação nem
+   pela data que o auditor preencheu no formulário. cicloId ainda é
+   guardado (rótulo "Ciclo Nº" no histórico/detalhe), mas não é mais usado
+   para contar o progresso: se duas sessões correrem ensureCurrentCycle
+   quase ao mesmo tempo na virada do mês, cada uma pode carimbar suas
+   auditorias com o id de um registro de ciclo diferente antes de uma das
+   gravações "vencer" a outra — usar o intervalo em vez do id torna a
+   contagem imune a essa corrida, presente ou passada. Usar o instante real
+   da gravação (em vez da data preenchida no formulário) é o que garante
+   que, ao finalizar um ciclo manualmente no meio do dia (ver
+   btnFinalizeMonthlyCycle), toda auditoria já salva até aquele momento
+   fique no ciclo encerrado — mesmo que o auditor tenha preenchido a data
+   de hoje, que é também a data de início do ciclo novo; só auditorias
+   salvas DEPOIS do clique entram no ciclo seguinte. Ciclos não-mensais
+   (fechados manualmente pelo botão "Concluir Ciclo") não têm essa corrida
+   nem essa ambiguidade — permanecem no cicloId. */
 function auditBelongsToCycle(audit, cycle){
   if(TIPOS[currentTipo].cycleMode==='monthly'){
-    if(!audit.data) return false;
-    if(audit.data < String(cycle.iniciadoEm).slice(0,10)) return false;
-    if(cycle.concluidoEm && audit.data >= String(cycle.concluidoEm).slice(0,10)) return false;
+    const ts = audit.updatedAt || audit.createdAt;
+    if(!ts) return false;
+    if(ts < new Date(cycle.iniciadoEm).getTime()) return false;
+    if(cycle.concluidoEm && ts >= new Date(cycle.concluidoEm).getTime()) return false;
     return true;
   }
   return audit.cicloId===cycle.id;
@@ -4206,7 +4212,7 @@ async function findEmptyCyclesAllTypes(){
     const empty = cyclesData.filter(c=>{
       if(c.status==='aberto') return false;
       const hasAny = cfg.cycleMode==='monthly'
-        ? fin.some(a=> a.data && a.data>=String(c.iniciadoEm).slice(0,10) && (!c.concluidoEm || a.data<String(c.concluidoEm).slice(0,10)))
+        ? fin.some(a=>{ const ts=a.updatedAt||a.createdAt; return ts && ts>=new Date(c.iniciadoEm).getTime() && (!c.concluidoEm || ts<new Date(c.concluidoEm).getTime()); })
         : fin.some(a=>a.cicloId===c.id);
       return !hasAny;
     });
