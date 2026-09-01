@@ -722,7 +722,7 @@ input,select,textarea{font-family:inherit;}
         <div class="card card-pad" id="currentCycleCard" style="margin-bottom:22px;"></div>
         <div class="card card-pad" id="inactiveSectorsCard" style="margin-bottom:22px;display:none;"></div>
         <div class="card card-pad" id="dataIntegrityCard" style="margin-bottom:22px;display:none;"></div>
-        <div class="section-title"><h2>Histórico de Ciclos</h2><button type="button" class="btn btn-ghost btn-sm" id="btnRemoveEmptyCycles">Remover ciclos vazios (todos os módulos)</button></div>
+        <div class="section-title"><h2>Histórico de Ciclos</h2><div style="display:flex;gap:8px;"><button type="button" class="btn btn-ghost btn-sm" id="btnFindCrossTypeDuplicates">Verificar auditorias duplicadas entre módulos</button><button type="button" class="btn btn-ghost btn-sm" id="btnRemoveEmptyCycles">Remover ciclos vazios (todos os módulos)</button></div></div>
         <div class="card" style="overflow:auto;">
           <table class="audit-table" id="cyclesHistoryTable">
             <thead><tr><th>Ciclo</th><th>Período</th><th>Duração</th><th id="thCyclesCount">Setores</th><th>Conformidade média</th><th></th></tr></thead>
@@ -4191,6 +4191,99 @@ function renderDataIntegrityCard(){
     );
   });
 }
+
+/* Auditorias duplicadas entre módulos — mesmo "id" de auditoria (gerado
+   uma única vez na criação) aparecendo no índice de mais de um módulo.
+   Sintoma do mesmo bug já corrigido em updateIndex/refreshAuditsFromStorage:
+   uma sessão desatualizada podia gravar, no índice do módulo atual, uma
+   auditoria que na verdade pertencia a outro módulo (ex.: Carro de
+   Emergência aparecendo em Carro de Medicação). Ao contrário do card
+   "fora da lista de setores" (que só pega o caso em que o setor não
+   existe no módulo atual), isso pega o caso em que os dois módulos usam
+   os mesmos setores — o critério aqui não é o setor, e sim o próprio
+   checklist: o "dono" verdadeiro é o módulo cujo conjunto de ids de itens
+   bate exatamente com os itens gravados na auditoria (ver
+   typeItemSignatures). Só reordena/some da LISTA dos módulos errados —
+   nunca apaga o registro de detalhe, que continua sendo o mesmo já usado
+   pelo módulo dono de verdade. */
+function typeItemSignatures(cfg){
+  if(cfg.sectorDependentItems && cfg.phases) return Object.values(cfg.phases).map(p=> new Set(p.items.map(i=>i.id)));
+  return [new Set((cfg.items||[]).map(i=>i.id))];
+}
+function idSetMatchesSignature(detailIds, sig){
+  if(detailIds.size!==sig.size) return false;
+  for(const id of detailIds) if(!sig.has(id)) return false;
+  return true;
+}
+async function findCrossTypeDuplicateAudits(){
+  const perType = {};
+  for(const cfg of Object.values(TIPOS)){
+    const idxKey = cfg.storagePrefix ? cfg.storagePrefix+'audit_index' : 'audit_index';
+    const idx = (await storageGet(idxKey)) || [];
+    perType[cfg.key] = { cfg, idxKey, idx };
+  }
+  const idOwners = {};
+  Object.entries(perType).forEach(([typeKey, data])=>{
+    data.idx.forEach(a=> (idOwners[a.id]=idOwners[a.id]||[]).push(typeKey));
+  });
+  const dupEntries = Object.entries(idOwners).filter(([,types])=>types.length>1);
+  const toRemove = {}; // typeKey -> [{id, setor}]
+  const unresolved = [];
+  for(const [id, types] of dupEntries){
+    const detail = await storageGet('audit_'+id);
+    if(!detail || !Array.isArray(detail.items)){ unresolved.push({id, types, reason:'sem registro de detalhe'}); continue; }
+    const detailIds = new Set(detail.items.map(i=>i.id));
+    const matches = types.filter(t=> typeItemSignatures(perType[t].cfg).some(sig=>idSetMatchesSignature(detailIds, sig)));
+    if(matches.length!==1){ unresolved.push({id, types, reason: matches.length===0?'nenhum módulo bate com o checklist salvo':'mais de um módulo bate — não dá para decidir sozinho'}); continue; }
+    const owner = matches[0];
+    types.forEach(t=>{
+      if(t===owner) return;
+      const entry = perType[t].idx.find(a=>a.id===id);
+      (toRemove[t]=toRemove[t]||[]).push(entry);
+    });
+  }
+  return { perType, toRemove, unresolved };
+}
+async function applyCrossTypeDuplicateRemoval(perType, toRemove){
+  let removed = 0;
+  for(const [typeKey, entries] of Object.entries(toRemove)){
+    const data = perType[typeKey];
+    const removeIds = new Set(entries.map(e=>e.id));
+    const kept = data.idx.filter(a=>!removeIds.has(a.id));
+    const ok = await storageSet(data.idxKey, kept);
+    if(ok){
+      removed += entries.length;
+      if(typeKey===currentTipo) allAudits = kept;
+    }
+  }
+  return removed;
+}
+document.getElementById('btnFindCrossTypeDuplicates').addEventListener('click', async ()=>{
+  const btn = document.getElementById('btnFindCrossTypeDuplicates');
+  btn.disabled = true;
+  let result;
+  try { result = await findCrossTypeDuplicateAudits(); }
+  finally { btn.disabled = false; }
+  const { perType, toRemove, unresolved } = result;
+  const total = Object.values(toRemove).reduce((s,arr)=>s+arr.length,0);
+  if(total===0 && unresolved.length===0){ toast('Nenhuma auditoria duplicada entre módulos encontrada.','ok'); return; }
+  if(total===0){
+    toast(`${unresolved.length} id(s) duplicado(s) entre módulos, mas não deu para identificar o dono com segurança — nada foi removido.`,'bad');
+    return;
+  }
+  const breakdown = Object.entries(toRemove).map(([t,arr])=>{
+    const setores = [...new Set(arr.map(a=>a.setor))].join(', ');
+    return `${perType[t].cfg.labelPlural}: ${arr.length} (setor: ${setores})`;
+  }).join(' · ');
+  const unresolvedNote = unresolved.length ? ` (${unresolved.length} caso(s) ambíguo(s) não mexidos — verifique manualmente.)` : '';
+  openConfirm('Remover auditorias duplicadas entre módulos',
+    `Encontrado(s) ${total} registro(s) que pertencem de verdade a outro módulo — ${breakdown}. Remove só da LISTA do módulo errado (o registro de detalhe, que continua no módulo dono de verdade, não é apagado). Esta ação não pode ser desfeita.${unresolvedNote} Deseja continuar?`,
+    async ()=>{
+      const removed = await applyCrossTypeDuplicateRemoval(perType, toRemove);
+      toast(`${removed} registro(s) removido(s) dos módulos errados.`,'ok');
+      renderCycles(); renderDashboard(); renderCycleBanner(); renderHistory(); renderSectors();
+    });
+});
 
 /* Ciclos "vazios" — fechados sem nenhuma auditoria dentro do seu
    intervalo — normalmente são resíduo de bugs já corrigidos (corrida de
