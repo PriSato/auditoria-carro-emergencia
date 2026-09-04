@@ -969,7 +969,6 @@ let CATEGORIES = [
   {id:'oxigenio', nome:'Oxigênio', icon:'tank'},
   {id:'medicamentos', nome:'Gavetas, Medicamentos e Validade', icon:'pill'},
   {id:'reposicao', nome:'Reposição e Organização', icon:'refresh'},
-  {id:'localizacao', nome:'Localização e Padronização', icon:'pin'},
 ];
 
 /* Categorias e itens da auditoria dos Carros de Medicação (módulo separado,
@@ -2871,6 +2870,7 @@ let ITEMS = [
  {id:4,cat:'lacre',texto:'O número do lacre do carro de parada corresponde ao último número registrado na planilha'},
  {id:5,cat:'desfibrilador',texto:'O desfibrilador está conectado à rede elétrica e pronto para uso'},
  {id:6,cat:'desfibrilador',texto:'Cabos, pás ou eletrodos íntegros'},
+ {id:26,cat:'desfibrilador',texto:'Teste do desfibrilador realizado', statusOptions:['conforme','parcial','nao-conforme','nao-aplica']},
  {id:8,cat:'registros',texto:'Checklist diário preenchido (Registro da conferência com data, período e assinatura)'},
  {id:9,cat:'viaaerea',texto:'Há bolsa válvula-máscara (Ambu) disponível, com lâminas de laringoscópio acondicionadas em maleta higienizável'},
  {id:10,cat:'viaaerea',texto:'Laringoscópio com lâminas e iluminação funcional'},
@@ -2879,13 +2879,10 @@ let ITEMS = [
  {id:13,cat:'oxigenio',texto:'O cilindro de oxigênio está disponível e instalado em suporte'},
  {id:14,cat:'oxigenio',texto:'Cilindro de oxigênio disponível, com carga adequada e dentro da validade da inspeção'},
  {id:15,cat:'medicamentos',texto:'Gavetas identificadas e organizadas conforme padronização institucional.'},
- {id:16,cat:'medicamentos',texto:'Medicamentos ou materiais não vencidos nem com validade próxima do vencimento no carro de parada', medCheck:true},
+ {id:16,cat:'medicamentos',texto:'Medicamentos e materiais dentro do prazo de validade e sem validade próxima do vencimento.', medCheck:true},
  {id:17,cat:'medicamentos',texto:'Controle de validade dos materiais e medicamentos.'},
  {id:18,cat:'reposicao',texto:'Evidência de reposição imediata após utilização.'},
  {id:19,cat:'reposicao',texto:'Organização que facilite a localização rápida dos medicamentos.'},
- {id:20,cat:'reposicao',texto:'Controle de reposição após utilização.'},
- {id:22,cat:'localizacao',texto:'Equipe conhece sua localização.'},
- {id:23,cat:'localizacao',texto:'Organização padronizada em todas as unidades do hospital.'},
  {id:24,cat:'acesso',texto:'Prancha rígida presente e íntegra.'},
  {id:25,cat:'medicamentos',texto:'Quantidade de medicamentos em conformidade com o estoque definido (sem faltas ou sobras).'},
 ];
