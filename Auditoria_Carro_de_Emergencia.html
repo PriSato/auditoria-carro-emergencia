@@ -5660,6 +5660,17 @@ document.getElementById('btnFinalizeAudit').addEventListener('click', async ()=>
    DASHBOARD GERAL
    ========================================================================= */
 function finalizedAudits(){ return allAudits.filter(a=>a.status==='finalizada'); }
+/* Dashboard Geral mostra só o ciclo em andamento (ou o último, se nenhum
+   estiver aberto) — não o acumulado desde sempre. Setores/Histórico
+   continuam usando finalizedAudits() puro, pois ali o objetivo é justamente
+   consultar o histórico completo. */
+function currentCycleFinalizedAudits(){
+  const fin = finalizedAudits();
+  if(TIPOS[currentTipo].hasCycles===false) return fin;
+  const cycle = getCurrentCycle();
+  if(!cycle) return fin;
+  return fin.filter(a=>auditBelongsToCycle(a, cycle));
+}
 
 /* Agrupamento usado pelos tipos com dashboardByItem (Meta 4, Processo
    Transfusional): por padrão agrupa por item (cada item já é um tópico
@@ -5692,12 +5703,16 @@ function dashboardItemGroups(fin){
 }
 
 function renderDashboard(){
-  const fin = finalizedAudits();
+  const fin = currentCycleFinalizedAudits();
   const kpiGrid = document.getElementById('kpiGrid');
   if(fin.length===0){
+    const semCicloAinda = finalizedAudits().length===0;
+    const msg = semCicloAinda
+      ? `<h3>Nenhuma auditoria finalizada ainda</h3><p>Crie sua primeira auditoria para começar a acompanhar a conformidade dos ${TIPOS[currentTipo].labelPlural.toLowerCase()}.</p>`
+      : `<h3>Nenhuma auditoria finalizada neste ciclo ainda</h3><p>O histórico de ciclos anteriores continua disponível em Histórico.</p>`;
     kpiGrid.innerHTML = `<div class="card card-pad" style="grid-column:1/-1;"><div class="empty-state">
       ${''}
-      <h3>Nenhuma auditoria finalizada ainda</h3><p>Crie sua primeira auditoria para começar a acompanhar a conformidade dos ${TIPOS[currentTipo].labelPlural.toLowerCase()}.</p>
+      ${msg}
       <button class="btn btn-primary" style="margin-top:14px;" onclick="startNewAudit()">Criar nova auditoria</button>
     </div></div>`;
     if(charts.trend) charts.trend.destroy();
@@ -6194,7 +6209,7 @@ document.getElementById('exportAuditFull').addEventListener('click', ()=>{
 });
 
 async function generateDashboardPdf(detailed){
-  const fin = finalizedAudits();
+  const fin = currentCycleFinalizedAudits();
   const doc = new jsPDF();
   pdfHeader(doc,'Dashboard Geral — Auditoria de '+TIPOS[currentTipo].labelPlural, `${fin.length} auditorias finalizadas`);
   let y=36;
@@ -6238,7 +6253,7 @@ async function generateDashboardPdf(detailed){
 }
 
 async function buildDashboardReportText(detailed){
-  const fin = finalizedAudits();
+  const fin = currentCycleFinalizedAudits();
   const avg = fin.length? fin.reduce((s,a)=>s+a.score,0)/fin.length : 0;
   const setores = new Set(fin.map(a=>a.setor));
   const now = new Date();
