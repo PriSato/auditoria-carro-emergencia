@@ -3213,8 +3213,8 @@ let ITEMS = [
  {id:17,cat:'medicamentos',texto:'Controle de validade dos materiais e medicamentos.'},
  {id:18,cat:'reposicao',texto:'Evidência de reposição imediata após utilização.'},
  {id:24,cat:'acesso',texto:'Prancha rígida presente e íntegra.'},
- {id:25,cat:'medicamentos',texto:'Quantidade de medicamentos em conformidade com o estoque definido (sem faltas ou sobras).'},
- {id:27,cat:'medicamentos',texto:'Materiais e quantidades compatíveis com o checklist de conferência'},
+ {id:25,cat:'medicamentos',texto:'Quantidade de medicamentos em conformidade com o estoque definido (sem faltas ou sobras).', medCheck:true, medCheckLabels:{ok:'Completo',proximo:'Parcial',vencido:'Faltando'}, medCheckDesc:'a quantidade'},
+ {id:27,cat:'medicamentos',texto:'Materiais e quantidades compatíveis com o checklist de conferência', medCheck:true, medCheckLabels:{ok:'Completo',proximo:'Parcial',vencido:'Faltando'}, medCheckDesc:'a quantidade'},
 ];
 
 /* Itens da auditoria dos Carros de Medicação (módulo separado, ver TIPOS
@@ -5324,7 +5324,7 @@ function itemRowHtml(it){
     <div class="item-extra" id="itemextra-${it.id}" style="display:none;">
       ${it.medCheck ? `
       <div class="med-alert" id="medalert-${it.id}">
-        <label>Perfil do carro (abre a lista de itens para conferir a validade)</label>
+        <label>Perfil do carro (abre a lista de itens para conferir ${it.medCheckDesc||'a validade'})</label>
         <select id="cartPerfilSel-${it.id}" onchange="setCartPerfil(${it.id}, this.value)">
           <option value="">Selecione...</option>
           <option value="adulto">Adulto</option>
@@ -5381,6 +5381,15 @@ function setObs(itemId, val){ const item = currentAudit.items.find(i=>i.id===ite
    medicamentos e insumos daquele carro (CART_PROFILES) para o auditor
    marcar item a item: válido, próximo do vencimento ou vencido.
    ========================================================================= */
+/* Rótulos dos 3 estados da conferência (✓/◐/✕) — por padrão são os de
+   validade (item 16); itens 25 e 27 sobrescrevem via medCheckLabels no
+   ITEMS para "Completo/Parcial/Faltando" (conferência de quantidade, não
+   de validade), mas continuam usando as mesmas chaves internas ok/
+   proximo/vencido — é só o texto mostrado que muda. */
+function medCheckLabelsFor(itemId){
+  const itDef = ITEMS.find(i=>i.id===itemId);
+  return (itDef && itDef.medCheckLabels) || {ok:'Válido', proximo:'Próx. vencimento', vencido:'Vencido'};
+}
 function setCartPerfil(itemId, perfil){
   const item = currentAudit.items.find(i=>i.id===itemId);
   if(item.cartPerfil !== perfil){
@@ -5398,6 +5407,7 @@ function renderCartChecklist(itemId){
   if(!item.cartPerfil){ wrap.innerHTML=''; return; }
   const categorias = CART_PROFILES[item.cartPerfil];
   const respostas = item.cartRespostas || {};
+  const lbl = medCheckLabelsFor(itemId);
   const catsHtml = categorias.map((cat,ci)=>{
     const rowsHtml = cat.itens.map((it2,ii)=>{
       const key = ci+'_'+ii;
@@ -5406,9 +5416,9 @@ function renderCartChecklist(itemId){
       return `<div class="cart-item-row" data-key="${key}">
         <div class="cart-item-txt"><span class="qtd">${escapeHtml(it2.qtd)}</span>${escapeHtml(it2.nome)}</div>
         <div class="cart-item-btns">
-          <button class="cart-btn ${val==='ok'?cls:''}" data-val="ok" title="Válido" onclick="setCartResposta(${itemId},'${key}','ok')">✓</button>
-          <button class="cart-btn ${val==='proximo'?cls:''}" data-val="proximo" title="Próx. vencimento" onclick="setCartResposta(${itemId},'${key}','proximo')">◐</button>
-          <button class="cart-btn ${val==='vencido'?cls:''}" data-val="vencido" title="Vencido" onclick="setCartResposta(${itemId},'${key}','vencido')">✕</button>
+          <button class="cart-btn ${val==='ok'?cls:''}" data-val="ok" title="${lbl.ok}" onclick="setCartResposta(${itemId},'${key}','ok')">✓</button>
+          <button class="cart-btn ${val==='proximo'?cls:''}" data-val="proximo" title="${lbl.proximo}" onclick="setCartResposta(${itemId},'${key}','proximo')">◐</button>
+          <button class="cart-btn ${val==='vencido'?cls:''}" data-val="vencido" title="${lbl.vencido}" onclick="setCartResposta(${itemId},'${key}','vencido')">✕</button>
         </div>
       </div>`;
     }).join('');
@@ -5447,7 +5457,8 @@ function updateCartSummary(itemId){
   categorias.forEach(cat=> cat.itens.forEach(()=> total++));
   Object.values(respostas).forEach(v=>{ conferidos++; if(v==='vencido') vencidos++; if(v==='proximo') proximos++; });
   const el = document.getElementById('cartSummary-'+itemId);
-  if(el) el.textContent = `${conferidos} de ${total} itens conferidos${vencidos||proximos?` · ${vencidos} vencido(s) · ${proximos} próximo(s) do vencimento`:''}`;
+  const lbl = medCheckLabelsFor(itemId);
+  if(el) el.textContent = `${conferidos} de ${total} itens conferidos${vencidos||proximos?` · ${vencidos} ${lbl.vencido.toLowerCase()} · ${proximos} ${lbl.proximo.toLowerCase()}`:''}`;
 }
 function toggleCartCat(itemId, ci){
   const el = document.querySelector(`#cartChecklist-${itemId} .cart-cat[data-cat="${ci}"]`);
@@ -5900,12 +5911,13 @@ function confirmDeleteAudit(id){
   });
 }
 
-/* Resume a conferência de validade do item 16 (perfil do carro + itens
-   vencidos/próximos do vencimento) para exibição no detalhe da auditoria. */
-function cartSummaryHtml(resp){
+/* Resume a conferência (validade no item 16; quantidade/estoque nos itens
+   25 e 27 — ver medCheckLabels) para exibição no detalhe da auditoria. */
+function cartSummaryHtml(resp, itemId){
   const categorias = CART_PROFILES[resp.cartPerfil];
   if(!categorias) return '';
   const respostas = resp.cartRespostas || {};
+  const lbl = medCheckLabelsFor(itemId);
   let total=0; categorias.forEach(cat=>cat.itens.forEach(()=>total++));
   const conferidos = Object.keys(respostas).length;
   const problemas = [];
@@ -5916,7 +5928,7 @@ function cartSummaryHtml(resp){
   const perfilLabel = {adulto:'Adulto', misto:'Misto (Adulto e Pediátrico)', infantil:'Infantil', neonatal:'Neonatal'}[resp.cartPerfil] || resp.cartPerfil;
   return `<div class="cart-summary-detail" style="margin-top:6px;font-size:12px;color:var(--ink-soft);">
     Perfil do carro: <strong>${escapeHtml(perfilLabel)}</strong> — ${conferidos} de ${total} itens conferidos
-    ${problemas.length?`<div style="margin-top:4px;">${problemas.map(p=>`<span class="tag ${p.v==='vencido'?'tag-bad':'tag-warn'}" style="margin:2px 4px 0 0;">${escapeHtml(p.nome)} — ${p.v==='vencido'?'Vencido':'Próx. vencimento'}</span>`).join('')}</div>`:''}
+    ${problemas.length?`<div style="margin-top:4px;">${problemas.map(p=>`<span class="tag ${p.v==='vencido'?'tag-bad':'tag-warn'}" style="margin:2px 4px 0 0;">${escapeHtml(p.nome)} — ${p.v==='vencido'?lbl.vencido:lbl.proximo}</span>`).join('')}</div>`:''}
   </div>`;
 }
 
@@ -5970,7 +5982,7 @@ async function openAuditDetail(id){
           <div class="stat-dot" style="background:${meta.color}"></div>
           <div class="body">
             <div class="txt">${it.id}. ${escapeHtml(it.texto)} <span class="tag" style="background:${meta.bg||'#EEF4FA'};color:${meta.color};margin-left:6px;">${meta.label}</span>${resp.medExtra?` <span class="tag tag-warn">${resp.medExtra==='vencido'?'Vencido':resp.medExtra==='proximo'?'Próx. vencimento':'Outro'}</span>`:''}</div>
-            ${resp.cartPerfil?cartSummaryHtml(resp):''}
+            ${resp.cartPerfil?cartSummaryHtml(resp, it.id):''}
             ${resp.obs?`<div class="obs">${escapeHtml(resp.obs)}</div>`:''}
             ${resp.photos && resp.photos.length?`<div class="imgs">${resp.photos.map(p=>`<img src="${p}" onclick="openLightbox('${p}')">`).join('')}</div>`:''}
           </div>
