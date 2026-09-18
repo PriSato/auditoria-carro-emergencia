@@ -4461,7 +4461,7 @@ function renderCycles(){
     const avg = cycleAvgScore(c);
     const sc = scoreColor(avg);
     const durDays = Math.max(0, Math.round((new Date(c.concluidoEm)-new Date(c.iniciadoEm))/86400000));
-    const cicloLabel = cfg.cycleMode==='monthly' ? monthLabel(c.mes) : ('Ciclo '+c.numero);
+    const cicloLabel = 'Ciclo '+c.numero;
     const countCell = cfg.cycleMode==='monthly' ? (p.total? `${p.done}/${p.total}` : p.done) : `${p.done}/${p.total}`;
     // Ciclo mensal fecha sempre na virada do mês (ver ensureCurrentCycle),
     // atingindo ou não a meta de todos os setores — o selo aqui é o que
@@ -5720,14 +5720,18 @@ function reportMatchesOnScreenCycle(){
   const current = getCurrentCycle();
   return !current ? !cycle : !!cycle && cycle.id===current.id;
 }
+/* Rótulo por "Ciclo Nº N" sempre — mesmo nos módulos com cycleMode:'monthly'
+   (que também têm mês/ano em cycle.mes, usado em outras telas como o banner
+   "Ciclo Atual"). Escolha da usuária: ela quer o mesmo padrão de rótulo em
+   todo lugar onde se SELECIONA um ciclo (este seletor de relatório e a
+   listagem de ciclos encerrados), independente do módulo. */
 function reportCycleLabel(){
   const cfg = TIPOS[currentTipo];
   if(cfg.hasCycles===false) return null;
   const { cycle, all } = selectedReportCycle();
   if(all) return 'Todos os ciclos';
   if(!cycle) return 'Nenhum ciclo em andamento';
-  const label = cfg.cycleMode==='monthly' ? monthLabel(cycle.mes) : ('Ciclo Nº '+cycle.numero);
-  return label + (cycle.status==='aberto' ? ' (em andamento)' : '');
+  return 'Ciclo Nº '+cycle.numero + (cycle.status==='aberto' ? ' (em andamento)' : '');
 }
 function populateReportCicloSelect(){
   const sel = document.getElementById('reportMenuCicloSel');
@@ -5738,7 +5742,7 @@ function populateReportCicloSelect(){
   if(wrap) wrap.style.display='';
   const current = getCurrentCycle();
   const ordered = [...allCycles].sort((a,b)=>b.numero-a.numero);
-  const labelFor = c => cfg.cycleMode==='monthly' ? monthLabel(c.mes) : ('Ciclo Nº '+c.numero);
+  const labelFor = c => 'Ciclo Nº '+c.numero;
   const prev = sel.value;
   sel.innerHTML = ordered.map(c=>`<option value="${c.id}">${escapeHtml(labelFor(c))}${c.status==='aberto'?' (atual)':''}</option>`).join('')
     + '<option value="all">Todos os ciclos</option>';
@@ -6380,11 +6384,13 @@ async function buildDashboardReportText(detailed){
     ? '  Ciclo do relatório: todos os ciclos.'
     : reportCycle ? (()=>{
         const p = cycleProgress(reportCycle);
-        if(TIPOS[currentTipo].cycleMode==='monthly'){
-          const contagem = p.total ? `${p.done} de ${p.total} auditorias (${Math.round(p.pct*100)}%)` : `${p.done} auditoria${p.done===1?'':'s'} finalizada${p.done===1?'':'s'}`;
-          return `  Ciclo do relatório: ${monthLabel(reportCycle.mes)} — ${contagem}`;
-        }
-        return `  Ciclo do relatório: Nº ${reportCycle.numero} — ${p.done} de ${p.total} setores auditados (${Math.round(p.pct*100)}%)`;
+        // A contagem (auditorias vs. setores) ainda depende do cycleMode —
+        // isso é o dado em si, não o rótulo; o rótulo do ciclo agora é
+        // sempre "Nº N", independente do módulo.
+        const contagem = TIPOS[currentTipo].cycleMode==='monthly'
+          ? (p.total ? `${p.done} de ${p.total} auditorias (${Math.round(p.pct*100)}%)` : `${p.done} auditoria${p.done===1?'':'s'} finalizada${p.done===1?'':'s'}`)
+          : `${p.done} de ${p.total} setores auditados (${Math.round(p.pct*100)}%)`;
+        return `  Ciclo do relatório: Nº ${reportCycle.numero} — ${contagem}`;
       })() : (hasCycles ? '  Nenhum ciclo em andamento.' : null);
 
   const avaliadosLabel = TIPOS[currentTipo].avaliadosLabel || 'setores avaliados';
