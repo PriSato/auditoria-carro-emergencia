@@ -567,6 +567,11 @@ input,select,textarea{font-family:inherit;}
             Gerar Relatório
           </button>
           <div class="report-menu" id="reportMenu">
+            <div class="report-menu-ciclo" style="padding:6px 12px 10px;">
+              <label for="reportMenuCicloSel" style="font-size:11px;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:4px;">Ciclo do relatório</label>
+              <select id="reportMenuCicloSel" style="width:100%;padding:6px 8px;border:1px solid var(--line,#DCE4EC);border-radius:6px;font-size:12.5px;"></select>
+            </div>
+            <div class="report-menu-divider"></div>
             <button id="reportMenuPdfResumo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 10l5 5 5-5"/><path d="M20 21H4"/></svg>Baixar em PDF — Resumo</button>
             <button id="reportMenuPdfCompleto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 10l5 5 5-5"/><path d="M20 21H4"/></svg>Baixar em PDF — Completo (obs. e fotos)</button>
             <div class="report-menu-divider"></div>
@@ -5683,6 +5688,64 @@ function currentCycleFinalizedAudits(){
   return fin.filter(a=>auditBelongsToCycle(a, cycle));
 }
 
+/* =========================================================================
+   CICLO DO RELATÓRIO (menu "Gerar Relatório")
+   O dashboard na tela sempre mostra o ciclo atual (currentCycleFinalizedAudits,
+   acima); o relatório exportado (PDF/texto), por sua vez, deixa a pessoa
+   escolher outro ciclo — ou "Todos os ciclos" — através do seletor
+   #reportMenuCicloSel. Sem esse seletor no DOM (módulo sem hasCycles, ou tela
+   que não é o Dashboard Geral), cai no ciclo atual como já era antes. */
+function selectedReportCycle(){
+  const cfg = TIPOS[currentTipo];
+  if(cfg.hasCycles===false) return { cycle:null, all:true };
+  const sel = document.getElementById('reportMenuCicloSel');
+  const val = sel ? sel.value : '';
+  if(val==='all') return { cycle:null, all:true };
+  const cycle = val ? allCycles.find(c=>c.id===val) : getCurrentCycle();
+  return { cycle: cycle||null, all:false };
+}
+function reportFinalizedAudits(){
+  const fin = finalizedAudits();
+  const { cycle, all } = selectedReportCycle();
+  if(all || !cycle) return fin;
+  return fin.filter(a=>auditBelongsToCycle(a, cycle));
+}
+/* Verdadeiro só quando o relatório está no ciclo atual — o mesmo já
+   desenhado na tela (charts.trend/charts.sector) — para o PDF poder
+   reaproveitar esses gráficos em vez de precisar redesenhá-los. */
+function reportMatchesOnScreenCycle(){
+  if(TIPOS[currentTipo].hasCycles===false) return true; // sem ciclos, tela e relatório são sempre o mesmo histórico completo
+  const { cycle, all } = selectedReportCycle();
+  if(all) return false;
+  const current = getCurrentCycle();
+  return !current ? !cycle : !!cycle && cycle.id===current.id;
+}
+function reportCycleLabel(){
+  const cfg = TIPOS[currentTipo];
+  if(cfg.hasCycles===false) return null;
+  const { cycle, all } = selectedReportCycle();
+  if(all) return 'Todos os ciclos';
+  if(!cycle) return 'Nenhum ciclo em andamento';
+  const label = cfg.cycleMode==='monthly' ? monthLabel(cycle.mes) : ('Ciclo Nº '+cycle.numero);
+  return label + (cycle.status==='aberto' ? ' (em andamento)' : '');
+}
+function populateReportCicloSelect(){
+  const sel = document.getElementById('reportMenuCicloSel');
+  if(!sel) return;
+  const wrap = sel.closest('.report-menu-ciclo');
+  const cfg = TIPOS[currentTipo];
+  if(cfg.hasCycles===false){ if(wrap) wrap.style.display='none'; return; }
+  if(wrap) wrap.style.display='';
+  const current = getCurrentCycle();
+  const ordered = [...allCycles].sort((a,b)=>b.numero-a.numero);
+  const labelFor = c => cfg.cycleMode==='monthly' ? monthLabel(c.mes) : ('Ciclo Nº '+c.numero);
+  const prev = sel.value;
+  sel.innerHTML = ordered.map(c=>`<option value="${c.id}">${escapeHtml(labelFor(c))}${c.status==='aberto'?' (atual)':''}</option>`).join('')
+    + '<option value="all">Todos os ciclos</option>';
+  if([...sel.options].some(o=>o.value===prev)) sel.value = prev;
+  else if(current) sel.value = current.id;
+}
+
 /* Agrupamento usado pelos tipos com dashboardByItem (Meta 4, Processo
    Transfusional): por padrão agrupa por item (cada item já é um tópico
    completo). Com dashboardGroupBy:'category' (Processo Transfusional),
@@ -6221,24 +6284,37 @@ document.getElementById('exportAuditFull').addEventListener('click', ()=>{
 });
 
 async function generateDashboardPdf(detailed){
-  const fin = currentCycleFinalizedAudits();
+  const fin = reportFinalizedAudits();
+  const cicloLabel = reportCycleLabel();
   const doc = new jsPDF();
-  pdfHeader(doc,'Dashboard Geral — Auditoria de '+TIPOS[currentTipo].labelPlural, `${fin.length} auditorias finalizadas`);
+  pdfHeader(doc,'Dashboard Geral — Auditoria de '+TIPOS[currentTipo].labelPlural,
+    `${cicloLabel?cicloLabel+' · ':''}${fin.length} auditorias finalizadas`);
   let y=36;
   const avg = fin.length? fin.reduce((s,a)=>s+a.score,0)/fin.length : 0;
   doc.setFontSize(11); doc.setFont('helvetica','bold');
   doc.text(`Conformidade média geral: ${pct(avg)}`, 14, y); y+=8;
 
-  if(charts.trend){
+  // Os gráficos na tela (charts.trend/charts.sector) são desenhados com os
+  // dados do ciclo atual — só entram no PDF quando o ciclo escolhido para o
+  // relatório é esse mesmo (reportMatchesOnScreenCycle); outro ciclo (ou
+  // "Todos os ciclos") mostraria gráficos de dados diferentes da tabela
+  // abaixo, então nesse caso o PDF fica só com a tabela.
+  const canUseOnScreenCharts = reportMatchesOnScreenCycle();
+  if(canUseOnScreenCharts && charts.trend){
     const img = charts.trend.toBase64Image();
     doc.text('Evolução da conformidade', 14, y); y+=4;
     doc.addImage(img,'PNG',14,y,182,70); y+=78;
   }
-  if(charts.sector){
+  if(canUseOnScreenCharts && charts.sector){
     if(y>230){ doc.addPage(); y=20; }
     const img2 = charts.sector.toBase64Image();
     doc.text(TIPOS[currentTipo].dashboardByItem ? 'Conformidade média por item' : 'Conformidade média por setor', 14, y); y+=4;
     doc.addImage(img2,'PNG',14,y,182,70); y+=78;
+  }
+  if(!canUseOnScreenCharts){
+    doc.setFontSize(9); doc.setFont('helvetica','italic'); doc.setTextColor(140,150,160);
+    doc.text('Gráficos disponíveis apenas para o ciclo atual — este PDF traz a tabela de auditorias do ciclo selecionado.', 14, y);
+    doc.setTextColor(20,20,20); y+=10;
   }
   doc.addPage();
   const sorted = [...fin].sort((a,b)=>b.data.localeCompare(a.data));
@@ -6265,7 +6341,7 @@ async function generateDashboardPdf(detailed){
 }
 
 async function buildDashboardReportText(detailed){
-  const fin = currentCycleFinalizedAudits();
+  const fin = reportFinalizedAudits();
   const avg = fin.length? fin.reduce((s,a)=>s+a.score,0)/fin.length : 0;
   const setores = new Set(fin.map(a=>a.setor));
   const now = new Date();
@@ -6299,15 +6375,17 @@ async function buildDashboardReportText(detailed){
     .map(a=>`  ${fmtDate(a.data)} — ${a.setor} — ${a.auditor||'—'} — ${pct(a.score)}`);
 
   const hasCycles = TIPOS[currentTipo].hasCycles!==false;
-  const currentCycle = hasCycles ? getCurrentCycle() : null;
-  const cicloLine = currentCycle ? (()=>{
-    const p = cycleProgress(currentCycle);
-    if(TIPOS[currentTipo].cycleMode==='monthly'){
-      const contagem = p.total ? `${p.done} de ${p.total} auditorias (${Math.round(p.pct*100)}%)` : `${p.done} auditoria${p.done===1?'':'s'} finalizada${p.done===1?'':'s'}`;
-      return `  Ciclo atual: ${monthLabel(currentCycle.mes)} — ${contagem}`;
-    }
-    return `  Ciclo atual: Nº ${currentCycle.numero} — ${p.done} de ${p.total} setores auditados (${Math.round(p.pct*100)}%)`;
-  })() : (hasCycles ? '  Nenhum ciclo em andamento.' : null);
+  const { cycle: reportCycle, all: reportAll } = selectedReportCycle();
+  const cicloLine = reportAll
+    ? '  Ciclo do relatório: todos os ciclos.'
+    : reportCycle ? (()=>{
+        const p = cycleProgress(reportCycle);
+        if(TIPOS[currentTipo].cycleMode==='monthly'){
+          const contagem = p.total ? `${p.done} de ${p.total} auditorias (${Math.round(p.pct*100)}%)` : `${p.done} auditoria${p.done===1?'':'s'} finalizada${p.done===1?'':'s'}`;
+          return `  Ciclo do relatório: ${monthLabel(reportCycle.mes)} — ${contagem}`;
+        }
+        return `  Ciclo do relatório: Nº ${reportCycle.numero} — ${p.done} de ${p.total} setores auditados (${Math.round(p.pct*100)}%)`;
+      })() : (hasCycles ? '  Nenhum ciclo em andamento.' : null);
 
   const avaliadosLabel = TIPOS[currentTipo].avaliadosLabel || 'setores avaliados';
   const lines = [
@@ -6376,6 +6454,7 @@ const reportMenuWrap = document.getElementById('reportMenuWrap');
 const reportMenu = document.getElementById('reportMenu');
 document.getElementById('btnGerarRelatorio').addEventListener('click', (e)=>{
   e.stopPropagation();
+  if(!reportMenu.classList.contains('open')) populateReportCicloSelect();
   reportMenu.classList.toggle('open');
 });
 document.addEventListener('click', (e)=>{
