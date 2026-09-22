@@ -739,6 +739,13 @@ input,select,textarea{font-family:inherit;}
             <p>Quando todos os setores forem auditados no ciclo atual, você poderá concluí-lo.</p>
           </div>
         </div>
+        <div class="report-menu" id="cycleReportMenu">
+          <button id="cycleReportPdfResumo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 10l5 5 5-5"/><path d="M20 21H4"/></svg>Baixar em PDF — Resumo</button>
+          <button id="cycleReportPdfCompleto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 10l5 5 5-5"/><path d="M20 21H4"/></svg>Baixar em PDF — Completo (obs. e fotos)</button>
+          <div class="report-menu-divider"></div>
+          <button id="cycleReportCopyResumo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar relatório — Resumo</button>
+          <button id="cycleReportCopyCompleto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar relatório — Completo (com observações)</button>
+        </div>
       </section>
 
       <!-- ============ DETALHE AUDITORIA ============ -->
@@ -4391,6 +4398,7 @@ function renderCycles(){
           <div class="section-title" style="margin:0;"><h2>Ciclo Atual — ${monthLabel(current.mes)}</h2></div>
           <div class="cycle-progress-label" style="margin-top:2px;">Iniciado em ${fmtDateShort(current.iniciadoEm)}</div>
         </div>
+        <button class="btn btn-ghost btn-sm cycle-report-trigger" onclick="openCycleReportMenu(event,'${current.id}')">Relatório</button>
       </div>
       ${prog.total ? `<div class="progress-bar-bg" style="margin-top:14px;"><div class="progress-bar-fg" style="width:${Math.round(prog.pct*100)}%"></div></div>` : ''}
       <div class="cycle-progress-label" style="margin-top:${prog.total?8:14}px;">${summaryLabel}${prog.done? ' · conformidade média '+pct(avg) : ''}</div>
@@ -4419,6 +4427,7 @@ function renderCycles(){
           <div class="section-title" style="margin:0;"><h2>Ciclo Atual — Nº ${current.numero}</h2></div>
           <div class="cycle-progress-label" style="margin-top:2px;">Iniciado em ${fmtDateShort(current.iniciadoEm)}</div>
         </div>
+        <button class="btn btn-ghost btn-sm cycle-report-trigger" onclick="openCycleReportMenu(event,'${current.id}')">Relatório</button>
       </div>
       <div class="progress-bar-bg" style="margin-top:14px;"><div class="progress-bar-fg" style="width:${pctVal}%"></div></div>
       <div class="cycle-progress-label">${prog.done} de ${prog.total} setores auditados (${pctVal}%)</div>
@@ -4475,7 +4484,10 @@ function renderCycles(){
       <td>${durDays} dia${durDays===1?'':'s'}</td>
       <td>${countCell}${metaBadge}</td>
       <td><span class="score-pill" style="background:${sc.bg};color:${sc.c};">${pct(avg)}</span></td>
-      <td style="text-align:right;"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();viewCycleAudits('${c.id}')">Ver auditorias</button></td>
+      <td style="text-align:right;white-space:nowrap;">
+        <button class="btn btn-ghost btn-sm cycle-report-trigger" onclick="event.stopPropagation();openCycleReportMenu(event,'${c.id}')">Relatório</button>
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();viewCycleAudits('${c.id}')">Ver auditorias</button>
+      </td>
     </tr>`;
   }).join('');
 }
@@ -5695,9 +5707,20 @@ function currentCycleFinalizedAudits(){
    escolher outro ciclo — ou "Todos os ciclos" — através do seletor
    #reportMenuCicloSel. Sem esse seletor no DOM (módulo sem hasCycles, ou tela
    que não é o Dashboard Geral), cai no ciclo atual como já era antes. */
+/* reportCycleOverride: setado temporariamente pelo botão "Relatório" de uma
+   linha da aba Ciclos (ver openCycleReportMenu/withCycleReportOverride,
+   mais abaixo) para gerar o relatório daquele ciclo específico sem depender
+   do seletor #reportMenuCicloSel, que fica em outra tela (Dashboard Geral).
+   undefined (padrão) = comportamento normal, lê o seletor. */
+let reportCycleOverride;
 function selectedReportCycle(){
   const cfg = TIPOS[currentTipo];
   if(cfg.hasCycles===false) return { cycle:null, all:true };
+  if(reportCycleOverride!==undefined){
+    if(reportCycleOverride==='all') return { cycle:null, all:true };
+    const cycle = allCycles.find(c=>c.id===reportCycleOverride);
+    return { cycle: cycle||null, all:false };
+  }
   const sel = document.getElementById('reportMenuCicloSel');
   const val = sel ? sel.value : '';
   if(val==='all') return { cycle:null, all:true };
@@ -6510,6 +6533,50 @@ document.getElementById('reportMenuCopyResumo').addEventListener('click', ()=> c
 document.getElementById('reportMenuCopyCompleto').addEventListener('click', ()=> copyDashboardReport(true));
 document.getElementById('reportTextClose').addEventListener('click', ()=>{
   document.getElementById('modalReportText').classList.remove('open');
+});
+
+/* Botão "Relatório" de cada linha da aba Ciclos (Histórico de Ciclos):
+   mesmo menu de 4 opções do Dashboard Geral, mas fixado no ciclo daquela
+   linha via reportCycleOverride — não depende do seletor #reportMenuCicloSel,
+   que só existe na tela do Dashboard. */
+const cycleReportMenu = document.getElementById('cycleReportMenu');
+let pendingCycleReportId = null;
+function openCycleReportMenu(e, cycleId){
+  pendingCycleReportId = cycleId;
+  const rect = e.currentTarget.getBoundingClientRect();
+  cycleReportMenu.style.position = 'fixed';
+  cycleReportMenu.style.top = (rect.bottom+6)+'px';
+  cycleReportMenu.style.right = (window.innerWidth-rect.right)+'px';
+  cycleReportMenu.style.left = 'auto';
+  cycleReportMenu.classList.add('open');
+}
+document.addEventListener('click', (e)=>{
+  if(cycleReportMenu.classList.contains('open') && !cycleReportMenu.contains(e.target) && !e.target.closest('.cycle-report-trigger')){
+    cycleReportMenu.classList.remove('open');
+  }
+});
+/* reportCycleOverride só fica setado durante a chamada em si (try/finally) —
+   nunca enquanto o menu está só aberto e ocioso — para não vazar e afetar
+   por engano um relatório gerado depois pelo seletor do Dashboard Geral. */
+async function withCycleReportOverride(fn){
+  reportCycleOverride = pendingCycleReportId;
+  try{ await fn(); } finally { reportCycleOverride = undefined; }
+}
+document.getElementById('cycleReportPdfResumo').addEventListener('click', ()=>{
+  cycleReportMenu.classList.remove('open');
+  withCycleReportOverride(()=>generateDashboardPdf(false));
+});
+document.getElementById('cycleReportPdfCompleto').addEventListener('click', ()=>{
+  cycleReportMenu.classList.remove('open');
+  withCycleReportOverride(()=>generateDashboardPdf(true));
+});
+document.getElementById('cycleReportCopyResumo').addEventListener('click', ()=>{
+  cycleReportMenu.classList.remove('open');
+  withCycleReportOverride(()=>copyDashboardReport(false));
+});
+document.getElementById('cycleReportCopyCompleto').addEventListener('click', ()=>{
+  cycleReportMenu.classList.remove('open');
+  withCycleReportOverride(()=>copyDashboardReport(true));
 });
 
 document.getElementById('btnExportSector').addEventListener('click', async ()=>{
