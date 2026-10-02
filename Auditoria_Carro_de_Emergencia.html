@@ -727,7 +727,7 @@ input,select,textarea{font-family:inherit;}
         <div class="card card-pad" id="currentCycleCard" style="margin-bottom:22px;"></div>
         <div class="card card-pad" id="inactiveSectorsCard" style="margin-bottom:22px;display:none;"></div>
         <div class="card card-pad" id="dataIntegrityCard" style="margin-bottom:22px;display:none;"></div>
-        <div class="section-title"><h2>Histórico de Ciclos</h2><div style="display:flex;gap:8px;"><button type="button" class="btn btn-ghost btn-sm" id="btnFindCrossTypeDuplicates">Verificar auditorias duplicadas entre módulos</button><button type="button" class="btn btn-ghost btn-sm" id="btnRemoveEmptyCycles">Remover ciclos vazios (todos os módulos)</button></div></div>
+        <div class="section-title"><h2>Histórico de Ciclos</h2><div style="display:flex;gap:8px;"><button type="button" class="btn btn-ghost btn-sm" id="btnFindCrossTypeDuplicates">Verificar auditorias duplicadas entre módulos</button><button type="button" class="btn btn-ghost btn-sm" id="btnSyncEngEquip">Sincronizar equipamentos da Engenharia Clínica</button><button type="button" class="btn btn-ghost btn-sm" id="btnRemoveEmptyCycles">Remover ciclos vazios (todos os módulos)</button></div></div>
         <div class="card" style="overflow:auto;">
           <table class="audit-table" id="cyclesHistoryTable">
             <thead><tr><th>Ciclo</th><th>Período</th><th>Duração</th><th id="thCyclesCount">Setores</th><th>Conformidade média</th><th></th></tr></thead>
@@ -4688,6 +4688,69 @@ document.getElementById('btnRemoveEmptyCycles').addEventListener('click', async 
       const removed = await removeEmptyCyclesAllTypes(results);
       toast(`${removed} ciclo(s) vazio(s) removido(s).`,'ok');
       renderCycles();
+    });
+});
+
+/* Sincroniza o catálogo salvo no banco (eng_sector_carts) com
+   DEFAULT_SECTOR_EQUIPAMENTOS. O catálogo só é semeado na primeira carga,
+   então listas antigas (formato "… — Pat. N") nunca se atualizam sozinhas.
+   Por setor: substitui as entradas antigas "— Pat." pelas do catálogo atual e
+   mantém as cadastradas manualmente. Auditorias já feitas não são tocadas. */
+const ENG_PREFIX = 'eng_';
+function planEngEquipSync(savedCarts){
+  const plan = [];
+  Object.entries(DEFAULT_SECTOR_EQUIPAMENTOS).forEach(([setor, defaults])=>{
+    const old = savedCarts[setor] || [];
+    const kept = old.filter(c=>!defaults.includes(c) && !/ — Pat\. /.test(c));
+    const merged = [...defaults, ...kept];
+    const added = defaults.filter(c=>!old.includes(c)).length;
+    const removed = old.filter(c=>!merged.includes(c)).length;
+    if(added || removed) plan.push({ setor, before: old.length, after: merged.length, added, removed, merged });
+  });
+  return plan;
+}
+async function applyEngEquipSync(savedCarts, plan){
+  const updated = { ...savedCarts };
+  plan.forEach(p=>{ updated[p.setor] = p.merged; });
+  if(!await storageSet(ENG_PREFIX+'sector_carts', updated)) return false;
+
+  const cycles = await storageGet(ENG_PREFIX+'cycles');
+  const inactive = (await storageGet(ENG_PREFIX+'inactive_sectors')) || [];
+  let newCycles = cycles;
+  if(Array.isArray(cycles) && cycles.length){
+    const cur = cycles.find(c=>c.status==='aberto') || cycles[cycles.length-1];
+    const touched = new Set(plan.map(p=>p.setor));
+    let setores = cur.setores.filter(k=>!touched.has(trackKeyBaseSetor(k)));
+    plan.forEach(p=>{
+      p.merged.forEach(c=>{ const k = trackKey(p.setor, c); if(!inactive.includes(k)) setores.push(k); });
+    });
+    newCycles = cycles.map(c=> c.id===cur.id ? { ...c, setores } : c);
+    await storageSet(ENG_PREFIX+'cycles', newCycles);
+  }
+  if(currentTipo==='engenharia'){
+    sectorCarts = updated;
+    if(Array.isArray(newCycles)) allCycles = newCycles;
+  }
+  return true;
+}
+document.getElementById('btnSyncEngEquip').addEventListener('click', async ()=>{
+  const btn = document.getElementById('btnSyncEngEquip');
+  btn.disabled = true;
+  const saved = await storageGet(ENG_PREFIX+'sector_carts');
+  btn.disabled = false;
+  if(saved===undefined){ toast('Não foi possível ler o banco. Tente novamente.','bad'); return; }
+  const savedCarts = saved || {};
+  const plan = planEngEquipSync(savedCarts);
+  if(!plan.length){ toast('Os equipamentos já estão sincronizados.','ok'); return; }
+  const totalAdded = plan.reduce((s,p)=>s+p.added,0);
+  const totalRemoved = plan.reduce((s,p)=>s+p.removed,0);
+  const sample = plan.slice(0,8).map(p=>`${p.setor}: ${p.before} → ${p.after}`).join(' · ');
+  openConfirm('Sincronizar equipamentos da Engenharia Clínica',
+    `${plan.length} setor(es) serão atualizados: ${totalAdded} equipamento(s) incluído(s) e ${totalRemoved} entrada(s) antiga(s) (formato "Pat.") substituída(s). Ex.: ${sample}${plan.length>8?' …':''}. Equipamentos cadastrados manualmente são mantidos e as auditorias já feitas não são alteradas, mas as do ciclo aberto feitas com os nomes antigos deixam de contar no progresso desse ciclo. Deseja continuar?`,
+    async ()=>{
+      const ok = await applyEngEquipSync(savedCarts, plan);
+      if(ok){ toast(`${plan.length} setor(es) sincronizado(s).`,'ok'); renderCycles(); renderCycleBanner(); }
+      else toast('Erro ao sincronizar. Nada foi alterado no catálogo.','bad');
     });
 });
 
