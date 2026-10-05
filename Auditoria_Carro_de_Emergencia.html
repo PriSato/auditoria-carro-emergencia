@@ -3618,6 +3618,7 @@ async function switchTipo(tipo){
   await performSwitchTipo(tipo);
 }
 async function performSwitchTipo(tipo){
+  dashboardCycleId = null;
   applyTipo(tipo);
   await loadInactiveSectors();
   await loadSectorCarts();
@@ -4329,6 +4330,31 @@ function renderCycleBanner(){
   if(!el) return;
   const current = getCurrentCycle();
   if(!current){ el.innerHTML=''; return; }
+  const viewed = dashboardCycle();
+  if(viewed && viewed.id!==current.id){
+    const vp = cycleProgress(viewed);
+    const monthly = TIPOS[currentTipo].cycleMode==='monthly';
+    const title = monthly ? monthLabel(viewed.mes) : 'Nº '+viewed.numero;
+    const period = `${fmtDateShort(viewed.iniciadoEm)}${viewed.concluidoEm ? ' – '+fmtDateShort(viewed.concluidoEm) : ''}`;
+    const vLabel = monthly
+      ? (vp.total ? `${vp.done} de ${vp.total} auditorias (${Math.round(vp.pct*100)}%)` : `${vp.done} auditoria${vp.done===1?'':'s'} finalizada${vp.done===1?'':'s'}`)
+      : `${vp.done} de ${vp.total} setores auditados (${Math.round(vp.pct*100)}%)`;
+    el.innerHTML = `
+      <div class="cycle-banner-head">
+        <div>
+          <div class="section-title" style="margin:0;"><h2 style="font-size:15px;">Dashboard do Ciclo ${title}</h2></div>
+          <div class="cycle-progress-label" style="margin-top:2px;">${period} · ${vLabel}</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btnBackToCurrentCycle">Voltar ao ciclo atual</button>
+      </div>
+    `;
+    document.getElementById('btnBackToCurrentCycle').addEventListener('click', ()=>{
+      dashboardCycleId = null;
+      renderDashboard();
+      renderCycleBanner();
+    });
+    return;
+  }
   const prog = cycleProgress(current);
   if(TIPOS[currentTipo].cycleMode==='monthly'){
     const label = prog.total
@@ -4397,7 +4423,10 @@ function renderCycles(){
           <div class="section-title" style="margin:0;"><h2>Ciclo Atual — ${monthLabel(current.mes)}</h2></div>
           <div class="cycle-progress-label" style="margin-top:2px;">Iniciado em ${fmtDateShort(current.iniciadoEm)}</div>
         </div>
-        <button class="btn btn-ghost btn-sm cycle-report-trigger" onclick="openCycleReportMenu(event,'${current.id}')">Relatório</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-sm" onclick="viewCycleDashboard('${current.id}')">Dashboard</button>
+          <button class="btn btn-ghost btn-sm cycle-report-trigger" onclick="openCycleReportMenu(event,'${current.id}')">Relatório</button>
+        </div>
       </div>
       ${prog.total ? `<div class="progress-bar-bg" style="margin-top:14px;"><div class="progress-bar-fg" style="width:${Math.round(prog.pct*100)}%"></div></div>` : ''}
       <div class="cycle-progress-label" style="margin-top:${prog.total?8:14}px;">${summaryLabel}${prog.done? ' · conformidade média '+pct(avg) : ''}</div>
@@ -4426,7 +4455,10 @@ function renderCycles(){
           <div class="section-title" style="margin:0;"><h2>Ciclo Atual — Nº ${current.numero}</h2></div>
           <div class="cycle-progress-label" style="margin-top:2px;">Iniciado em ${fmtDateShort(current.iniciadoEm)}</div>
         </div>
-        <button class="btn btn-ghost btn-sm cycle-report-trigger" onclick="openCycleReportMenu(event,'${current.id}')">Relatório</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-sm" onclick="viewCycleDashboard('${current.id}')">Dashboard</button>
+          <button class="btn btn-ghost btn-sm cycle-report-trigger" onclick="openCycleReportMenu(event,'${current.id}')">Relatório</button>
+        </div>
       </div>
       <div class="progress-bar-bg" style="margin-top:14px;"><div class="progress-bar-fg" style="width:${pctVal}%"></div></div>
       <div class="cycle-progress-label">${prog.done} de ${prog.total} setores auditados (${pctVal}%)</div>
@@ -4484,11 +4516,25 @@ function renderCycles(){
       <td>${countCell}${metaBadge}</td>
       <td><span class="score-pill" style="background:${sc.bg};color:${sc.c};">${pct(avg)}</span></td>
       <td style="text-align:right;white-space:nowrap;">
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();viewCycleDashboard('${c.id}')">Dashboard</button>
         <button class="btn btn-ghost btn-sm cycle-report-trigger" onclick="event.stopPropagation();openCycleReportMenu(event,'${c.id}')">Relatório</button>
         <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();viewCycleAudits('${c.id}')">Ver auditorias</button>
       </td>
     </tr>`;
   }).join('');
+}
+
+/* Ciclo exibido no Dashboard Geral. null = ciclo atual (padrão); definido
+   pelo botão "Dashboard" de cada ciclo na aba Ciclos e zerado ao sair do
+   dashboard, trocar de módulo ou clicar em "Dashboard" no menu. */
+let dashboardCycleId = null;
+function dashboardCycle(){
+  if(TIPOS[currentTipo].hasCycles===false) return null;
+  return (dashboardCycleId && allCycles.find(c=>c.id===dashboardCycleId)) || getCurrentCycle();
+}
+async function viewCycleDashboard(cycleId){
+  dashboardCycleId = cycleId;
+  await showView('dashboard');
 }
 
 async function viewCycleAudits(cycleId){
@@ -4811,6 +4857,7 @@ const VIEW_TITLES = {
   'sector-detail':['Detalhe do Setor',''],
 };
 async function showView(name){
+  if(name!=='dashboard') dashboardCycleId = null;
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.view===name));
@@ -4839,7 +4886,10 @@ async function showView(name){
   }
 }
 document.querySelectorAll('.nav-item[data-view]').forEach(el=>{
-  el.addEventListener('click', ()=> showView(el.dataset.view));
+  el.addEventListener('click', ()=>{
+    if(el.dataset.view==='dashboard') dashboardCycleId = null;
+    showView(el.dataset.view);
+  });
 });
 document.getElementById('hamburger').addEventListener('click', ()=>{
   document.getElementById('sidebar').classList.toggle('open');
@@ -5757,7 +5807,7 @@ function finalizedAudits(){ return allAudits.filter(a=>a.status==='finalizada');
 function currentCycleFinalizedAudits(){
   const fin = finalizedAudits();
   if(TIPOS[currentTipo].hasCycles===false) return fin;
-  const cycle = getCurrentCycle();
+  const cycle = dashboardCycle();
   if(!cycle) return fin;
   return fin.filter(a=>auditBelongsToCycle(a, cycle));
 }
@@ -5873,10 +5923,11 @@ function renderDashboard(){
     const msg = semCicloAinda
       ? `<h3>Nenhuma auditoria finalizada ainda</h3><p>Crie sua primeira auditoria para começar a acompanhar a conformidade dos ${TIPOS[currentTipo].labelPlural.toLowerCase()}.</p>`
       : `<h3>Nenhuma auditoria finalizada neste ciclo ainda</h3><p>O histórico de ciclos anteriores continua disponível em Histórico.</p>`;
+    const viewingPast = dashboardCycleId && dashboardCycle() && dashboardCycle().id!==(getCurrentCycle()||{}).id;
     kpiGrid.innerHTML = `<div class="card card-pad" style="grid-column:1/-1;"><div class="empty-state">
       ${''}
       ${msg}
-      <button class="btn btn-primary" style="margin-top:14px;" onclick="startNewAudit()">Criar nova auditoria</button>
+      ${viewingPast ? '' : `<button class="btn btn-primary" style="margin-top:14px;" onclick="startNewAudit()">Criar nova auditoria</button>`}
     </div></div>`;
     if(charts.trend) charts.trend.destroy();
     if(charts.sector) charts.sector.destroy();
