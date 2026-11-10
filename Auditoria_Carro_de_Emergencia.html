@@ -3233,8 +3233,6 @@ let ITEMS = [
    dos carros de parada — a validade dos medicamentos entra como item comum. */
 const ITEMS_MED = [
  {id:1,cat:'seguranca',texto:'Todas as gavetas encontram-se trancadas quando o carrinho não está sob supervisão direta (medicamentos estão protegidos contra acesso de pessoas não autorizadas)'},
- {id:2,cat:'seguranca',texto:'Fechaduras das gavetas estão funcionando adequadamente e chave do carrinho em boas condições de uso'},
- {id:3,cat:'seguranca',texto:'Chave permanece em posse do profissional responsável durante o uso'},
  {id:4,cat:'identificacao',texto:'Medicamentos estão armazenados na gaveta correspondente ao paciente (não existem medicamentos de pacientes diferentes armazenados juntos)'},
  {id:5,cat:'identificacao',texto:'Medicamentos encontram-se dentro das embalagens originais e devidamente identificados'},
  {id:6,cat:'identificacao',texto:'Insumos encontram-se organizados e sem uso de elástico/liga'},
@@ -3247,10 +3245,6 @@ const ITEMS_MED = [
  {id:15,cat:'limpeza',texto:'Gavetas encontram-se organizadas e não há presença de materiais alheios ao uso do carrinho'},
  {id:16,cat:'residuos',texto:'Caixa perfurocortante não apresenta violação, danos ou deformidades'},
  {id:17,cat:'residuos',texto:'Nível de preenchimento da caixa perfurocortante está dentro do limite permitido (até a linha de segurança)'},
- {id:18,cat:'residuos',texto:'Lixeiras possuem identificação conforme classificação do resíduo'},
- {id:19,cat:'residuos',texto:'Lixeiras possuem saco plástico compatível com o tipo de resíduo'},
- {id:20,cat:'residuos',texto:'Saco plástico da lixeira está corretamente acondicionado, sem transbordamento'},
- {id:21,cat:'residuos',texto:'Lixeira encontra-se limpa, íntegra e em boas condições de conservação'},
  {id:22,cat:'residuos',texto:'Não há mistura inadequada de resíduos (comum, infectante, reciclável, químico etc.)'},
 ];
 
@@ -6030,7 +6024,7 @@ function renderDashboard(){
   // ranking of most non-conforming items
   const itemFailCount = {};
   fin.forEach(a=>{ (a.itemStatus||[]).forEach(is=>{ if(is.status==='nao-conforme' || is.status==='parcial'){ itemFailCount[is.id]=(itemFailCount[is.id]||0)+ (is.status==='nao-conforme'?1:0.5); } }); });
-  const ranked = Object.entries(itemFailCount).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const ranked = Object.entries(itemFailCount).filter(([id])=>allTipoItems().some(i=>i.id==id)).sort((a,b)=>b[1]-a[1]).slice(0,6);
   const rankList = document.getElementById('rankList');
   if(ranked.length===0){
     rankList.innerHTML = `<div class="empty-state" style="padding:20px;"><p>Nenhuma não conformidade registrada até o momento.</p></div>`;
@@ -6274,7 +6268,7 @@ async function openSectorDetail(name){
 
   const itemFailCount = {};
   fin.forEach(a=>{ (a.itemStatus||[]).forEach(is=>{ if(is.status==='nao-conforme'||is.status==='parcial'){ itemFailCount[is.id]=(itemFailCount[is.id]||0)+(is.status==='nao-conforme'?1:0.5);} }); });
-  const ranked = Object.entries(itemFailCount).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const ranked = Object.entries(itemFailCount).filter(([id])=>allTipoItems().some(i=>i.id==id)).sort((a,b)=>b[1]-a[1]).slice(0,6);
   document.getElementById('secRankList').innerHTML = ranked.length? ranked.map(([id,val],idx)=>{
     const it = allTipoItems().find(i=>i.id==id);
     return `<div class="rank-row"><div class="num">${idx+1}</div><div class="txt">${escapeHtml(it?it.texto:'')}</div><div class="pct">${val}x</div></div>`;
@@ -6505,7 +6499,7 @@ async function buildDashboardReportText(detailed){
 
   const itemFailCount = {};
   fin.forEach(a=>{ (a.itemStatus||[]).forEach(is=>{ if(is.status==='nao-conforme' || is.status==='parcial'){ itemFailCount[is.id]=(itemFailCount[is.id]||0)+ (is.status==='nao-conforme'?1:0.5); } }); });
-  const ranked = Object.entries(itemFailCount).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const ranked = Object.entries(itemFailCount).filter(([id])=>allTipoItems().some(i=>i.id==id)).sort((a,b)=>b[1]-a[1]).slice(0,6);
   const rankedLines = ranked.map(([id,val],idx)=>{
     const it = allTipoItems().find(i=>i.id==id);
     return `  ${idx+1}. ${it?it.texto:''} (${val}x)`;
