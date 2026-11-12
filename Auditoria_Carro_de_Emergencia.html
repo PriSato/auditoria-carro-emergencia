@@ -242,6 +242,8 @@ input,select,textarea{font-family:inherit;}
 .ring-lbl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Montserrat';font-weight:800;font-size:14px;color:var(--navy-900);}
 
 /* ---------- FORM / NEW AUDIT ---------- */
+.history-cycle-sel{font:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);cursor:pointer;}
+.history-cycle-sel:hover{border-color:var(--blue-500);}
 .header-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;}
 .checkbox-label{display:flex;align-items:center;gap:9px;margin-top:16px;font-size:13.5px;font-weight:600;color:var(--ink);cursor:pointer;}
 .link-btn{display:block;background:none;border:none;color:var(--blue-600);font-size:12.5px;font-weight:700;cursor:pointer;padding:0;margin-top:14px;text-align:left;}
@@ -727,7 +729,7 @@ input,select,textarea{font-family:inherit;}
         <div class="card card-pad" id="currentCycleCard" style="margin-bottom:22px;"></div>
         <div class="card card-pad" id="inactiveSectorsCard" style="margin-bottom:22px;display:none;"></div>
         <div class="card card-pad" id="dataIntegrityCard" style="margin-bottom:22px;display:none;"></div>
-        <div class="section-title"><h2>Histórico de Ciclos</h2><div style="display:flex;gap:8px;"><button type="button" class="btn btn-ghost btn-sm" id="btnFindCrossTypeDuplicates">Verificar auditorias duplicadas entre módulos</button><button type="button" class="btn btn-ghost btn-sm" id="btnSyncEngEquip">Sincronizar equipamentos da Engenharia Clínica</button><button type="button" class="btn btn-ghost btn-sm" id="btnRemoveEmptyCycles">Remover ciclos vazios (todos os módulos)</button></div></div>
+        <div class="section-title"><h2>Histórico de Ciclos</h2><div style="display:flex;gap:8px;"><button type="button" class="btn btn-ghost btn-sm" id="btnFindCrossTypeDuplicates">Verificar auditorias duplicadas entre módulos</button><button type="button" class="btn btn-ghost btn-sm" id="btnMoveAudits">Mover auditorias entre ciclos</button><button type="button" class="btn btn-ghost btn-sm" id="btnSyncEngEquip">Sincronizar equipamentos da Engenharia Clínica</button><button type="button" class="btn btn-ghost btn-sm" id="btnRemoveEmptyCycles">Remover ciclos vazios (todos os módulos)</button></div></div>
         <div class="card" style="overflow:auto;">
           <table class="audit-table" id="cyclesHistoryTable">
             <thead><tr><th>Ciclo</th><th>Período</th><th>Duração</th><th id="thCyclesCount">Setores</th><th>Conformidade média</th><th></th></tr></thead>
@@ -951,6 +953,24 @@ input,select,textarea{font-family:inherit;}
     <div class="actions">
       <button class="btn btn-ghost" id="addCartCancel">Cancelar</button>
       <button class="btn btn-primary" id="addCartConfirm">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalMoveAudits">
+  <div class="modal" style="max-width:520px;">
+    <h3>Mover auditorias entre ciclos</h3>
+    <p>Move para outro ciclo as auditorias do ciclo de origem feitas a partir da data informada. As respostas e os resultados não mudam; só o ciclo a que cada auditoria pertence.</p>
+    <div class="header-form" style="grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="field"><label>Do ciclo</label><select id="moveFrom"></select></div>
+      <div class="field"><label>Para o ciclo</label><select id="moveTo"></select></div>
+      <div class="field"><label>A partir de</label><input type="date" id="moveDateIni"></div>
+      <div class="field"><label>Até (opcional)</label><input type="date" id="moveDateFim"></div>
+    </div>
+    <div id="movePreview" style="margin-top:14px;font-size:13px;"></div>
+    <div class="actions" style="margin-top:14px;">
+      <button class="btn btn-ghost" id="moveCancel">Cancelar</button>
+      <button class="btn btn-primary" id="moveConfirm">Mover</button>
     </div>
   </div>
 </div>
@@ -4794,6 +4814,77 @@ document.getElementById('btnSyncEngEquip').addEventListener('click', async ()=>{
     });
 });
 
+/* Move auditorias de um ciclo para outro (só módulos por cobertura — nos
+   mensais o ciclo é definido pelo instante da gravação). Necessário quando
+   a rodada seguinte começa antes de o ciclo anterior ser concluído: o app
+   carimba cada auditoria com o ciclo aberto na criação. Atualiza o índice,
+   o registro de detalhe de cada auditoria e as chaves de rastreamento do
+   ciclo de destino. */
+function moveAuditsMatches(){
+  const from = document.getElementById('moveFrom').value;
+  const ini = document.getElementById('moveDateIni').value;
+  const fim = document.getElementById('moveDateFim').value;
+  if(!from || !ini) return [];
+  return allAudits
+    .filter(a=> a.cicloId===from && (a.data||'')>=ini && (!fim || (a.data||'')<=fim))
+    .sort((a,b)=> (a.data||'').localeCompare(b.data||'') || (a.createdAt||0)-(b.createdAt||0));
+}
+function renderMovePreview(){
+  const from = document.getElementById('moveFrom').value;
+  const to = document.getElementById('moveTo').value;
+  const list = moveAuditsMatches();
+  const prev = document.getElementById('movePreview');
+  const btn = document.getElementById('moveConfirm');
+  btn.disabled = true;
+  if(!document.getElementById('moveDateIni').value){ prev.innerHTML = '<span style="color:var(--ink-soft);">Informe a data inicial para ver as auditorias.</span>'; return; }
+  if(from===to){ prev.innerHTML = '<span style="color:var(--bad);">Escolha ciclos diferentes na origem e no destino.</span>'; return; }
+  if(!list.length){ prev.innerHTML = '<span style="color:var(--ink-soft);">Nenhuma auditoria do ciclo de origem nesse período.</span>'; return; }
+  btn.disabled = false;
+  const rows = list.map(a=>`<tr><td>${fmtDate(a.data)}</td><td>${escapeHtml(a.setor||'')}</td><td>${escapeHtml(a.carro||'—')}</td><td>${a.status==='finalizada'?'Finalizada':'Rascunho'}</td></tr>`).join('');
+  prev.innerHTML = `<b>${list.length} auditoria${list.length===1?'':'s'} será${list.length===1?'':'ão'} movida${list.length===1?'':'s'}:</b>
+    <div style="max-height:200px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:8px;"><table style="width:100%;font-size:12.5px;"><tbody>${rows}</tbody></table></div>`;
+}
+function openMoveAuditsModal(){
+  const cfg = TIPOS[currentTipo];
+  if(cfg.cycleMode==='monthly'){ toast('Neste módulo o ciclo é definido automaticamente pelo momento em que a auditoria é salva.','bad'); return; }
+  const cycles = [...allCycles].sort((a,b)=>b.numero-a.numero);
+  if(cycles.length<2){ toast('É preciso ter pelo menos dois ciclos.','bad'); return; }
+  const opts = cycles.map(c=>`<option value="${c.id}">Ciclo Nº ${c.numero}${c.status==='aberto'?' (atual)':''}</option>`).join('');
+  const from = document.getElementById('moveFrom'), to = document.getElementById('moveTo');
+  from.innerHTML = opts; to.innerHTML = opts;
+  const open = cycles.find(c=>c.status==='aberto') || cycles[0];
+  const prevCycle = cycles.find(c=>c.numero<open.numero) || cycles[1];
+  from.value = prevCycle.id; to.value = open.id;
+  document.getElementById('moveDateIni').value = '';
+  document.getElementById('moveDateFim').value = '';
+  renderMovePreview();
+  document.getElementById('modalMoveAudits').classList.add('open');
+}
+['moveFrom','moveTo','moveDateIni','moveDateFim'].forEach(id=> document.getElementById(id).addEventListener('input', renderMovePreview));
+document.getElementById('btnMoveAudits').addEventListener('click', openMoveAuditsModal);
+document.getElementById('moveCancel').addEventListener('click', ()=> document.getElementById('modalMoveAudits').classList.remove('open'));
+document.getElementById('moveConfirm').addEventListener('click', async ()=>{
+  const list = moveAuditsMatches();
+  const to = document.getElementById('moveTo').value;
+  if(!list.length || !to) return;
+  const btn = document.getElementById('moveConfirm');
+  btn.disabled = true;
+  const ids = new Set(list.map(a=>a.id));
+  const okIndex = await updateIndex(idx=> idx.map(a=> ids.has(a.id) ? { ...a, cicloId: to } : a));
+  if(!okIndex){ btn.disabled = false; return; }
+  let detailFail = 0;
+  for(const a of list){
+    const det = await storageGet('audit_'+a.id);
+    if(det && typeof det==='object'){
+      if(!await storageSet('audit_'+a.id, { ...det, cicloId: to })) detailFail++;
+    } else if(det===undefined) detailFail++;
+  }
+  for(const key of new Set(list.map(a=>trackKey(a.setor, a.carro)))) await ensureSectorInCycle(to, key);
+  document.getElementById('modalMoveAudits').classList.remove('open');
+  toast(detailFail ? `${list.length} movida(s); ${detailFail} registro(s) de detalhe não atualizado(s) — repita a operação.` : `${list.length} auditoria(s) movida(s).`, detailFail?'bad':'ok');
+  renderCycles(); renderCycleBanner();
+});
+
 function confirmDeactivateSector(setorName){
   openConfirm('Desativar setor', `"${setorName}" deixará de contar nos indicadores e no progresso dos ciclos (atual e futuros). O histórico de auditorias já feitas para esse setor é mantido, e você pode reativá-lo depois.`, async ()=>{
     const ok = await deactivateSector(setorName);
@@ -6079,13 +6170,35 @@ function applyHistoryFilters(){
       <td>${fmtDate(a.data)}</td>
       <td>${escapeHtml(a.setor)}</td>
       <td>${a.carro?escapeHtml(a.carro):'—'}</td>
-      <td>${numeroCiclo?('Ciclo '+numeroCiclo):'—'}</td>
+      <td>${historyCycleCell(a, numeroCiclo)}</td>
       <td>${escapeHtml(a.auditor)}</td>
       <td><span class="score-pill" style="background:${sc.bg};color:${sc.c};">${a.status==='finalizada'?pct(a.score||0):'—'}</span></td>
       <td>${a.status==='finalizada'?'<span class="tag tag-ok">Finalizada</span>':'<span class="tag tag-neutral">Rascunho</span>'}</td>
       <td style="text-align:right;"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();confirmDeleteAudit('${a.id}')">Excluir</button></td>
     </tr>`;
   }).join('');
+}
+/* Coluna "Ciclo" do Histórico: editável nos módulos por cobertura, onde o
+   ciclo é o cicloId gravado na auditoria (nos mensais ele é definido pelo
+   instante da gravação, então fica só como texto). */
+function historyCycleCell(a, numeroCiclo){
+  if(TIPOS[currentTipo].cycleMode==='monthly') return numeroCiclo ? 'Ciclo '+numeroCiclo : '—';
+  const opts = [...allCycles].sort((x,y)=>y.numero-x.numero)
+    .map(c=>`<option value="${c.id}"${c.id===a.cicloId?' selected':''}>Ciclo ${c.numero}</option>`).join('');
+  return `<select class="history-cycle-sel" title="Alterar o ciclo desta auditoria" onclick="event.stopPropagation()" onchange="changeAuditCycle('${a.id}', this.value)">${a.cicloId?'':'<option value="" selected>—</option>'}${opts}</select>`;
+}
+async function changeAuditCycle(auditId, cycleId){
+  const a = allAudits.find(x=>x.id===auditId);
+  if(!a || !cycleId || a.cicloId===cycleId){ applyHistoryFilters(); return; }
+  const ok = await updateIndex(idx=> idx.map(x=> x.id===auditId ? { ...x, cicloId: cycleId } : x));
+  if(!ok){ applyHistoryFilters(); return; }
+  const det = await storageGet('audit_'+auditId);
+  let detailOk = true;
+  if(det && typeof det==='object') detailOk = await storageSet('audit_'+auditId, { ...det, cicloId: cycleId });
+  else if(det===undefined) detailOk = false;
+  await ensureSectorInCycle(cycleId, trackKey(a.setor, a.carro));
+  toast(detailOk ? `Auditoria movida para o Ciclo ${cycleNumeroById(cycleId)}.` : 'Ciclo alterado, mas o registro de detalhe não foi atualizado. Tente novamente.', detailOk?'ok':'bad');
+  applyHistoryFilters();
 }
 ['fltSetor','fltCiclo','fltStatus','fltDataIni','fltDataFim'].forEach(id=>{
   document.getElementById(id).addEventListener('change', applyHistoryFilters);
