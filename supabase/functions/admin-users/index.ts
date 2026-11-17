@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
       const role = String(body.role || "");
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: "E-mail inválido." }, 400);
       if (password.length < 8) return json({ error: "A senha precisa ter no mínimo 8 caracteres." }, 400);
-      if (!ROLES.includes(role)) return json({ error: "Papel inválido." }, 400);
+      if (!ROLES.includes(role)) return json({ error: "Perfil inválido." }, 400);
 
       const { data: created, error } = await admin.auth.admin.createUser({
         email, password, email_confirm: true, user_metadata: { name },
@@ -108,8 +108,8 @@ Deno.serve(async (req) => {
     // ---------- set_role ----------
     if (action === "set_role") {
       const role = String(body.role || "");
-      if (!ROLES.includes(role)) return json({ error: "Papel inválido." }, 400);
-      if (isSelf) return json({ error: "Você não pode alterar o seu próprio papel." }, 400);
+      if (!ROLES.includes(role)) return json({ error: "Perfil inválido." }, 400);
+      if (isSelf) return json({ error: "Você não pode alterar o seu próprio perfil." }, 400);
       const { data: target, error: tErr } = await admin.auth.admin.getUserById(targetId);
       if (tErr || !target?.user) return json({ error: "Usuário não encontrado." }, 404);
       const { error } = await admin.from("user_roles").upsert({
@@ -123,9 +123,9 @@ Deno.serve(async (req) => {
     // ---------- set_active ----------
     if (action === "set_active") {
       const active = body.active === true;
-      if (isSelf) return json({ error: "Você não pode desativar o seu próprio acesso." }, 400);
+      if (isSelf) return json({ error: "Você não pode inativar o seu próprio acesso." }, 400);
       const { data: row } = await admin.from("user_roles").select("user_id").eq("user_id", targetId).maybeSingle();
-      if (!row) return json({ error: "Este usuário ainda não tem papel. Defina um papel primeiro." }, 400);
+      if (!row) return json({ error: "Este usuário ainda não tem perfil. Defina um perfil primeiro." }, 400);
       const { error } = await admin.from("user_roles").update({ active }).eq("user_id", targetId);
       if (error) throw error;
       // Desativado também não consegue mais entrar (sessões atuais perdem acesso aos dados pela RLS).

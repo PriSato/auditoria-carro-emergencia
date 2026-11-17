@@ -782,11 +782,11 @@ body:not(.role-admin) .admin-only{display:none !important;}
         <div class="card card-pad" style="margin-bottom:16px;font-size:13px;color:var(--ink-soft);line-height:1.6;">
           <b>Administrador:</b> vê e faz tudo, inclusive criar usuários.<br>
           <b>Coordenação:</b> acessa somente a auditoria de <b>Equipamento Hospitalar</b>.<br>
-          O cadastro pelo link inicial foi desativado: só o administrador cria usuários. Quem aparece sem papel não consegue acessar nada até receber um.
+          O cadastro pelo link inicial foi desativado: só o administrador cria usuários. Quem aparece sem perfil não consegue acessar nada até receber um. Usuário inativo perde o acesso, mas pode ser reativado.
         </div>
         <div class="card" style="overflow:auto;">
           <table class="audit-table" id="usersTable">
-            <thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Situação</th><th>Último acesso</th><th></th></tr></thead>
+            <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Situação</th><th>Último acesso</th><th></th></tr></thead>
             <tbody id="usersBody"></tbody>
           </table>
           <div class="empty-state" id="usersEmpty" style="display:none;"><h3 id="usersEmptyTitle">Carregando…</h3><p id="usersEmptyMsg"></p></div>
@@ -1002,7 +1002,7 @@ body:not(.role-admin) .admin-only{display:none !important;}
     <div class="profile-field"><label>Nome</label><input type="text" id="nuName" placeholder="Nome completo" autocomplete="off"></div>
     <div class="profile-field"><label>E-mail</label><input type="email" id="nuEmail" placeholder="usuario@hospital.com" autocomplete="off"></div>
     <div class="profile-field"><label>Senha provisória (mín. 8 caracteres)</label><input type="text" id="nuPassword" autocomplete="off"></div>
-    <div class="profile-field"><label>Papel</label>
+    <div class="profile-field"><label>Perfil</label>
       <select id="nuRole" style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;">
         <option value="coordenacao">Coordenação — somente Equipamento Hospitalar</option>
         <option value="admin">Administrador — acesso total</option>
@@ -3792,7 +3792,7 @@ function authTranslateError(msg){
   const m = (msg||'').toLowerCase();
   if(m.includes('invalid login credentials')) return 'Email ou senha incorretos.';
   if(m.includes('email not confirmed')) return 'Email não confirmado. Fale com o administrador.';
-  if(m.includes('banned') || m.includes('user is banned')) return 'Este acesso foi desativado. Fale com o administrador.';
+  if(m.includes('banned') || m.includes('user is banned')) return 'Este acesso foi inativado. Fale com o administrador.';
   if(m.includes('password') && m.includes('6')) return 'A senha precisa ter no mínimo 6 caracteres.';
   if(m.includes('email') && m.includes('invalid')) return 'Email inválido.';
   return msg || 'Ocorreu um erro. Tente novamente.';
@@ -3927,16 +3927,16 @@ function renderUsers(){
     const roleCell = u.is_me
       ? `<span class="tag tag-neutral">${ROLE_LABEL[u.role]||'—'} (você)</span>`
       : `<select data-uid="${u.id}" class="user-role-sel">
-           <option value=""${u.role?'':' selected'} disabled>Sem papel</option>
+           <option value=""${u.role?'':' selected'} disabled>Sem perfil</option>
            <option value="coordenacao"${u.role==='coordenacao'?' selected':''}>Coordenação</option>
            <option value="admin"${u.role==='admin'?' selected':''}>Administrador</option>
          </select>`;
     const status = !u.role ? '<span class="tag tag-warn">Sem acesso</span>'
-      : (u.active ? '<span class="tag tag-ok">Ativo</span>' : '<span class="tag tag-bad">Desativado</span>');
+      : (u.active ? '<span class="tag tag-ok">Ativo</span>' : '<span class="tag tag-bad">Inativo</span>');
     const actions = u.is_me ? '<button class="btn btn-ghost btn-sm" data-act="pwd" data-uid="'+u.id+'">Redefinir senha</button>' : `
       <div class="users-actions">
         <button class="btn btn-ghost btn-sm" data-act="pwd" data-uid="${u.id}">Redefinir senha</button>
-        ${u.role ? `<button class="btn btn-ghost btn-sm" data-act="toggle" data-uid="${u.id}">${u.active?'Desativar':'Reativar'}</button>` : ''}
+        ${u.role ? `<button class="btn btn-ghost btn-sm" data-act="toggle" data-uid="${u.id}">${u.active?'Inativar':'Reativar'}</button>` : ''}
       </div>`;
     return `<tr class="${u.role && !u.active ? 'user-off' : ''}">
       <td>${escapeHtml(u.name||'—')}</td>
@@ -3954,7 +3954,7 @@ document.getElementById('usersBody').addEventListener('change', async (e)=>{
   const role = sel.value;
   try{
     await callAdminUsers({ action:'set_role', user_id:u.id, role });
-    toast('Papel de '+(u.name||u.email)+' alterado para '+ROLE_LABEL[role]+'.','ok');
+    toast('Perfil de '+(u.name||u.email)+' alterado para '+ROLE_LABEL[role]+'.','ok');
   }catch(err){ toast(err.message,'bad'); }
   loadUsers();
 });
@@ -3964,13 +3964,13 @@ document.getElementById('usersBody').addEventListener('click', (e)=>{
   const u = usersCache.find(x=>x.id===btn.dataset.uid); if(!u) return;
   if(btn.dataset.act==='toggle'){
     const turnOff = u.active;
-    openConfirm(turnOff?'Desativar usuário':'Reativar usuário',
+    openConfirm(turnOff?'Inativar usuário':'Reativar usuário',
       turnOff ? `${u.name||u.email} perderá o acesso ao sistema imediatamente. Deseja continuar?`
-              : `${u.name||u.email} voltará a ter acesso com o papel ${ROLE_LABEL[u.role]}. Deseja continuar?`,
+              : `${u.name||u.email} voltará a ter acesso com o perfil ${ROLE_LABEL[u.role]}. Deseja continuar?`,
       async ()=>{
         try{
           await callAdminUsers({ action:'set_active', user_id:u.id, active:!u.active });
-          toast(turnOff?'Usuário desativado.':'Usuário reativado.','ok');
+          toast(turnOff?'Usuário inativado.':'Usuário reativado.','ok');
         }catch(err){ toast(err.message,'bad'); }
         loadUsers();
       });
@@ -4162,7 +4162,7 @@ async function startSession(user){
     return;
   }
   if(!role){
-    showNoAccess('Sua conta não tem um papel de acesso ativo neste sistema. Fale com o administrador.');
+    showNoAccess('Sua conta não tem um perfil de acesso ativo neste sistema. Fale com o administrador.');
     return;
   }
   currentRole = role;

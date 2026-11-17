@@ -118,5 +118,43 @@ create policy "kv_store_delete_rbac" on public.kv_store
 
 grant select, insert, update, delete on public.kv_store to authenticated;
 
+-- 5b) Perfis (nome de exibição). Já estava em supabase_schema.sql, mas se aquela
+--     parte nunca foi rodada o app dá "Could not find the table 'public.profiles'"
+--     e a aba Usuários não mostra os nomes. Idempotente.
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  name text,
+  updated_at timestamptz not null default now()
+);
+
+create or replace function public.set_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists trg_profiles_updated_at on public.profiles;
+create trigger trg_profiles_updated_at
+  before update on public.profiles
+  for each row execute function public.set_updated_at();
+
+alter table public.profiles enable row level security;
+
+drop policy if exists "profiles_select_authenticated" on public.profiles;
+create policy "profiles_select_authenticated" on public.profiles
+  for select using (auth.role() = 'authenticated');
+
+drop policy if exists "profiles_insert_own" on public.profiles;
+create policy "profiles_insert_own" on public.profiles
+  for insert with check (auth.uid() = id);
+
+drop policy if exists "profiles_update_own" on public.profiles;
+create policy "profiles_update_own" on public.profiles
+  for update using (auth.uid() = id);
+
+grant select, insert, update on public.profiles to authenticated;
+
 -- 6) Conferência: deve listar você como admin.
 select email, role, active from public.user_roles order by role, email;
