@@ -67,8 +67,18 @@ input,select,textarea{font-family:inherit;}
 .auth-field input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;box-sizing:border-box;}
 .auth-error{color:var(--bad);font-size:12.5px;margin-bottom:10px;display:none;}
 .auth-msg{color:var(--ok);font-size:12.5px;margin-bottom:10px;display:none;}
-.auth-toggle{text-align:center;font-size:13px;margin-top:16px;color:var(--ink-soft);}
+.auth-toggle{text-align:center;font-size:12.5px;margin-top:16px;color:var(--ink-soft);line-height:1.5;}
 .auth-toggle a{color:var(--blue-600);font-weight:600;cursor:pointer;text-decoration:none;}
+#noAccessScreen{position:fixed;inset:0;background:linear-gradient(135deg,var(--navy-900),var(--navy-700));display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
+#noAccessScreen.hidden{display:none;}
+/* Controle de acesso (RBAC): itens só de administrador ficam ocultos para os demais papéis */
+body:not(.role-admin) .admin-only{display:none !important;}
+.role-tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;padding:1px 6px;border-radius:999px;background:rgba(255,255,255,.14);color:#BFD8F0;margin-left:4px;}
+.users-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.users-actions select{padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-size:12.5px;background:#fff;}
+#usersTable tbody tr{cursor:default;}
+#usersTable tbody tr:hover{background:transparent;}
+.user-off td{opacity:.55;}
 .btn-logout{background:none;border:none;color:#7FA3C6;font-size:11px;cursor:pointer;text-decoration:underline;padding:0;margin-top:6px;}
 
 .avatar{border-radius:50%;object-fit:cover;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:var(--blue-100);color:var(--blue-600);font-weight:800;font-family:'Montserrat';overflow:hidden;}
@@ -419,11 +429,19 @@ input,select,textarea{font-family:inherit;}
     <div class="auth-error" id="authError"></div>
     <div class="auth-msg" id="authMsg"></div>
     <div class="auth-field"><label>Email</label><input type="email" id="authEmail" autocomplete="username" placeholder="seuemail@hospital.com"></div>
-    <div class="auth-field"><label>Senha</label><input type="password" id="authPassword" autocomplete="current-password" placeholder="Mínimo 6 caracteres"></div>
+    <div class="auth-field"><label>Senha</label><input type="password" id="authPassword" autocomplete="current-password" placeholder="Sua senha"></div>
     <button class="btn btn-primary" id="authSubmit" style="width:100%;justify-content:center;">Entrar</button>
-    <div class="auth-toggle">
-      <span id="authToggleText">Ainda não tem conta?</span> <a id="authToggleLink">Criar conta</a>
-    </div>
+    <div class="auth-toggle">Acesso restrito. Para obter ou recuperar o acesso, fale com o administrador do sistema.</div>
+  </div>
+</div>
+
+<!-- Tela exibida a quem entrou mas não tem papel (ou foi desativado) -->
+<div id="noAccessScreen" class="hidden">
+  <div class="auth-card" style="text-align:center;">
+    <div class="auth-logo-wrap"><img id="noAccessLogo" class="auth-logo" alt="Hospital Maternidade São Vicente de Paulo"></div>
+    <h2>Sem acesso</h2>
+    <div class="sub" id="noAccessMsg">Sua conta não tem permissão para usar este sistema. Fale com o administrador.</div>
+    <button class="btn btn-primary" id="noAccessLogout" style="width:100%;justify-content:center;">Sair</button>
   </div>
 </div>
 
@@ -531,6 +549,10 @@ input,select,textarea{font-family:inherit;}
         <div class="nav-item" data-view="cycles">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
           <span>Ciclos</span>
+        </div>
+        <div class="nav-item admin-only" data-view="users">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg>
+          <span>Usuários</span>
         </div>
       </div>
       <div class="nav-cta" id="btnNovaAuditoriaNav">
@@ -733,7 +755,7 @@ input,select,textarea{font-family:inherit;}
         <div class="card card-pad" id="currentCycleCard" style="margin-bottom:22px;"></div>
         <div class="card card-pad" id="inactiveSectorsCard" style="margin-bottom:22px;display:none;"></div>
         <div class="card card-pad" id="dataIntegrityCard" style="margin-bottom:22px;display:none;"></div>
-        <div class="section-title"><h2>Histórico de Ciclos</h2><div style="display:flex;gap:8px;"><button type="button" class="btn btn-ghost btn-sm" id="btnFindCrossTypeDuplicates">Verificar auditorias duplicadas entre módulos</button><button type="button" class="btn btn-ghost btn-sm" id="btnMoveAudits">Mover auditorias entre ciclos</button><button type="button" class="btn btn-ghost btn-sm" id="btnSyncEngEquip">Sincronizar equipamentos da Engenharia Clínica</button><button type="button" class="btn btn-ghost btn-sm" id="btnRemoveEmptyCycles">Remover ciclos vazios (todos os módulos)</button></div></div>
+        <div class="section-title"><h2>Histórico de Ciclos</h2><div style="display:flex;gap:8px;"><button type="button" class="btn btn-ghost btn-sm admin-only" id="btnFindCrossTypeDuplicates">Verificar auditorias duplicadas entre módulos</button><button type="button" class="btn btn-ghost btn-sm" id="btnMoveAudits">Mover auditorias entre ciclos</button><button type="button" class="btn btn-ghost btn-sm admin-only" id="btnSyncEngEquip">Sincronizar equipamentos da Engenharia Clínica</button><button type="button" class="btn btn-ghost btn-sm admin-only" id="btnRemoveEmptyCycles">Remover ciclos vazios (todos os módulos)</button></div></div>
         <div class="card" style="overflow:auto;">
           <table class="audit-table" id="cyclesHistoryTable">
             <thead><tr><th>Ciclo</th><th>Período</th><th>Duração</th><th id="thCyclesCount">Setores</th><th>Conformidade média</th><th></th></tr></thead>
@@ -751,6 +773,23 @@ input,select,textarea{font-family:inherit;}
           <div class="report-menu-divider"></div>
           <button id="cycleReportCopyResumo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar relatório — Resumo</button>
           <button id="cycleReportCopyCompleto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar relatório — Completo (com observações)</button>
+        </div>
+      </section>
+
+      <!-- ============ USUÁRIOS (somente administrador) ============ -->
+      <section class="view" id="view-users">
+        <div class="section-title"><h2>Usuários e acessos</h2><div style="display:flex;gap:8px;"><button type="button" class="btn btn-primary btn-sm" id="btnNewUser">+ Novo usuário</button></div></div>
+        <div class="card card-pad" style="margin-bottom:16px;font-size:13px;color:var(--ink-soft);line-height:1.6;">
+          <b>Administrador:</b> vê e faz tudo, inclusive criar usuários.<br>
+          <b>Coordenação:</b> acessa somente a auditoria de <b>Equipamento Hospitalar</b>.<br>
+          O cadastro pelo link inicial foi desativado: só o administrador cria usuários. Quem aparece sem papel não consegue acessar nada até receber um.
+        </div>
+        <div class="card" style="overflow:auto;">
+          <table class="audit-table" id="usersTable">
+            <thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Situação</th><th>Último acesso</th><th></th></tr></thead>
+            <tbody id="usersBody"></tbody>
+          </table>
+          <div class="empty-state" id="usersEmpty" style="display:none;"><h3 id="usersEmptyTitle">Carregando…</h3><p id="usersEmptyMsg"></p></div>
         </div>
       </section>
 
@@ -948,9 +987,44 @@ input,select,textarea{font-family:inherit;}
     </div>
     <div class="profile-field"><label>Nome de exibição</label><input type="text" id="profileNameInput" placeholder="Seu nome"></div>
     <div class="sub" style="margin-bottom:16px;color:var(--ink-soft);font-size:12.5px;" id="profileEmailLabel"></div>
+    <div class="profile-field"><label>Nova senha (opcional)</label><input type="password" id="profileNewPassword" autocomplete="new-password" placeholder="Deixe em branco para manter a atual"></div>
     <div class="actions">
       <button class="btn btn-ghost" id="profileCancel">Cancelar</button>
       <button class="btn btn-primary" id="profileSave">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalNewUser">
+  <div class="modal" style="max-width:420px;">
+    <h3>Novo usuário</h3>
+    <p>A conta é criada já confirmada. Informe uma senha provisória e repasse ao usuário; ele poderá trocá-la em "Meu Perfil".</p>
+    <div class="profile-field"><label>Nome</label><input type="text" id="nuName" placeholder="Nome completo" autocomplete="off"></div>
+    <div class="profile-field"><label>E-mail</label><input type="email" id="nuEmail" placeholder="usuario@hospital.com" autocomplete="off"></div>
+    <div class="profile-field"><label>Senha provisória (mín. 8 caracteres)</label><input type="text" id="nuPassword" autocomplete="off"></div>
+    <div class="profile-field"><label>Papel</label>
+      <select id="nuRole" style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;">
+        <option value="coordenacao">Coordenação — somente Equipamento Hospitalar</option>
+        <option value="admin">Administrador — acesso total</option>
+      </select>
+    </div>
+    <div class="auth-error" id="nuError"></div>
+    <div class="actions">
+      <button class="btn btn-ghost" id="nuCancel">Cancelar</button>
+      <button class="btn btn-primary" id="nuConfirm">Criar usuário</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalResetPwd">
+  <div class="modal" style="max-width:400px;">
+    <h3>Redefinir senha</h3>
+    <p id="rpTarget"></p>
+    <div class="profile-field"><label>Nova senha (mín. 8 caracteres)</label><input type="text" id="rpPassword" autocomplete="off"></div>
+    <div class="auth-error" id="rpError"></div>
+    <div class="actions">
+      <button class="btn btn-ghost" id="rpCancel">Cancelar</button>
+      <button class="btn btn-primary" id="rpConfirm">Redefinir</button>
     </div>
   </div>
 </div>
@@ -3420,7 +3494,7 @@ const TIPOS = {
     key:'equipHospitalar', label:'Equipamento Hospitalar', labelPlural:'Equipamentos Hospitalares', icon:'wrench',
     categories: CATEGORIES_ENG, items: ITEMS_EQUIP_HOSP, setores: SETORES_ENGENHARIA,
     cartProfiles: {}, defaultSectorCarts: DEFAULT_SECTOR_EQUIPAMENTOS,
-    storagePrefix: 'equipHosp_', carroLabel: 'Equipamento', requireCarroSelection: true, allowNaoAplica: true,
+    storagePrefix: 'equipHosp_', detailKeyPrefix: 'equipHosp_', carroLabel: 'Equipamento', requireCarroSelection: true, allowNaoAplica: true,
   },
   meta2: {
     key:'meta2', label:'Meta 2 (SBAR)', labelPlural:'Meta 2 (SBAR)', icon:'clipboard',
@@ -3647,6 +3721,7 @@ function updateTipoUI(){
    o checklist/setores e descartaria as respostas não salvas. */
 async function switchTipo(tipo){
   if(tipo===currentTipo){ return; }
+  if(!canAccessTipo(tipo)){ toast('Seu perfil não tem acesso a este módulo.','bad'); return; }
   const activeEl = document.querySelector('.view.active');
   const activeViewName = activeEl ? activeEl.id.replace('view-','') : null;
   if(activeViewName==='new-audit'){
@@ -3705,36 +3780,19 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 document.getElementById('authLogo').src = document.getElementById('sidebarLogoImg').src;
 
 /* =========================================================================
-   AUTENTICAÇÃO (Supabase Auth — email/senha, autocadastro liberado)
+   AUTENTICAÇÃO (Supabase Auth — email/senha). SEM autocadastro: as contas
+   são criadas somente por um administrador (aba "Usuários"). Para garantir,
+   desative também "Allow new users to sign up" no painel do Supabase
+   (Authentication > Sign In / Providers) — e o acesso aos dados é barrado
+   pela RLS (supabase_rbac_schema.sql) mesmo para quem se cadastrar por fora.
    ========================================================================= */
-let authMode = 'signin'; // 'signin' | 'signup'
 let appStarted = false;
-
-function setAuthMode(mode){
-  authMode = mode;
-  document.getElementById('authError').style.display='none';
-  document.getElementById('authMsg').style.display='none';
-  if(mode==='signup'){
-    document.getElementById('authTitle').textContent = 'Criar conta';
-    document.getElementById('authSub').textContent = 'Cadastre-se com seu email institucional para acessar o instrumento.';
-    document.getElementById('authSubmit').textContent = 'Criar conta';
-    document.getElementById('authToggleText').textContent = 'Já tem conta?';
-    document.getElementById('authToggleLink').textContent = 'Entrar';
-  } else {
-    document.getElementById('authTitle').textContent = 'Entrar';
-    document.getElementById('authSub').textContent = 'Acesse com seu email e senha para continuar.';
-    document.getElementById('authSubmit').textContent = 'Entrar';
-    document.getElementById('authToggleText').textContent = 'Ainda não tem conta?';
-    document.getElementById('authToggleLink').textContent = 'Criar conta';
-  }
-}
-document.getElementById('authToggleLink').addEventListener('click', ()=> setAuthMode(authMode==='signin'?'signup':'signin'));
 
 function authTranslateError(msg){
   const m = (msg||'').toLowerCase();
   if(m.includes('invalid login credentials')) return 'Email ou senha incorretos.';
-  if(m.includes('email not confirmed')) return 'Você precisa confirmar seu email antes de entrar. Verifique sua caixa de entrada (ou peça ao administrador para desativar a confirmação de email no Supabase).';
-  if(m.includes('user already registered')) return 'Já existe uma conta com este email. Tente entrar.';
+  if(m.includes('email not confirmed')) return 'Email não confirmado. Fale com o administrador.';
+  if(m.includes('banned') || m.includes('user is banned')) return 'Este acesso foi desativado. Fale com o administrador.';
   if(m.includes('password') && m.includes('6')) return 'A senha precisa ter no mínimo 6 caracteres.';
   if(m.includes('email') && m.includes('invalid')) return 'Email inválido.';
   return msg || 'Ocorreu um erro. Tente novamente.';
@@ -3751,18 +3809,8 @@ document.getElementById('authSubmit').addEventListener('click', async ()=>{
   const btn = document.getElementById('authSubmit');
   btn.disabled = true;
   try{
-    if(authMode==='signup'){
-      const { data, error } = await sb.auth.signUp({ email, password });
-      if(error) throw error;
-      if(!data.session){
-        setAuthMode('signin');
-        msgEl.textContent = 'Conta criada! Verifique seu email para confirmar antes de entrar.';
-        msgEl.style.display='block';
-      }
-    } else {
-      const { error } = await sb.auth.signInWithPassword({ email, password });
-      if(error) throw error;
-    }
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if(error) throw error;
   }catch(e){
     errEl.textContent = authTranslateError(e.message);
     errEl.style.display='block';
@@ -3773,6 +3821,207 @@ document.getElementById('authSubmit').addEventListener('click', async ()=>{
 
 document.getElementById('btnLogout').addEventListener('click', async ()=>{
   await sb.auth.signOut();
+});
+document.getElementById('noAccessLogout').addEventListener('click', async ()=>{
+  await sb.auth.signOut();
+});
+document.getElementById('noAccessLogo').src = document.getElementById('sidebarLogoImg').src;
+document.getElementById('authPassword').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('authSubmit').click(); });
+
+/* =========================================================================
+   CONTROLE DE ACESSO (RBAC)
+   Papéis (tabela public.user_roles, gravada só pela Edge Function admin-users):
+     admin        → tudo, inclusive gerenciar usuários.
+     coordenacao  → somente o módulo "Equipamento Hospitalar".
+   A barreira real é a RLS do Supabase (supabase_rbac_schema.sql); o que
+   esta camada faz na tela é só esconder/redirecionar para não confundir.
+   ========================================================================= */
+const ROLE_LABEL = { admin:'Administrador', coordenacao:'Coordenação' };
+const ROLE_TIPOS = { admin:null, coordenacao:['equipHospitalar'] }; // null = todos os módulos
+let currentRole = null;
+
+function canAccessTipo(tipo){
+  const allowed = ROLE_TIPOS[currentRole];
+  return !!currentRole && (allowed===null || allowed.includes(tipo));
+}
+async function fetchMyRole(userId){
+  try{
+    const { data, error } = await sb.from('user_roles').select('role, active').eq('user_id', userId).maybeSingle();
+    if(error) throw error;
+    return (data && data.active && ROLE_LABEL[data.role]) ? data.role : null;
+  }catch(e){
+    console.error('role error', e);
+    return undefined; // falha de leitura (≠ "sem papel")
+  }
+}
+/* Aplica o papel à interface: módulos permitidos, itens só de admin e rótulo. */
+function applyRoleUI(){
+  document.body.classList.toggle('role-admin', currentRole==='admin');
+  document.querySelectorAll('.tipo-btn, .tipo-select-card').forEach(el=>{
+    el.style.display = canAccessTipo(el.dataset.tipo) ? '' : 'none';
+  });
+  document.querySelectorAll('.tipo-group').forEach(g=>{
+    const any = Array.from(g.querySelectorAll('.tipo-btn')).some(b=> canAccessTipo(b.dataset.tipo));
+    g.style.display = any ? '' : 'none';
+  });
+  if(!canAccessTipo(currentTipo)){
+    const allowed = ROLE_TIPOS[currentRole];
+    currentTipo = allowed && allowed[0] ? allowed[0] : 'emergencia';
+  }
+}
+function showNoAccess(msg){
+  document.getElementById('authScreen').classList.add('hidden');
+  document.getElementById('app').classList.add('app-hidden');
+  document.getElementById('noAccessMsg').textContent = msg || 'Sua conta não tem permissão para usar este sistema. Fale com o administrador.';
+  document.getElementById('noAccessScreen').classList.remove('hidden');
+}
+
+/* ---------- Tela "Usuários" (somente administrador) ----------
+   Todas as operações passam pela Edge Function "admin-users", que valida no
+   servidor que quem chama é administrador e usa a service_role key (que
+   nunca chega ao navegador). */
+async function callAdminUsers(payload){
+  const { data, error } = await sb.functions.invoke('admin-users', { body: payload });
+  if(error){
+    let msg = error.message;
+    try{ const j = await error.context.json(); if(j && j.error) msg = j.error; }catch(_){}
+    if(/Failed to send|NetworkError|fetch/i.test(msg||'')) msg = 'Não foi possível falar com o servidor. A função "admin-users" já foi publicada no Supabase?';
+    throw new Error(msg);
+  }
+  if(data && data.error) throw new Error(data.error);
+  return data;
+}
+let usersCache = [];
+function fmtDateTimeBR(iso){
+  if(!iso) return '—';
+  const d = new Date(iso); if(isNaN(d)) return '—';
+  return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+async function loadUsers(){
+  const body = document.getElementById('usersBody');
+  const empty = document.getElementById('usersEmpty');
+  try{
+    const res = await callAdminUsers({ action:'list' });
+    usersCache = res.users || [];
+    usersCache.sort((a,b)=> (a.name||a.email||'').localeCompare(b.name||b.email||'','pt-BR'));
+    renderUsers();
+  }catch(e){
+    body.innerHTML = '';
+    empty.style.display = 'block';
+    document.getElementById('usersEmptyTitle').textContent = 'Não foi possível carregar os usuários';
+    document.getElementById('usersEmptyMsg').textContent = e.message;
+  }
+}
+function renderUsers(){
+  const body = document.getElementById('usersBody');
+  const empty = document.getElementById('usersEmpty');
+  if(!usersCache.length){
+    body.innerHTML = '';
+    empty.style.display = 'block';
+    document.getElementById('usersEmptyTitle').textContent = 'Nenhum usuário';
+    document.getElementById('usersEmptyMsg').textContent = '';
+    return;
+  }
+  empty.style.display = 'none';
+  body.innerHTML = usersCache.map(u=>{
+    const roleCell = u.is_me
+      ? `<span class="tag tag-neutral">${ROLE_LABEL[u.role]||'—'} (você)</span>`
+      : `<select data-uid="${u.id}" class="user-role-sel">
+           <option value=""${u.role?'':' selected'} disabled>Sem papel</option>
+           <option value="coordenacao"${u.role==='coordenacao'?' selected':''}>Coordenação</option>
+           <option value="admin"${u.role==='admin'?' selected':''}>Administrador</option>
+         </select>`;
+    const status = !u.role ? '<span class="tag tag-warn">Sem acesso</span>'
+      : (u.active ? '<span class="tag tag-ok">Ativo</span>' : '<span class="tag tag-bad">Desativado</span>');
+    const actions = u.is_me ? '<button class="btn btn-ghost btn-sm" data-act="pwd" data-uid="'+u.id+'">Redefinir senha</button>' : `
+      <div class="users-actions">
+        <button class="btn btn-ghost btn-sm" data-act="pwd" data-uid="${u.id}">Redefinir senha</button>
+        ${u.role ? `<button class="btn btn-ghost btn-sm" data-act="toggle" data-uid="${u.id}">${u.active?'Desativar':'Reativar'}</button>` : ''}
+      </div>`;
+    return `<tr class="${u.role && !u.active ? 'user-off' : ''}">
+      <td>${escapeHtml(u.name||'—')}</td>
+      <td>${escapeHtml(u.email||'')}</td>
+      <td>${roleCell}</td>
+      <td>${status}</td>
+      <td>${fmtDateTimeBR(u.last_sign_in_at)}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('');
+}
+document.getElementById('usersBody').addEventListener('change', async (e)=>{
+  const sel = e.target.closest('.user-role-sel'); if(!sel) return;
+  const u = usersCache.find(x=>x.id===sel.dataset.uid); if(!u) return;
+  const role = sel.value;
+  try{
+    await callAdminUsers({ action:'set_role', user_id:u.id, role });
+    toast('Papel de '+(u.name||u.email)+' alterado para '+ROLE_LABEL[role]+'.','ok');
+  }catch(err){ toast(err.message,'bad'); }
+  loadUsers();
+});
+let resetPwdUserId = null;
+document.getElementById('usersBody').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-act]'); if(!btn) return;
+  const u = usersCache.find(x=>x.id===btn.dataset.uid); if(!u) return;
+  if(btn.dataset.act==='toggle'){
+    const turnOff = u.active;
+    openConfirm(turnOff?'Desativar usuário':'Reativar usuário',
+      turnOff ? `${u.name||u.email} perderá o acesso ao sistema imediatamente. Deseja continuar?`
+              : `${u.name||u.email} voltará a ter acesso com o papel ${ROLE_LABEL[u.role]}. Deseja continuar?`,
+      async ()=>{
+        try{
+          await callAdminUsers({ action:'set_active', user_id:u.id, active:!u.active });
+          toast(turnOff?'Usuário desativado.':'Usuário reativado.','ok');
+        }catch(err){ toast(err.message,'bad'); }
+        loadUsers();
+      });
+  } else if(btn.dataset.act==='pwd'){
+    resetPwdUserId = u.id;
+    document.getElementById('rpTarget').textContent = 'Defina uma nova senha para '+(u.name||u.email)+'.';
+    document.getElementById('rpPassword').value = '';
+    document.getElementById('rpError').style.display = 'none';
+    document.getElementById('modalResetPwd').classList.add('open');
+  }
+});
+document.getElementById('rpCancel').addEventListener('click', ()=> document.getElementById('modalResetPwd').classList.remove('open'));
+document.getElementById('rpConfirm').addEventListener('click', async ()=>{
+  const errEl = document.getElementById('rpError');
+  const password = document.getElementById('rpPassword').value;
+  errEl.style.display = 'none';
+  if(password.length<8){ errEl.textContent='A senha precisa ter no mínimo 8 caracteres.'; errEl.style.display='block'; return; }
+  const btn = document.getElementById('rpConfirm'); btn.disabled = true;
+  try{
+    await callAdminUsers({ action:'reset_password', user_id:resetPwdUserId, password });
+    document.getElementById('modalResetPwd').classList.remove('open');
+    toast('Senha redefinida. Repasse a nova senha ao usuário.','ok');
+  }catch(err){ errEl.textContent = err.message; errEl.style.display='block'; }
+  finally{ btn.disabled = false; }
+});
+document.getElementById('btnNewUser').addEventListener('click', ()=>{
+  ['nuName','nuEmail','nuPassword'].forEach(id=> document.getElementById(id).value='');
+  document.getElementById('nuRole').value = 'coordenacao';
+  document.getElementById('nuError').style.display = 'none';
+  document.getElementById('modalNewUser').classList.add('open');
+});
+document.getElementById('nuCancel').addEventListener('click', ()=> document.getElementById('modalNewUser').classList.remove('open'));
+document.getElementById('nuConfirm').addEventListener('click', async ()=>{
+  const errEl = document.getElementById('nuError');
+  errEl.style.display = 'none';
+  const name = document.getElementById('nuName').value.trim();
+  const email = document.getElementById('nuEmail').value.trim();
+  const password = document.getElementById('nuPassword').value;
+  const role = document.getElementById('nuRole').value;
+  const fail = (m)=>{ errEl.textContent = m; errEl.style.display = 'block'; };
+  if(!name) return fail('Informe o nome.');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail('Informe um e-mail válido.');
+  if(password.length<8) return fail('A senha provisória precisa ter no mínimo 8 caracteres.');
+  const btn = document.getElementById('nuConfirm'); btn.disabled = true;
+  try{
+    await callAdminUsers({ action:'create', name, email, password, role });
+    document.getElementById('modalNewUser').classList.remove('open');
+    toast('Usuário criado. Repasse o e-mail e a senha provisória.','ok');
+    loadUsers();
+  }catch(err){ fail(err.message); }
+  finally{ btn.disabled = false; }
 });
 
 /* =========================================================================
@@ -3815,13 +4064,14 @@ async function ensureProfile(user){
 function renderSidebarProfile(){
   setAvatarEl(document.getElementById('sidebarAvatar'), currentProfile.name);
   document.getElementById('sidebarUserName').textContent = currentProfile.name || currentAuthUser.email;
-  document.getElementById('sidebarUserEmail').textContent = currentAuthUser.email;
+  document.getElementById('sidebarUserEmail').textContent = (ROLE_LABEL[currentRole] ? ROLE_LABEL[currentRole]+' · ' : '') + currentAuthUser.email;
 }
 
 document.getElementById('btnOpenProfile').addEventListener('click', ()=>{
   setAvatarEl(document.getElementById('profileAvatarPreview'), currentProfile.name);
   document.getElementById('profileNameInput').value = currentProfile.name || '';
-  document.getElementById('profileEmailLabel').textContent = currentAuthUser.email;
+  document.getElementById('profileEmailLabel').textContent = currentAuthUser.email + (ROLE_LABEL[currentRole] ? ' · '+ROLE_LABEL[currentRole] : '');
+  document.getElementById('profileNewPassword').value = '';
   document.getElementById('modalProfile').classList.add('open');
 });
 document.getElementById('profileCancel').addEventListener('click', ()=>{
@@ -3830,9 +4080,15 @@ document.getElementById('profileCancel').addEventListener('click', ()=>{
 document.getElementById('profileSave').addEventListener('click', async ()=>{
   const name = document.getElementById('profileNameInput').value.trim();
   if(!name){ toast('Informe um nome.','bad'); return; }
+  const newPwd = document.getElementById('profileNewPassword').value;
+  if(newPwd && newPwd.length<8){ toast('A nova senha precisa ter no mínimo 8 caracteres.','bad'); return; }
   const btn = document.getElementById('profileSave');
   btn.disabled = true;
   try{
+    if(newPwd){
+      const pw = await sb.auth.updateUser({ password: newPwd });
+      if(pw.error) throw pw.error;
+    }
     const { data, error } = await sb.from('profiles')
       .upsert({ id: currentAuthUser.id, name })
       .select().maybeSingle();
@@ -3875,25 +4131,53 @@ function setupPresence(user){
     });
 }
 
+let authHandledUserId = null; // evita refazer tudo a cada renovação de token
 sb.auth.onAuthStateChange((event, session)=>{
   if(session){
-    document.getElementById('authScreen').classList.add('hidden');
-    document.getElementById('app').classList.remove('app-hidden');
-    currentAuthUser = session.user;
-    ensureProfile(session.user).then(profile=>{
-      currentProfile = profile;
-      renderSidebarProfile();
-      setupPresence(session.user);
-    });
-    if(!appStarted){ appStarted = true; init(); }
+    if(authHandledUserId===session.user.id) return; // TOKEN_REFRESHED etc.
+    authHandledUserId = session.user.id;
+    // Obs.: não chamar o Supabase direto aqui dentro (deadlock do supabase-js) — adia p/ fora do callback.
+    setTimeout(()=> startSession(session.user), 0);
   } else {
+    // Saiu da conta: recarrega a página para não sobrar NENHUM dado do usuário
+    // anterior em memória (outro papel pode entrar logo em seguida neste aparelho).
+    if(authHandledUserId){ authHandledUserId = null; location.reload(); return; }
     if(presenceChannel){ sb.removeChannel(presenceChannel); presenceChannel = null; }
     currentAuthUser = null;
     currentProfile = null;
+    currentRole = null;
+    document.body.classList.remove('role-admin');
+    document.getElementById('noAccessScreen').classList.add('hidden');
     document.getElementById('authScreen').classList.remove('hidden');
     document.getElementById('app').classList.add('app-hidden');
   }
 });
+
+/* Depois do login: descobre o papel; sem papel/desativado → tela "Sem acesso". */
+async function startSession(user){
+  const role = await fetchMyRole(user.id);
+  if(role===undefined){
+    authHandledUserId = null; // permite nova tentativa
+    showNoAccess('Não foi possível verificar o seu acesso agora. Verifique a conexão e entre novamente.');
+    return;
+  }
+  if(!role){
+    showNoAccess('Sua conta não tem um papel de acesso ativo neste sistema. Fale com o administrador.');
+    return;
+  }
+  currentRole = role;
+  currentAuthUser = user;
+  applyRoleUI();
+  document.getElementById('noAccessScreen').classList.add('hidden');
+  document.getElementById('authScreen').classList.add('hidden');
+  document.getElementById('app').classList.remove('app-hidden');
+  ensureProfile(user).then(profile=>{
+    currentProfile = profile;
+    renderSidebarProfile();
+    setupPresence(user);
+  });
+  if(!appStarted){ appStarted = true; init(); }
+}
 
 async function storageGet(key, attempts=2){
   for(let i=0;i<attempts;i++){
@@ -3919,6 +4203,23 @@ async function storageSet(key,val,attempts=2){
 }
 async function storageDelete(key){
   try{ await sb.from('kv_store').delete().eq('key', key); }catch(e){}
+}
+
+/* Detalhe de cada auditoria. Os módulos antigos guardam em 'audit_<id>' (sem
+   prefixo). Módulos com `detailKeyPrefix` (Equipamento Hospitalar) guardam em
+   '<prefixo>audit_<id>' — assim a RLS consegue liberar só essas chaves ao
+   papel Coordenação, sem expor os detalhes dos demais módulos. A leitura cai
+   para a chave antiga quando não acha a nova (compatibilidade). */
+function auditKey(id){ return (TIPOS[currentTipo].detailKeyPrefix||'')+'audit_'+id; }
+async function auditGet(id){
+  const v = await storageGet(auditKey(id));
+  if(v===null && TIPOS[currentTipo].detailKeyPrefix) return storageGet('audit_'+id);
+  return v;
+}
+function auditSet(id, val){ return storageSet(auditKey(id), val); }
+async function auditDelete(id){
+  await storageDelete(auditKey(id));
+  if(TIPOS[currentTipo].detailKeyPrefix) await storageDelete('audit_'+id);
 }
 
 /* Busca o índice com segurança. Retorna [] se de fato não existir ainda,
@@ -4898,9 +5199,9 @@ document.getElementById('moveConfirm').addEventListener('click', async ()=>{
   if(!okIndex){ btn.disabled = false; return; }
   let detailFail = 0;
   for(const a of list){
-    const det = await storageGet('audit_'+a.id);
+    const det = await auditGet(a.id);
     if(det && typeof det==='object'){
-      if(!await storageSet('audit_'+a.id, { ...det, cicloId: to })) detailFail++;
+      if(!await auditSet(a.id, { ...det, cicloId: to })) detailFail++;
     } else if(det===undefined) detailFail++;
   }
   for(const key of new Set(list.map(a=>trackKey(a.setor, a.carro)))) await ensureSectorInCycle(to, key);
@@ -4962,11 +5263,14 @@ const VIEW_TITLES = {
   'history':['Histórico de Auditorias','Consulte, filtre e exporte auditorias anteriores'],
   'sectors':['Setores','Desempenho de conformidade por setor'],
   'cycles':['Gerenciamento de Ciclos','Acompanhe o progresso e o histórico dos ciclos de auditoria'],
+  'users':['Usuários','Crie usuários e defina o acesso de cada um'],
   'audit-detail':['Detalhe da Auditoria',''],
   'sector-detail':['Detalhe do Setor',''],
 };
 async function showView(name){
+  if(name==='users' && currentRole!=='admin') name = 'dashboard'; // só administrador
   if(name!=='dashboard') dashboardCycleId = null;
+  if(name==='users') loadUsers();
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.view===name));
@@ -5119,7 +5423,7 @@ async function startNewAuditForm(){
    essa auditoria foi originalmente feita, principalmente para permitir
    auditar itens novos em auditorias antigas. */
 async function editAudit(id){
-  const full = await storageGet('audit_'+id);
+  const full = await auditGet(id);
   if(!full){ toast('Auditoria não encontrada.','bad'); return; }
   editingAuditId = id;
   await refreshInactiveSectorsFromStorage();
@@ -5865,7 +6169,7 @@ async function persistAudit(finalize){
 
   if(TIPOS[currentTipo].cycleMode!=='monthly') await ensureSectorInCycle(currentAudit.cicloId, trackKey(h.setor, h.carro));
 
-  const savedDetail = await storageSet('audit_'+currentAudit.id, currentAudit);
+  const savedDetail = await auditSet(currentAudit.id, currentAudit);
   if(!savedDetail){
     toast('Erro ao salvar os dados da auditoria. Tente novamente.','bad');
     return false;
@@ -6216,9 +6520,9 @@ async function changeAuditCycle(auditId, cycleId){
   if(!a || !cycleId || a.cicloId===cycleId){ applyHistoryFilters(); return; }
   const ok = await updateIndex(idx=> idx.map(x=> x.id===auditId ? { ...x, cicloId: cycleId } : x));
   if(!ok){ applyHistoryFilters(); return; }
-  const det = await storageGet('audit_'+auditId);
+  const det = await auditGet(auditId);
   let detailOk = true;
-  if(det && typeof det==='object') detailOk = await storageSet('audit_'+auditId, { ...det, cicloId: cycleId });
+  if(det && typeof det==='object') detailOk = await auditSet(auditId, { ...det, cicloId: cycleId });
   else if(det===undefined) detailOk = false;
   await ensureSectorInCycle(cycleId, trackKey(a.setor, a.carro));
   toast(detailOk ? `Auditoria movida para o Ciclo ${cycleNumeroById(cycleId)}.` : 'Ciclo alterado, mas o registro de detalhe não foi atualizado. Tente novamente.', detailOk?'ok':'bad');
@@ -6239,7 +6543,7 @@ function confirmDeleteAudit(id){
   openConfirm('Excluir auditoria','Esta ação é permanente e removerá todos os dados e fotos desta auditoria.', async ()=>{
     const ok = await updateIndex(idx=> idx.filter(a=>a.id!==id));
     if(!ok) return; // aborta sem apagar o detalhe, para não deixar referência quebrada
-    await storageDelete('audit_'+id);
+    await auditDelete(id);
     toast('Auditoria excluída.','ok');
     renderHistory();
   });
@@ -6270,7 +6574,7 @@ function cartSummaryHtml(resp, itemId){
    DETALHE DE AUDITORIA
    ========================================================================= */
 async function openAuditDetail(id){
-  const full = await storageGet('audit_'+id);
+  const full = await auditGet(id);
   if(!full){ toast('Auditoria não encontrada.','bad'); return; }
   currentDetailId = id;
   applySectorDependentItems(full.header.setor, false);
@@ -6332,7 +6636,7 @@ function confirmDeleteAuditThenBack(){
   openConfirm('Excluir auditoria','Esta ação é permanente e removerá todos os dados e fotos desta auditoria.', async ()=>{
     const ok = await updateIndex(idx=> idx.filter(a=>a.id!==currentDetailId));
     if(!ok) return;
-    await storageDelete('audit_'+currentDetailId);
+    await auditDelete(currentDetailId);
     toast('Auditoria excluída.','ok');
     showView('history');
   });
@@ -6509,7 +6813,7 @@ function renderAuditItemsSection(doc, full, startY, detailed){
 }
 
 async function generateAuditPdf(detailed){
-  const full = await storageGet('audit_'+currentDetailId);
+  const full = await auditGet(currentDetailId);
   if(!full) return;
   const doc = new jsPDF();
   pdfHeader(doc, 'Auditoria de '+TIPOS[currentTipo].label, `${full.header.setor}${full.header.setorDestino?' → '+full.header.setorDestino:''} · ${fmtDate(full.header.data)}`);
@@ -6595,7 +6899,7 @@ async function generateDashboardPdf(detailed){
 
   if(detailed && sorted.length){
     for(const summary of sorted){
-      const full = await storageGet('audit_'+summary.id);
+      const full = await auditGet(summary.id);
       if(!full) continue;
       applySectorDependentItems(full.header.setor, false);
       doc.addPage();
@@ -6691,7 +6995,7 @@ async function buildDashboardReportText(detailed){
     const sorted = [...fin].sort((a,b)=> new Date(b.data)-new Date(a.data));
     let anyNaoConforme = false;
     for(const summary of sorted){
-      const full = await storageGet('audit_'+summary.id);
+      const full = await auditGet(summary.id);
       if(!full) continue;
       applySectorDependentItems(full.header.setor, false);
       const naoConformeLines = [];
