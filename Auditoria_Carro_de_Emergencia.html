@@ -3880,12 +3880,16 @@ function showNoAccess(msg){
    Todas as operações passam pela Edge Function "admin-users", que valida no
    servidor que quem chama é administrador e usa a service_role key (que
    nunca chega ao navegador). */
+/* Identificador (slug) da Edge Function no Supabase. O editor do painel deu o
+   slug "dynamic-endpoint" à função de nome "admin-users"; o endereço real é
+   .../functions/v1/dynamic-endpoint. */
+const ADMIN_USERS_FN = 'dynamic-endpoint';
 async function callAdminUsers(payload){
-  const { data, error } = await sb.functions.invoke('admin-users', { body: payload });
+  const { data, error } = await sb.functions.invoke(ADMIN_USERS_FN, { body: payload });
   if(error){
     let msg = error.message;
     try{ const j = await error.context.json(); if(j && j.error) msg = j.error; }catch(_){}
-    if(/Failed to send|NetworkError|fetch/i.test(msg||'')) msg = 'Não foi possível falar com o servidor. A função "admin-users" já foi publicada no Supabase?';
+    if(/Failed to send|NetworkError|fetch/i.test(msg||'')) msg = 'Não foi possível falar com o servidor. A Edge Function de usuários já foi publicada no Supabase?';
     throw new Error(msg);
   }
   if(data && data.error) throw new Error(data.error);
