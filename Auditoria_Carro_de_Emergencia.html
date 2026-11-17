@@ -451,6 +451,10 @@ input,select,textarea{font-family:inherit;}
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 4.4l-6.6 6.6a1.7 1.7 0 0 0 2.4 2.4l6.6-6.6a4 4 0 0 0 5.5-3.9l-3 3-2.4-2.4z"/></svg>
             <span>Engenharia Clínica</span>
           </button>
+          <button type="button" class="tipo-btn" data-tipo="equipHospitalar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 4.4l-6.6 6.6a1.7 1.7 0 0 0 2.4 2.4l6.6-6.6a4 4 0 0 0 5.5-3.9l-3 3-2.4-2.4z"/></svg>
+            <span>Equipamento Hospitalar</span>
+          </button>
           <button type="button" class="tipo-btn" data-tipo="medicacao">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="9.5" width="17" height="7" rx="3.5" transform="rotate(-35 12 13)"/><path d="M11 10l3 6" stroke-width="1.6"/></svg>
             <span>Carro de Medicação</span>
@@ -837,6 +841,12 @@ input,select,textarea{font-family:inherit;}
         </div>
         <div class="tipo-select-label">Equipamento da Engenharia Clínica</div>
       </button>
+      <button type="button" class="tipo-select-card" data-tipo="equipHospitalar">
+        <div class="tipo-select-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 4.4l-6.6 6.6a1.7 1.7 0 0 0 2.4 2.4l6.6-6.6a4 4 0 0 0 5.5-3.9l-3 3-2.4-2.4z"/></svg>
+        </div>
+        <div class="tipo-select-label">Equipamento Hospitalar</div>
+      </button>
       <button type="button" class="tipo-select-card" data-tipo="medicacao">
         <div class="tipo-select-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="9.5" width="17" height="7" rx="3.5" transform="rotate(-35 12 13)"/><path d="M11 10l3 6" stroke-width="1.6"/></svg>
@@ -1018,9 +1028,17 @@ const CATEGORIES_MED = [
 const CATEGORIES_ENG = [
   {id:'conferencia', nome:'Conferência do Equipamento', icon:'wrench'},
 ];
+/* Engenharia Clínica avalia apenas os dois itens de prazo (calibração e
+   manutenção preventiva). Os demais itens de conferência ficam no módulo
+   "Equipamento Hospitalar" (abaixo), com os mesmos ids de antes. */
 const ITEMS_ENG = [
  {id:1,cat:'conferencia',texto:'Calibração realizada dentro do prazo previsto no cronograma.'},
  {id:2,cat:'conferencia',texto:'Manutenção preventiva realizada dentro do prazo previsto no cronograma.'},
+];
+/* "Equipamento Hospitalar": mesma auditoria (setores, equipamentos e ciclos)
+   da Engenharia Clínica, mas com os itens de conferência do equipamento e sem
+   os dois itens de prazo de calibração e manutenção preventiva. */
+const ITEMS_EQUIP_HOSP = [
  {id:3,cat:'conferencia',texto:'Equipamento conectado à rede elétrica, quando aplicável.'},
  {id:4,cat:'conferencia',texto:'Equipamento funcionando corretamente.'},
  {id:5,cat:'conferencia',texto:'Equipamento em boas condições de higiene.'},
@@ -3397,6 +3415,12 @@ const TIPOS = {
     categories: CATEGORIES_ENG, items: ITEMS_ENG, setores: SETORES_ENGENHARIA,
     cartProfiles: {}, defaultSectorCarts: DEFAULT_SECTOR_EQUIPAMENTOS,
     storagePrefix: 'eng_', carroLabel: 'Equipamento', requireCarroSelection: true, allowNaoAplica: true,
+  },
+  equipHospitalar: {
+    key:'equipHospitalar', label:'Equipamento Hospitalar', labelPlural:'Equipamentos Hospitalares', icon:'wrench',
+    categories: CATEGORIES_ENG, items: ITEMS_EQUIP_HOSP, setores: SETORES_ENGENHARIA,
+    cartProfiles: {}, defaultSectorCarts: DEFAULT_SECTOR_EQUIPAMENTOS,
+    storagePrefix: 'equipHosp_', carroLabel: 'Equipamento', requireCarroSelection: true, allowNaoAplica: true,
   },
   meta2: {
     key:'meta2', label:'Meta 2 (SBAR)', labelPlural:'Meta 2 (SBAR)', icon:'clipboard',
