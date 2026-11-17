@@ -10,7 +10,9 @@
 //   create          → { email, password, name, role }  cria usuário já confirmado
 //   set_role        → { user_id, role }                 muda o papel
 //   set_active      → { user_id, active }               ativa/desativa o acesso
-//   reset_password  → { user_id, password }             define nova senha
+//   reset_password  → { user_id, password }             senha provisória (usuário troca no próximo login)
+//   set_name        → { user_id, name }                 define o nome de exibição
+//   delete          → { user_id }                       exclui (só quem nunca entrou no sistema)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 const ROLES = ["admin", "coordenacao"];
@@ -65,6 +67,7 @@ Deno.serve(async (req) => {
         active: roleBy.get(u.id)?.active ?? false,
         created_at: u.created_at,
         last_sign_in_at: u.last_sign_in_at,
+        must_change_password: u.user_metadata?.must_change_password === true,
         is_me: u.id === me.id,
       }));
       return json({ users });
@@ -81,7 +84,7 @@ Deno.serve(async (req) => {
       if (!ROLES.includes(role)) return json({ error: "Perfil inválido." }, 400);
 
       const { data: created, error } = await admin.auth.admin.createUser({
-        email, password, email_confirm: true, user_metadata: { name },
+        email, password, email_confirm: true, user_metadata: { name, must_change_password: true },
       });
       if (error) {
         const m = (error.message || "").toLowerCase();
@@ -134,10 +137,45 @@ Deno.serve(async (req) => {
     }
 
     // ---------- reset_password ----------
+    // A senha definida aqui é provisória: no próximo login o próprio usuário
+    // é obrigado a cadastrar a sua (flag must_change_password no user_metadata).
+    // Se o admin redefine a PRÓPRIA senha, não há flag (ele já sabe a senha).
     if (action === "reset_password") {
       const password = String(body.password || "");
       if (password.length < 8) return json({ error: "A senha precisa ter no mínimo 8 caracteres." }, 400);
-      const { error } = await admin.auth.admin.updateUserById(targetId, { password });
+      const { data: target, error: tErr } = await admin.auth.admin.getUserById(targetId);
+      if (tErr || !target?.user) return json({ error: "Usuário não encontrado." }, 404);
+      const meta = { ...(target.user.user_metadata || {}), must_change_password: !isSelf };
+      const { error } = await admin.auth.admin.updateUserById(targetId, { password, user_metadata: meta });
+      if (error) throw error;
+      return json({ ok: true });
+    }
+
+    // ---------- set_name ----------
+    if (action === "set_name") {
+      const name = String(body.name || "").trim();
+      if (!name) return json({ error: "Informe o nome." }, 400);
+      if (name.length > 120) return json({ error: "Nome muito longo." }, 400);
+      const { data: target, error: tErr } = await admin.auth.admin.getUserById(targetId);
+      if (tErr || !target?.user) return json({ error: "Usuário não encontrado." }, 404);
+      const { error: pErr } = await admin.from("profiles").upsert({ id: targetId, name });
+      if (pErr) throw new Error("Não foi possível salvar o nome (a tabela profiles existe? rode supabase_rbac_schema.sql). " + pErr.message);
+      await admin.auth.admin.updateUserById(targetId, { user_metadata: { ...(target.user.user_metadata || {}), name } });
+      return json({ ok: true });
+    }
+
+    // ---------- delete ----------
+    // Só exclui quem NUNCA entrou no sistema (sem movimentações). Quem já
+    // acessou pode ter auditorias/histórico: nesse caso, use "Inativar".
+    if (action === "delete") {
+      if (isSelf) return json({ error: "Você não pode excluir a sua própria conta." }, 400);
+      const { data: target, error: tErr } = await admin.auth.admin.getUserById(targetId);
+      if (tErr || !target?.user) return json({ error: "Usuário não encontrado." }, 404);
+      if (target.user.last_sign_in_at) {
+        return json({ error: "Este usuário já acessou o sistema e pode ter movimentações. Inative-o em vez de excluir." }, 409);
+      }
+      // user_roles e profiles são apagados em cascata (FK ... on delete cascade).
+      const { error } = await admin.auth.admin.deleteUser(targetId);
       if (error) throw error;
       return json({ ok: true });
     }

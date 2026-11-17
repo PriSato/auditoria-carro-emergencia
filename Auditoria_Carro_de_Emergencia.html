@@ -69,8 +69,8 @@ input,select,textarea{font-family:inherit;}
 .auth-msg{color:var(--ok);font-size:12.5px;margin-bottom:10px;display:none;}
 .auth-toggle{text-align:center;font-size:12.5px;margin-top:16px;color:var(--ink-soft);line-height:1.5;}
 .auth-toggle a{color:var(--blue-600);font-weight:600;cursor:pointer;text-decoration:none;}
-#noAccessScreen{position:fixed;inset:0;background:linear-gradient(135deg,var(--navy-900),var(--navy-700));display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
-#noAccessScreen.hidden{display:none;}
+#noAccessScreen,#forcePwdScreen{position:fixed;inset:0;background:linear-gradient(135deg,var(--navy-900),var(--navy-700));display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
+#noAccessScreen.hidden,#forcePwdScreen.hidden{display:none;}
 /* Controle de acesso (RBAC): itens só de administrador ficam ocultos para os demais papéis */
 body:not(.role-admin) .admin-only{display:none !important;}
 .role-tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;padding:1px 6px;border-radius:999px;background:rgba(255,255,255,.14);color:#BFD8F0;margin-left:4px;}
@@ -445,6 +445,20 @@ body:not(.role-admin) .admin-only{display:none !important;}
   </div>
 </div>
 
+<!-- Primeiro acesso / senha redefinida pelo administrador: o usuário cadastra a própria senha -->
+<div id="forcePwdScreen" class="hidden">
+  <div class="auth-card">
+    <div class="auth-logo-wrap"><img id="forcePwdLogo" class="auth-logo" alt="Hospital Maternidade São Vicente de Paulo"></div>
+    <h2>Cadastre sua senha</h2>
+    <div class="sub">Sua senha foi definida pelo administrador. Para continuar, crie uma senha só sua (mínimo de 8 caracteres).</div>
+    <div class="auth-error" id="fpError"></div>
+    <div class="auth-field"><label>Nova senha</label><input type="password" id="fpNew" autocomplete="new-password"></div>
+    <div class="auth-field"><label>Repita a nova senha</label><input type="password" id="fpConfirm" autocomplete="new-password"></div>
+    <button class="btn btn-primary" id="fpSubmit" style="width:100%;justify-content:center;">Salvar e entrar</button>
+    <div class="auth-toggle"><a id="fpLogout">Sair</a></div>
+  </div>
+</div>
+
 <div id="app" class="app-hidden">
   <div class="sidebar-scrim" id="scrim"></div>
   <aside class="sidebar" id="sidebar">
@@ -782,7 +796,7 @@ body:not(.role-admin) .admin-only{display:none !important;}
         <div class="card card-pad" style="margin-bottom:16px;font-size:13px;color:var(--ink-soft);line-height:1.6;">
           <b>Administrador:</b> vê e faz tudo, inclusive criar usuários.<br>
           <b>Coordenação:</b> acessa somente a auditoria de <b>Equipamento Hospitalar</b>.<br>
-          O cadastro pelo link inicial foi desativado: só o administrador cria usuários. Quem aparece sem perfil não consegue acessar nada até receber um. Usuário inativo perde o acesso, mas pode ser reativado.
+          O cadastro pelo link inicial foi desativado: só o administrador cria usuários. Quem aparece sem perfil não consegue acessar nada até receber um. Usuário inativo perde o acesso, mas pode ser reativado. <b>Excluir</b> só aparece para quem nunca entrou no sistema; quem já acessou deve ser inativado, para preservar o histórico. Senhas definidas aqui são provisórias: no próximo acesso a própria pessoa cadastra a sua.
         </div>
         <div class="card" style="overflow:auto;">
           <table class="audit-table" id="usersTable">
@@ -998,7 +1012,7 @@ body:not(.role-admin) .admin-only{display:none !important;}
 <div class="modal-backdrop" id="modalNewUser">
   <div class="modal" style="max-width:420px;">
     <h3>Novo usuário</h3>
-    <p>A conta é criada já confirmada. Informe uma senha provisória e repasse ao usuário; ele poderá trocá-la em "Meu Perfil".</p>
+    <p>A conta é criada já confirmada. Informe uma senha provisória e repasse ao usuário; no primeiro acesso ele será obrigado a cadastrar a própria senha.</p>
     <div class="profile-field"><label>Nome</label><input type="text" id="nuName" placeholder="Nome completo" autocomplete="off"></div>
     <div class="profile-field"><label>E-mail</label><input type="email" id="nuEmail" placeholder="usuario@hospital.com" autocomplete="off"></div>
     <div class="profile-field"><label>Senha provisória (mín. 8 caracteres)</label><input type="text" id="nuPassword" autocomplete="off"></div>
@@ -1016,11 +1030,24 @@ body:not(.role-admin) .admin-only{display:none !important;}
   </div>
 </div>
 
+<div class="modal-backdrop" id="modalEditName">
+  <div class="modal" style="max-width:400px;">
+    <h3>Editar nome</h3>
+    <p id="enTarget"></p>
+    <div class="profile-field"><label>Nome</label><input type="text" id="enName" placeholder="Nome completo" autocomplete="off"></div>
+    <div class="auth-error" id="enError"></div>
+    <div class="actions">
+      <button class="btn btn-ghost" id="enCancel">Cancelar</button>
+      <button class="btn btn-primary" id="enConfirm">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="modalResetPwd">
   <div class="modal" style="max-width:400px;">
     <h3>Redefinir senha</h3>
     <p id="rpTarget"></p>
-    <div class="profile-field"><label>Nova senha (mín. 8 caracteres)</label><input type="text" id="rpPassword" autocomplete="off"></div>
+    <div class="profile-field"><label>Senha provisória (mín. 8 caracteres)</label><input type="text" id="rpPassword" autocomplete="off"></div>
     <div class="auth-error" id="rpError"></div>
     <div class="actions">
       <button class="btn btn-ghost" id="rpCancel">Cancelar</button>
@@ -3876,6 +3903,45 @@ function showNoAccess(msg){
   document.getElementById('noAccessScreen').classList.remove('hidden');
 }
 
+/* ---------- Troca obrigatória de senha (primeiro acesso / senha redefinida) ----------
+   O admin define uma senha provisória e marca user_metadata.must_change_password.
+   Enquanto a flag existir, o usuário só vê esta tela. Obs.: a flag é uma
+   barreira de uso, não de segurança — o usuário já está autenticado com a
+   senha provisória; o objetivo é que a senha final seja só dele. */
+function showForcePassword(user){
+  document.getElementById('authScreen').classList.add('hidden');
+  document.getElementById('noAccessScreen').classList.add('hidden');
+  document.getElementById('app').classList.add('app-hidden');
+  document.getElementById('fpNew').value = '';
+  document.getElementById('fpConfirm').value = '';
+  document.getElementById('fpError').style.display = 'none';
+  document.getElementById('forcePwdScreen').classList.remove('hidden');
+  forcePwdUser = user;
+}
+let forcePwdUser = null;
+document.getElementById('forcePwdLogo').src = document.getElementById('sidebarLogoImg').src;
+document.getElementById('fpLogout').addEventListener('click', async ()=>{ await sb.auth.signOut(); });
+document.getElementById('fpConfirm').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('fpSubmit').click(); });
+document.getElementById('fpSubmit').addEventListener('click', async ()=>{
+  const errEl = document.getElementById('fpError');
+  const p1 = document.getElementById('fpNew').value;
+  const p2 = document.getElementById('fpConfirm').value;
+  errEl.style.display = 'none';
+  const fail = (m)=>{ errEl.textContent = m; errEl.style.display = 'block'; };
+  if(p1.length<8) return fail('A senha precisa ter no mínimo 8 caracteres.');
+  if(p1!==p2) return fail('As senhas não conferem.');
+  const btn = document.getElementById('fpSubmit'); btn.disabled = true;
+  try{
+    const { data, error } = await sb.auth.updateUser({ password: p1, data: { must_change_password: false } });
+    if(error) throw error;
+    document.getElementById('forcePwdScreen').classList.add('hidden');
+    await startSession(data.user || { ...forcePwdUser, user_metadata:{ ...(forcePwdUser.user_metadata||{}), must_change_password:false } });
+  }catch(e){
+    const m = (e.message||'').toLowerCase();
+    fail(m.includes('different') ? 'Escolha uma senha diferente da provisória.' : authTranslateError(e.message));
+  }finally{ btn.disabled = false; }
+});
+
 /* ---------- Tela "Usuários" (somente administrador) ----------
    Todas as operações passam pela Edge Function "admin-users", que valida no
    servidor que quem chama é administrador e usa a service_role key (que
@@ -3935,15 +4001,20 @@ function renderUsers(){
            <option value="coordenacao"${u.role==='coordenacao'?' selected':''}>Coordenação</option>
            <option value="admin"${u.role==='admin'?' selected':''}>Administrador</option>
          </select>`;
-    const status = !u.role ? '<span class="tag tag-warn">Sem acesso</span>'
-      : (u.active ? '<span class="tag tag-ok">Ativo</span>' : '<span class="tag tag-bad">Inativo</span>');
-    const actions = u.is_me ? '<button class="btn btn-ghost btn-sm" data-act="pwd" data-uid="'+u.id+'">Redefinir senha</button>' : `
+    const status = (!u.role ? '<span class="tag tag-warn">Sem acesso</span>'
+      : (u.active ? '<span class="tag tag-ok">Ativo</span>' : '<span class="tag tag-bad">Inativo</span>'))
+      + (u.must_change_password ? ' <span class="tag tag-neutral" title="O usuário ainda vai cadastrar a própria senha no próximo acesso">Senha provisória</span>' : '');
+    // Só dá para excluir quem nunca entrou no sistema (sem movimentações). Os demais: inativar.
+    const canDelete = !u.is_me && !u.last_sign_in_at;
+    const actions = `
       <div class="users-actions">
+        <button class="btn btn-ghost btn-sm" data-act="name" data-uid="${u.id}">Editar nome</button>
         <button class="btn btn-ghost btn-sm" data-act="pwd" data-uid="${u.id}">Redefinir senha</button>
-        ${u.role ? `<button class="btn btn-ghost btn-sm" data-act="toggle" data-uid="${u.id}">${u.active?'Inativar':'Reativar'}</button>` : ''}
+        ${!u.is_me && u.role ? `<button class="btn btn-ghost btn-sm" data-act="toggle" data-uid="${u.id}">${u.active?'Inativar':'Reativar'}</button>` : ''}
+        ${canDelete ? `<button class="btn btn-danger btn-sm" data-act="delete" data-uid="${u.id}" title="Nunca acessou o sistema: pode ser excluído">Excluir</button>` : ''}
       </div>`;
     return `<tr class="${u.role && !u.active ? 'user-off' : ''}">
-      <td>${escapeHtml(u.name||'—')}</td>
+      <td>${u.name ? escapeHtml(u.name) : '<span style="color:var(--ink-soft);font-style:italic;">sem nome</span>'}</td>
       <td>${escapeHtml(u.email||'')}</td>
       <td>${roleCell}</td>
       <td>${status}</td>
@@ -3963,6 +4034,23 @@ document.getElementById('usersBody').addEventListener('change', async (e)=>{
   loadUsers();
 });
 let resetPwdUserId = null;
+let editNameUserId = null;
+document.getElementById('enCancel').addEventListener('click', ()=> document.getElementById('modalEditName').classList.remove('open'));
+document.getElementById('enName').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('enConfirm').click(); });
+document.getElementById('enConfirm').addEventListener('click', async ()=>{
+  const errEl = document.getElementById('enError');
+  const name = document.getElementById('enName').value.trim();
+  errEl.style.display = 'none';
+  if(!name){ errEl.textContent = 'Informe o nome.'; errEl.style.display = 'block'; return; }
+  const btn = document.getElementById('enConfirm'); btn.disabled = true;
+  try{
+    await callAdminUsers({ action:'set_name', user_id:editNameUserId, name });
+    document.getElementById('modalEditName').classList.remove('open');
+    toast('Nome atualizado.','ok');
+    loadUsers();
+  }catch(err){ errEl.textContent = err.message; errEl.style.display = 'block'; }
+  finally{ btn.disabled = false; }
+});
 document.getElementById('usersBody').addEventListener('click', (e)=>{
   const btn = e.target.closest('button[data-act]'); if(!btn) return;
   const u = usersCache.find(x=>x.id===btn.dataset.uid); if(!u) return;
@@ -3978,9 +4066,28 @@ document.getElementById('usersBody').addEventListener('click', (e)=>{
         }catch(err){ toast(err.message,'bad'); }
         loadUsers();
       });
+  } else if(btn.dataset.act==='delete'){
+    openConfirm('Excluir usuário',
+      `${u.name||u.email} nunca acessou o sistema e será excluído em definitivo. Esta ação não pode ser desfeita. Deseja continuar?`,
+      async ()=>{
+        try{
+          await callAdminUsers({ action:'delete', user_id:u.id });
+          toast('Usuário excluído.','ok');
+        }catch(err){ toast(err.message,'bad'); }
+        loadUsers();
+      });
+  } else if(btn.dataset.act==='name'){
+    editNameUserId = u.id;
+    document.getElementById('enTarget').textContent = 'Nome de exibição de '+u.email+'.';
+    document.getElementById('enName').value = u.name || '';
+    document.getElementById('enError').style.display = 'none';
+    document.getElementById('modalEditName').classList.add('open');
+    setTimeout(()=> document.getElementById('enName').focus(), 50);
   } else if(btn.dataset.act==='pwd'){
     resetPwdUserId = u.id;
-    document.getElementById('rpTarget').textContent = 'Defina uma nova senha para '+(u.name||u.email)+'.';
+    document.getElementById('rpTarget').textContent = u.is_me
+      ? 'Defina uma nova senha para a sua conta.'
+      : 'Defina uma senha provisória para '+(u.name||u.email)+'. No próximo acesso, a própria pessoa será obrigada a cadastrar a sua senha.';
     document.getElementById('rpPassword').value = '';
     document.getElementById('rpError').style.display = 'none';
     document.getElementById('modalResetPwd').classList.add('open');
@@ -3996,7 +4103,8 @@ document.getElementById('rpConfirm').addEventListener('click', async ()=>{
   try{
     await callAdminUsers({ action:'reset_password', user_id:resetPwdUserId, password });
     document.getElementById('modalResetPwd').classList.remove('open');
-    toast('Senha redefinida. Repasse a nova senha ao usuário.','ok');
+    toast('Senha provisória definida. Repasse-a ao usuário; ele cadastrará a própria no próximo acesso.','ok');
+    loadUsers();
   }catch(err){ errEl.textContent = err.message; errEl.style.display='block'; }
   finally{ btn.disabled = false; }
 });
@@ -4169,9 +4277,16 @@ async function startSession(user){
     showNoAccess('Sua conta não tem um perfil de acesso ativo neste sistema. Fale com o administrador.');
     return;
   }
+  // Senha provisória (conta nova ou senha redefinida pelo admin): o usuário
+  // precisa cadastrar a própria antes de entrar no sistema.
+  if(user.user_metadata && user.user_metadata.must_change_password===true){
+    showForcePassword(user);
+    return;
+  }
   currentRole = role;
   currentAuthUser = user;
   applyRoleUI();
+  document.getElementById('forcePwdScreen').classList.add('hidden');
   document.getElementById('noAccessScreen').classList.add('hidden');
   document.getElementById('authScreen').classList.add('hidden');
   document.getElementById('app').classList.remove('app-hidden');

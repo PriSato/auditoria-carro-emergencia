@@ -156,5 +156,26 @@ create policy "profiles_update_own" on public.profiles
 
 grant select, insert, update on public.profiles to authenticated;
 
+-- 5c) App "Núcleos e Comissões" (tabelas ncom_*): antes qualquer usuário
+--     autenticado LIA os dados. Agora que existem usuários de Coordenação (e
+--     para que ninguém que se cadastre por fora leia nada), a leitura passa a
+--     exigir perfil de administrador. A escrita continua só para ncom_admins.
+--     Só é aplicado se as tabelas ncom_* existirem. ATENÇÃO: se você rodar de
+--     novo o supabase_ncom_schema.sql, ele recria a policy aberta — rode este
+--     arquivo (supabase_rbac_schema.sql) novamente em seguida.
+do $$
+begin
+  if to_regclass('public.ncom_store') is not null then
+    execute 'drop policy if exists "ncom_store_select" on public.ncom_store';
+    execute $p$create policy "ncom_store_select" on public.ncom_store
+              for select using (public.app_role() = 'admin')$p$;
+  end if;
+  if to_regclass('public.ncom_admins') is not null then
+    execute 'drop policy if exists "ncom_admins_select" on public.ncom_admins';
+    execute $p$create policy "ncom_admins_select" on public.ncom_admins
+              for select using (public.app_role() = 'admin')$p$;
+  end if;
+end $$;
+
 -- 6) Conferência: deve listar você como admin.
 select email, role, active from public.user_roles order by role, email;
