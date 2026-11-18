@@ -700,10 +700,25 @@ body:not(.role-admin) .admin-only{display:none !important;}
             <input type="checkbox" id="fCarroIndisponivel">
             <span id="lblCarroIndisponivel">Carro de emergência não disponível no setor</span>
           </label>
+          <!-- Só no Equipamento Hospitalar: motivo da indisponibilidade e, se emprestado, para qual setor -->
+          <div class="header-form" id="indispDetalhes" style="display:none;margin-top:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">
+            <div class="field"><label>Motivo *</label>
+              <select id="fIndispMotivo">
+                <option value="" disabled selected>Selecione o motivo...</option>
+                <option value="nao-rastreado">Equipamento não rastreado</option>
+                <option value="emprestado">Equipamento emprestado</option>
+              </select>
+            </div>
+            <div class="field" id="fEmprestadoParaWrap" style="display:none;"><label>Emprestado para o setor *</label>
+              <select id="fEmprestadoPara"></select>
+            </div>
+          </div>
         </div>
 
+        <div class="card card-pad" id="emprestimoInfo" style="display:none;margin-bottom:18px;background:var(--warn-bg);border-color:var(--warn);"></div>
+
         <div class="card card-pad" id="carroIndisponivelBanner" style="display:none;margin-bottom:18px;background:var(--bad-bg);border-color:var(--bad);">
-          <strong style="color:var(--bad);">Carro não disponível.</strong> Esta auditoria será registrada como não conformidade total do setor — não é necessário preencher o checklist item a item.
+          <strong style="color:var(--bad);" id="carroIndispTitulo">Carro não disponível.</strong> <span id="carroIndispMotivoTxt"></span>Esta auditoria será registrada como não conformidade total do setor — não é necessário preencher o checklist item a item.
         </div>
 
         <div class="card card-pad" id="carroGatingHint" style="display:none;margin-bottom:18px;background:var(--blue-50);">
@@ -3521,6 +3536,7 @@ const TIPOS = {
     key:'equipHospitalar', label:'Equipamento Hospitalar', labelPlural:'Equipamentos Hospitalares', icon:'wrench',
     categories: CATEGORIES_ENG, items: ITEMS_EQUIP_HOSP, setores: SETORES_ENGENHARIA,
     cartProfiles: {}, defaultSectorCarts: DEFAULT_SECTOR_EQUIPAMENTOS,
+    supportsLoans: true, // "não disponível" pede o motivo; equipamento emprestado aparece no setor de destino
     storagePrefix: 'equipHosp_', detailKeyPrefix: 'equipHosp_', carroLabel: 'Equipamento', requireCarroSelection: true, allowNaoAplica: true,
   },
   meta2: {
@@ -5323,7 +5339,7 @@ document.getElementById('moveConfirm').addEventListener('click', async ()=>{
       if(!await auditSet(a.id, { ...det, cicloId: to })) detailFail++;
     } else if(det===undefined) detailFail++;
   }
-  for(const key of new Set(list.map(a=>trackKey(a.setor, a.carro)))) await ensureSectorInCycle(to, key);
+  for(const key of new Set(list.filter(a=>!a.emprestadoDe).map(a=>trackKey(a.setor, a.carro)))) await ensureSectorInCycle(to, key);
   document.getElementById('modalMoveAudits').classList.remove('open');
   toast(detailFail ? `${list.length} movida(s); ${detailFail} registro(s) de detalhe não atualizado(s) — repita a operação.` : `${list.length} auditoria(s) movida(s).`, detailFail?'bad':'ok');
   renderCycles(); renderCycleBanner();
@@ -5497,7 +5513,7 @@ async function startNewAuditForm(){
   currentAudit = {
     id: uid(),
     cicloId: cycle ? cycle.id : null,
-    header:{ data: todayISO(), setor:'', carro:'', setorDestino:'', auditor:'', enfermeiro:'', enfermeiroOrigem:'', enfermeiroDestino:'', carroIndisponivel:false,
+    header:{ data: todayISO(), setor:'', carro:'', setorDestino:'', auditor:'', enfermeiro:'', enfermeiroOrigem:'', enfermeiroDestino:'', carroIndisponivel:false, indispMotivo:'', emprestadoPara:'', emprestadoDe:'',
       fase: cfg.multiFase ? cfg.fases[0].key : null,
       faseSetores: cfg.multiFase ? Object.fromEntries(cfg.fases.map(f=>[f.key,''])) : null,
     },
@@ -5528,7 +5544,10 @@ async function startNewAuditForm(){
   document.getElementById('fCarroWrap').style.display = 'none';
   document.getElementById('btnAddCart').style.display = 'none';
   document.getElementById('fCarroIndisponivel').checked = false;
+  document.getElementById('fCarroIndisponivelWrap').style.display = (TIPOS[currentTipo].hasCarts===false) ? 'none' : '';
+  syncIndispFieldsUI();
   setCarroIndisponivelUI(false);
+  updateEmprestimoInfo();
   buildCategoriesUI();
   updateProgress();
   updateCategoriesGating();
@@ -5550,6 +5569,9 @@ async function editAudit(id){
 
   full.header.carro = full.header.carro || '';
   full.header.carroIndisponivel = !!full.header.carroIndisponivel;
+  full.header.indispMotivo = full.header.indispMotivo || '';
+  full.header.emprestadoPara = full.header.emprestadoPara || '';
+  full.header.emprestadoDe = full.header.emprestadoDe || '';
   applySectorDependentItems(full.header.setor, false);
   const existingIds = new Set(full.items.map(i=>i.id));
   ITEMS.forEach(it=>{
@@ -5599,11 +5621,13 @@ async function editAudit(id){
     document.getElementById('fSetorOutro').value = '';
     document.getElementById('btnAddCart').style.display = TIPOS[currentTipo].hasCarts===false ? 'none' : 'block';
     const originalCarro = currentAudit.header.carro;
-    populateCarroSelect(originalSetor); // zera header.carro — restaurado abaixo
+    const originalEmprestadoDe = currentAudit.header.emprestadoDe || '';
+    populateCarroSelect(originalSetor, { carro: originalCarro, emprestadoDe: originalEmprestadoDe }); // zera header.carro/emprestadoDe — restaurados abaixo
     if(originalCarro){
       document.getElementById('fCarro').value = originalCarro;
       currentAudit.header.carro = originalCarro;
-      document.getElementById('btnRemoveCart').style.display = 'flex';
+      currentAudit.header.emprestadoDe = originalEmprestadoDe;
+      document.getElementById('btnRemoveCart').style.display = originalEmprestadoDe ? 'none' : 'flex';
     }
   } else if(originalSetor){
     sel.value = SETOR_OUTRO;
@@ -5642,7 +5666,9 @@ async function editAudit(id){
   }
 
   document.getElementById('fCarroIndisponivel').checked = !!currentAudit.header.carroIndisponivel;
+  syncIndispFieldsUI();
   setCarroIndisponivelUI(!!currentAudit.header.carroIndisponivel);
+  updateEmprestimoInfo();
 
   buildCategoriesUI();
   restoreAuditUI();
@@ -5692,19 +5718,66 @@ document.getElementById('btnEditAudit').addEventListener('click', ()=>{
 });
 
 function setCarroIndisponivelUI(indisponivel){
+  const h = currentAudit ? currentAudit.header : {};
+  const loans = loansSupported();
   document.getElementById('carroIndisponivelBanner').style.display = indisponivel ? 'block' : 'none';
   document.getElementById('progressWrap').style.display = indisponivel ? 'none' : '';
   document.getElementById('categoriesWrap').style.display = indisponivel ? 'none' : '';
+  // Motivo / setor de empréstimo (só Equipamento Hospitalar)
+  document.getElementById('indispDetalhes').style.display = (loans && indisponivel) ? 'grid' : 'none';
+  document.getElementById('fEmprestadoParaWrap').style.display = (loans && indisponivel && h.indispMotivo==='emprestado') ? 'flex' : 'none';
+  document.getElementById('carroIndispTitulo').textContent = loans ? 'Equipamento não disponível.' : 'Carro não disponível.';
+  let motivoTxt = '';
+  if(loans && h.indispMotivo==='nao-rastreado') motivoTxt = 'Motivo: equipamento não rastreado. ';
+  if(loans && h.indispMotivo==='emprestado') motivoTxt = h.emprestadoPara
+    ? `Motivo: equipamento emprestado para o setor ${h.emprestadoPara} — ele passará a aparecer lá para ser auditado, identificado como emprestado. `
+    : 'Motivo: equipamento emprestado (selecione o setor). ';
+  document.getElementById('carroIndispMotivoTxt').textContent = motivoTxt;
   if(!indisponivel) updateCategoriesGating();
 }
-document.getElementById('fCarroIndisponivel').addEventListener('change', (e)=>{
+/* Lista de setores para o empréstimo: todos os ativos, menos o próprio setor. */
+function populateEmprestadoParaSelect(selected){
+  const sel = document.getElementById('fEmprestadoPara');
+  const own = currentAudit ? currentAudit.header.setor : '';
+  const list = activeBaseSectors().filter(s=>s!==own);
+  if(selected && !list.includes(selected)) list.push(selected);
+  sel.innerHTML = '<option value="" disabled selected>Selecione o setor...</option>'
+    + list.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  sel.value = selected || '';
+}
+/* Reflete na tela o motivo/setor já gravados na auditoria (novo, rascunho ou edição). */
+function syncIndispFieldsUI(){
+  const h = currentAudit.header;
+  document.getElementById('fIndispMotivo').value = h.indispMotivo || '';
+  populateEmprestadoParaSelect(h.emprestadoPara || '');
+}
+function applyCarroIndisponivel(checked){
   if(!currentAudit) return;
-  const checked = e.target.checked;
+  document.getElementById('fCarroIndisponivel').checked = checked;
   currentAudit.header.carroIndisponivel = checked;
+  if(!checked){ currentAudit.header.indispMotivo = ''; currentAudit.header.emprestadoPara = ''; }
+  syncIndispFieldsUI();
   currentAudit.items.forEach(i=>{ i.status = checked ? 'nao-conforme' : null; });
   buildCategoriesUI();
   updateProgress();
   setCarroIndisponivelUI(checked);
+  updateEmprestimoInfo();
+}
+document.getElementById('fCarroIndisponivel').addEventListener('change', (e)=>{
+  if(!currentAudit) return;
+  applyCarroIndisponivel(e.target.checked);
+});
+document.getElementById('fIndispMotivo').addEventListener('change', (e)=>{
+  if(!currentAudit) return;
+  currentAudit.header.indispMotivo = e.target.value;
+  if(e.target.value!=='emprestado') currentAudit.header.emprestadoPara = '';
+  populateEmprestadoParaSelect(currentAudit.header.emprestadoPara);
+  setCarroIndisponivelUI(true);
+});
+document.getElementById('fEmprestadoPara').addEventListener('change', (e)=>{
+  if(!currentAudit) return;
+  currentAudit.header.emprestadoPara = e.target.value;
+  setCarroIndisponivelUI(true);
 });
 /* Em auditorias por equipamento (ex.: Engenharia Clínica), o checklist só
    aparece depois que um equipamento é escolhido no setor — evita registrar
@@ -5712,7 +5785,7 @@ document.getElementById('fCarroIndisponivel').addEventListener('change', (e)=>{
 function updateCategoriesGating(){
   if(!currentAudit || currentAudit.header.carroIndisponivel) return;
   const cfg = TIPOS[currentTipo];
-  const needsCarro = !!cfg.requireCarroSelection && cartsForSector(currentAudit.header.setor).length > 0;
+  const needsCarro = !!cfg.requireCarroSelection && sectorHasSelectableCarts(currentAudit.header.setor);
   const hide = needsCarro && !currentAudit.header.carro;
   document.getElementById('progressWrap').style.display = hide ? 'none' : '';
   document.getElementById('categoriesWrap').style.display = hide ? 'none' : '';
@@ -5806,23 +5879,111 @@ function populateSetorDestinoSelect(){
 }
 /* Preenche o seletor de Carro com os carros ativos do setor escolhido.
    Só é exibido quando o setor tem pelo menos um carro cadastrado. */
-function populateCarroSelect(setor){
+/* ---------- Equipamento emprestado (só módulos com supportsLoans) ----------
+   Quando, na auditoria de um setor, o equipamento é marcado como "não
+   disponível → emprestado para o setor X", ele passa a aparecer também na
+   lista de equipamentos de X, para ser auditado lá. Não há tabela própria de
+   empréstimos: o estado é derivado das auditorias finalizadas (summary em
+   allAudits). Vale a auditoria mais recente do equipamento FEITA NO SETOR DE
+   ORIGEM (as feitas no destino têm `emprestadoDe` e não alteram o estado):
+   se for "emprestado", o empréstimo está ativo; uma auditoria normal depois
+   (equipamento reencontrado na origem) encerra o empréstimo. */
+function loansSupported(){ return !!TIPOS[currentTipo].supportsLoans; }
+function computeLoans(){
+  if(!loansSupported()) return [];
+  const latest = {};
+  allAudits.forEach(a=>{
+    if(a.status!=='finalizada' || !a.carro || a.emprestadoDe) return;
+    const t = a.updatedAt || a.createdAt || 0;
+    if(!latest[a.carro] || t>latest[a.carro].t) latest[a.carro] = { t, a };
+  });
+  return Object.values(latest)
+    .filter(({a})=> a.carroIndisponivel && a.indispMotivo==='emprestado' && a.emprestadoPara)
+    .map(({a})=> ({ equip:a.carro, origem:a.setor, destino:a.emprestadoPara }));
+}
+function loanOut(setor, equip){ return computeLoans().find(l=>l.origem===setor && l.equip===equip) || null; }
+function loansInto(setor){ return computeLoans().filter(l=>l.destino===setor); }
+/* Equipamentos selecionáveis no setor: os cadastrados nele + os emprestados a ele. */
+function sectorHasSelectableCarts(setor){
+  return cartsForSector(setor).length>0 || loansInto(setor).length>0;
+}
+/* Texto curto "(emprestado de X)" / "(emprestado para X)" para listas, PDF e relatórios. */
+function carroNote(h){
+  if(h.emprestadoDe) return ` (emprestado de ${h.emprestadoDe})`;
+  if(h.carroIndisponivel && h.indispMotivo==='emprestado' && h.emprestadoPara) return ` (emprestado para ${h.emprestadoPara})`;
+  return '';
+}
+function carroCellHtml(a){
+  const base = a.carro ? escapeHtml(a.carro) : '—';
+  if(a.emprestadoDe) return `${base} <span class="tag tag-warn">Emprestado de ${escapeHtml(a.emprestadoDe)}</span>`;
+  if(a.carroIndisponivel && a.indispMotivo==='emprestado' && a.emprestadoPara) return `${base} <span class="tag tag-warn">Emprestado para ${escapeHtml(a.emprestadoPara)}</span>`;
+  return base;
+}
+/* Aviso explícito, sob o cabeçalho, quando o equipamento escolhido está
+   emprestado (visto do setor de origem ou do de destino). */
+function updateEmprestimoInfo(){
+  const el = document.getElementById('emprestimoInfo');
+  if(!el) return;
+  const h = currentAudit && currentAudit.header;
+  if(loansSupported() && h && h.carroIndisponivel){
+    if(h.emprestadoPara && h.emprestadoPara===h.setor) h.emprestadoPara = ''; // setor mudou: não empresta para si mesmo
+    populateEmprestadoParaSelect(h.emprestadoPara);
+    setCarroIndisponivelUI(true);
+  }
+  let html = '';
+  if(loansSupported() && h && h.carro && h.setor){
+    if(h.emprestadoDe){
+      html = `<strong style="color:var(--warn);">Equipamento emprestado.</strong> Este equipamento pertence ao setor <b>${escapeHtml(h.emprestadoDe)}</b> e está emprestado ao setor <b>${escapeHtml(h.setor)}</b>. A auditoria será registrada em ${escapeHtml(h.setor)} como equipamento emprestado de ${escapeHtml(h.emprestadoDe)}.`;
+    } else {
+      const l = loanOut(h.setor, h.carro);
+      if(l && !h.carroIndisponivel) html = `<strong style="color:var(--warn);">Equipamento emprestado.</strong> Este equipamento está emprestado para o setor <b>${escapeHtml(l.destino)}</b>. Se ele voltou para ${escapeHtml(h.setor)}, audite normalmente (isso encerra o empréstimo). Se continua emprestado, marque "não disponível no setor" e informe o setor.`;
+    }
+  }
+  el.innerHTML = html;
+  el.style.display = html ? 'block' : 'none';
+  // Equipamento recebido por empréstimo está no setor: não faz sentido marcá-lo "não disponível".
+  const wrap = document.getElementById('fCarroIndisponivelWrap');
+  if(wrap && loansSupported()){
+    const lockedOut = !!(h && h.emprestadoDe);
+    wrap.style.display = lockedOut ? 'none' : '';
+    if(lockedOut && h.carroIndisponivel) applyCarroIndisponivel(false);
+  }
+}
+/* Preenche o seletor de Carro com os carros ativos do setor escolhido.
+   Só é exibido quando o setor tem pelo menos um carro cadastrado (ou, nos
+   módulos com empréstimo, equipamento emprestado a ele). `extra` = cabeçalho
+   de uma auditoria em edição, para manter selecionável um equipamento cujo
+   empréstimo já terminou. */
+function populateCarroSelect(setor, extra){
   const carts = cartsForSector(setor).filter(c=>!inactiveSectors.includes(trackKey(setor,c)));
+  const loaned = loansSupported() ? loansInto(setor).filter(l=>!carts.includes(l.equip)) : [];
+  if(loansSupported() && extra && extra.emprestadoDe && extra.carro && !carts.includes(extra.carro) && !loaned.some(l=>l.equip===extra.carro)){
+    loaned.push({ equip:extra.carro, origem:extra.emprestadoDe, destino:setor });
+  }
   const wrap = document.getElementById('fCarroWrap');
   const sel = document.getElementById('fCarro');
   document.getElementById('btnRemoveCart').style.display = 'none';
-  if(!carts.length){
+  currentAudit.header.emprestadoDe = '';
+  if(!carts.length && !loaned.length){
     wrap.style.display = 'none';
     currentAudit.header.carro = '';
     updateCategoriesGating();
+    updateEmprestimoInfo();
     return;
   }
   wrap.style.display = 'flex';
   const carroLabel = (TIPOS[currentTipo].carroLabel || 'carro').toLowerCase();
+  // A marcação de empréstimo vem NO INÍCIO do texto: o seletor é estreito e
+  // cortaria um sufixo.
   sel.innerHTML = `<option value="" disabled selected>Selecione o ${carroLabel}...</option>`
-    + carts.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    + carts.map(c=>{
+        const l = loansSupported() ? loanOut(setor, c) : null;
+        return `<option value="${escapeHtml(c)}">${l ? '⇄ EMPRESTADO p/ '+escapeHtml(l.destino)+' · ' : ''}${escapeHtml(c)}</option>`;
+      }).join('')
+    + loaned.map(l=>`<option value="${escapeHtml(l.equip)}" data-loan-from="${escapeHtml(l.origem)}">⇄ EMPRESTADO de ${escapeHtml(l.origem)} · ${escapeHtml(l.equip)}</option>`).join('');
   currentAudit.header.carro = '';
   updateCategoriesGating();
+  updateEmprestimoInfo();
 }
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
@@ -5895,8 +6056,12 @@ document.getElementById('fSetorDestinoOutro').addEventListener('input', (e)=>{
 document.getElementById('fCarro').addEventListener('change', (e)=>{
   if(!currentAudit) return;
   currentAudit.header.carro = e.target.value;
+  const opt = e.target.selectedOptions && e.target.selectedOptions[0];
+  currentAudit.header.emprestadoDe = (opt && opt.dataset.loanFrom) || '';
   updateCategoriesGating();
-  document.getElementById('btnRemoveCart').style.display = e.target.value ? 'flex' : 'none';
+  // Equipamento recebido por empréstimo não pode ser removido do setor (não pertence a ele).
+  document.getElementById('btnRemoveCart').style.display = (e.target.value && !currentAudit.header.emprestadoDe) ? 'flex' : 'none';
+  updateEmprestimoInfo();
 });
 document.getElementById('btnRemoveCart').addEventListener('click', ()=>{
   if(!currentAudit || !currentAudit.header.setor || !currentAudit.header.carro) return;
@@ -6249,7 +6414,11 @@ async function persistAudit(finalize){
     toast(`Informe ${cfg.setorArticle||'o'} ${(cfg.setorLabel||'Setor').toLowerCase()} da auditoria.`,'bad');
     document.getElementById('fSetor').focus(); return false;
   }
-  if(cartsForSector(h.setor).length && !h.carro){ toast(`Selecione o ${(TIPOS[currentTipo].carroLabel||'carro').toLowerCase()} deste setor.`,'bad'); document.getElementById('fCarro').focus(); return false; }
+  if(sectorHasSelectableCarts(h.setor) && !h.carro){ toast(`Selecione o ${(TIPOS[currentTipo].carroLabel||'carro').toLowerCase()} deste setor.`,'bad'); document.getElementById('fCarro').focus(); return false; }
+  if(loansSupported() && h.carroIndisponivel){
+    if(!h.indispMotivo){ toast('Informe o motivo: equipamento não rastreado ou emprestado.','bad'); document.getElementById('fIndispMotivo').focus(); return false; }
+    if(h.indispMotivo==='emprestado' && (!h.emprestadoPara || h.emprestadoPara===h.setor)){ toast('Selecione o setor para o qual o equipamento foi emprestado.','bad'); document.getElementById('fEmprestadoPara').focus(); return false; }
+  }
   if(TIPOS[currentTipo].hasSetorDestino && !h.setorDestino){ toast('Informe o setor de destino.','bad'); document.getElementById('fSetorDestino').focus(); return false; }
   if(!h.auditor || !h.auditor.trim()){ toast('Informe o nome do auditor.','bad'); document.getElementById('fAuditor').focus(); return false; }
   if(TIPOS[currentTipo].hasSetorDestino){
@@ -6286,7 +6455,7 @@ async function persistAudit(finalize){
   currentAudit.subIndicators = computeSubIndicators(currentAudit);
   currentAudit.updatedAt = Date.now();
 
-  if(TIPOS[currentTipo].cycleMode!=='monthly') await ensureSectorInCycle(currentAudit.cicloId, trackKey(h.setor, h.carro));
+  if(TIPOS[currentTipo].cycleMode!=='monthly' && !h.emprestadoDe) await ensureSectorInCycle(currentAudit.cicloId, trackKey(h.setor, h.carro));
 
   const savedDetail = await auditSet(currentAudit.id, currentAudit);
   if(!savedDetail){
@@ -6298,6 +6467,7 @@ async function persistAudit(finalize){
     id: currentAudit.id,
     cicloId: currentAudit.cicloId || null,
     carroIndisponivel: !!h.carroIndisponivel,
+    indispMotivo: h.indispMotivo || null, emprestadoPara: h.emprestadoPara || null, emprestadoDe: h.emprestadoDe || null,
     setor: h.setor, carro: h.carro || null, setorDestino: h.setorDestino || null,
     faseSetores: h.faseSetores || null,
     auditor: h.auditor, enfermeiro: h.enfermeiro,
@@ -6616,7 +6786,7 @@ function applyHistoryFilters(){
     return `<tr onclick="openAuditDetail('${a.id}')">
       <td>${fmtDate(a.data)}</td>
       <td>${escapeHtml(a.setor)}</td>
-      <td>${a.carro?escapeHtml(a.carro):'—'}</td>
+      <td>${carroCellHtml(a)}</td>
       <td>${historyCycleCell(a, numeroCiclo)}</td>
       <td>${escapeHtml(a.auditor)}</td>
       <td><span class="score-pill" style="background:${sc.bg};color:${sc.c};">${a.status==='finalizada'?pct(a.score||0):'—'}</span></td>
@@ -6643,7 +6813,7 @@ async function changeAuditCycle(auditId, cycleId){
   let detailOk = true;
   if(det && typeof det==='object') detailOk = await auditSet(auditId, { ...det, cicloId: cycleId });
   else if(det===undefined) detailOk = false;
-  await ensureSectorInCycle(cycleId, trackKey(a.setor, a.carro));
+  if(!a.emprestadoDe) await ensureSectorInCycle(cycleId, trackKey(a.setor, a.carro));
   toast(detailOk ? `Auditoria movida para o Ciclo ${cycleNumeroById(cycleId)}.` : 'Ciclo alterado, mas o registro de detalhe não foi atualizado. Tente novamente.', detailOk?'ok':'bad');
   applyHistoryFilters();
 }
@@ -6701,11 +6871,11 @@ async function openAuditDetail(id){
   const setorLabel = (cfgDet.multiFase && full.header.faseSetores)
     ? cfgDet.fases.map(f=> full.header.faseSetores[f.key] ? `${f.label}: ${full.header.faseSetores[f.key]}` : null).filter(Boolean).join(' · ')
     : full.header.setor;
-  document.getElementById('detTitle').textContent = (setorLabel||full.header.setor) + (full.header.carro? ' · '+full.header.carro:'') + (full.header.setorDestino? ' → '+full.header.setorDestino:'') + ' — ' + fmtDate(full.header.data);
+  document.getElementById('detTitle').textContent = (setorLabel||full.header.setor) + (full.header.carro? ' · '+full.header.carro+carroNote(full.header):'') + (full.header.setorDestino? ' → '+full.header.setorDestino:'') + ' — ' + fmtDate(full.header.data);
   const enfermeiroLine = TIPOS[currentTipo].hasSetorDestino
     ? `${full.header.enfermeiroOrigem? ' · Enf. Origem: '+escapeHtml(full.header.enfermeiroOrigem):''}${full.header.enfermeiroDestino? ' · Enf. Destino: '+escapeHtml(full.header.enfermeiroDestino):''}`
     : (full.header.enfermeiro? ' · Enfermeiro: '+escapeHtml(full.header.enfermeiro):'');
-  document.getElementById('detSub').innerHTML = `Auditor: ${escapeHtml(full.header.auditor)}${enfermeiroLine}${full.header.carroIndisponivel? ' <span class="tag tag-bad">Carro não disponível</span>':''}`;
+  document.getElementById('detSub').innerHTML = `Auditor: ${escapeHtml(full.header.auditor)}${enfermeiroLine}${full.header.carroIndisponivel? (TIPOS[currentTipo].supportsLoans ? ' <span class="tag tag-bad">Equipamento não disponível</span>' + (full.header.indispMotivo==='emprestado' ? ' <span class="tag tag-warn">Emprestado para '+escapeHtml(full.header.emprestadoPara||'—')+'</span>' : full.header.indispMotivo==='nao-rastreado' ? ' <span class="tag tag-warn">Não rastreado</span>' : '') : ' <span class="tag tag-bad">Carro não disponível</span>'):''}${full.header.emprestadoDe? ' <span class="tag tag-warn">Equipamento emprestado de '+escapeHtml(full.header.emprestadoDe)+'</span>':''}`;
 
   const sc = scoreColor(full.score||0);
   // Higiene/Manutenção (subindicadores) entram como mini-stats extras,
@@ -6837,7 +7007,7 @@ async function openSectorDetail(name){
   document.getElementById('secHistoryBody').innerHTML = fin.slice().reverse().map(a=>{
     const sc = scoreColor(a.score);
     return `<tr onclick="openAuditDetail('${a.id}')">
-      <td>${fmtDate(a.data)}</td><td>${a.carro?escapeHtml(a.carro):'—'}</td><td>${escapeHtml(a.auditor)}</td>
+      <td>${fmtDate(a.data)}</td><td>${carroCellHtml(a)}</td><td>${escapeHtml(a.auditor)}</td>
       <td><span class="score-pill" style="background:${sc.bg};color:${sc.c};">${pct(a.score)}</span></td>
       <td><span class="tag tag-ok">Finalizada</span></td>
       <td style="text-align:right;"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();confirmDeleteAudit('${a.id}')">Excluir</button></td>
@@ -7022,7 +7192,7 @@ async function generateDashboardPdf(detailed){
       if(!full) continue;
       applySectorDependentItems(full.header.setor, false);
       doc.addPage();
-      pdfHeader(doc, `${full.header.setor}${full.header.carro?' · '+full.header.carro:''}`,
+      pdfHeader(doc, `${full.header.setor}${full.header.carro?' · '+full.header.carro+carroNote(full.header):''}`,
         `${fmtDate(full.header.data)} · Auditor: ${full.header.auditor||'—'} · Conformidade: ${pct(full.score||0)}`);
       renderAuditItemsSection(doc, full, 34, true);
     }
@@ -7137,7 +7307,7 @@ async function buildDashboardReportText(detailed){
       }
       if(!naoConformeLines.length) continue;
       anyNaoConforme = true;
-      lines.push('', `— ${full.header.setor}${full.header.carro?' · '+full.header.carro:''} — ${fmtDate(full.header.data)} — Auditor: ${full.header.auditor||'—'} — Conformidade: ${pct(full.score||0)}`);
+      lines.push('', `— ${full.header.setor}${full.header.carro?' · '+full.header.carro+carroNote(full.header):''} — ${fmtDate(full.header.data)} — Auditor: ${full.header.auditor||'—'} — Conformidade: ${pct(full.score||0)}`);
       lines.push(...naoConformeLines);
     }
     if(!anyNaoConforme) lines.push('', '  Nenhuma não conformidade registrada.');
