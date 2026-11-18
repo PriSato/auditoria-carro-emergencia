@@ -1074,6 +1074,30 @@ select.sel-emprestado{background:#FCF1DD;border-color:#B5760A;color:#7A4F00;font
   </div>
 </div>
 
+<div class="modal-backdrop" id="modalReturnLoan">
+  <div class="modal" style="max-width:460px;">
+    <h3>Devolver equipamento</h3>
+    <p id="rlTarget"></p>
+    <div class="header-form" style="grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div class="field"><label>Data</label><input type="date" id="rlData"></div>
+      <div class="field"><label>Auditor *</label><input type="text" id="rlAuditor" placeholder="Nome do auditor"></div>
+      <div class="field" style="grid-column:1/-1;"><label>Enfermeiro responsável *</label><input type="text" id="rlEnfermeiro" placeholder="Nome do enfermeiro"></div>
+    </div>
+    <div class="profile-field" style="margin-bottom:6px;"><label id="rlItemLabel">Controle do equipamento devidamente registrado *</label>
+      <div style="display:flex;gap:8px;">
+        <button type="button" class="status-btn" data-rl="conforme" style="flex:1;">✓ Conforme</button>
+        <button type="button" class="status-btn" data-rl="nao-conforme" style="flex:1;">✕ Não Conforme</button>
+      </div>
+    </div>
+    <div class="sub" style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">Os demais itens ficam "Não se Aplica". Esta devolução é registrada como uma auditoria do setor que devolve.</div>
+    <div class="auth-error" id="rlError"></div>
+    <div class="actions">
+      <button class="btn btn-ghost" id="rlCancel">Cancelar</button>
+      <button class="btn btn-primary" id="rlConfirm">Devolver</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="modalAddCart">
   <div class="modal" style="max-width:380px;">
     <h3 id="addCartTitle">Adicionar carro</h3>
@@ -3540,6 +3564,10 @@ const TIPOS = {
     categories: CATEGORIES_ENG, items: ITEMS_EQUIP_HOSP, setores: SETORES_ENGENHARIA,
     cartProfiles: {}, defaultSectorCarts: DEFAULT_SECTOR_EQUIPAMENTOS,
     supportsLoans: true, // "não disponível" pede o motivo; equipamento emprestado aparece no setor de destino
+    hideItemNumbers: true, // itens sem numeração (os ids 3–7 herdados da Engenharia Clínica não fazem sentido aqui)
+    // "Não disponível": todos os itens ficam "Não se Aplica", exceto o de controle/registro,
+    // que é "Conforme" se o equipamento está emprestado e "Não Conforme" se não rastreado.
+    unavailableScoring: { registroItemId: 7 },
     storagePrefix: 'equipHosp_', detailKeyPrefix: 'equipHosp_', carroLabel: 'Equipamento', requireCarroSelection: true, allowNaoAplica: true,
   },
   meta2: {
@@ -4748,7 +4776,7 @@ function cycleProgress(cycle){
   return { done: doneSectors.length, total, pct: total? doneSectors.length/total : 0, doneSectors, pendingSectors };
 }
 function cycleAvgScore(cycle){
-  const fin = allAudits.filter(a=>a.status==='finalizada' && !isLoanTransfer(a) && auditBelongsToCycle(a, cycle));
+  const fin = allAudits.filter(a=>a.status==='finalizada' && auditBelongsToCycle(a, cycle));
   if(!fin.length) return 0;
   return fin.reduce((s,a)=>s+a.score,0)/fin.length;
 }
@@ -5741,9 +5769,15 @@ function setCarroIndisponivelUI(indisponivel){
     : 'Motivo: equipamento emprestado (selecione o setor). ';
   document.getElementById('carroIndispMotivoTxt').textContent = motivoTxt;
   const transfer = loans && indisponivel && h.indispMotivo==='emprestado';
-  document.getElementById('carroIndispResto').textContent = transfer
-    ? 'Como o equipamento está emprestado, esta auditoria apenas o transfere para o outro setor: não é registrada como não conformidade e não entra na pontuação do setor.'
-    : 'Esta auditoria será registrada como não conformidade total do setor — não é necessário preencher o checklist item a item.';
+  const rule = TIPOS[currentTipo].unavailableScoring;
+  const regItem = rule ? ITEMS.find(i=>i.id===rule.registroItemId) : null;
+  let resto = 'Esta auditoria será registrada como não conformidade total do setor — não é necessário preencher o checklist item a item.';
+  if(loans && regItem){
+    if(h.indispMotivo==='emprestado') resto = `Pontuação automática: os demais itens ficam "Não se Aplica" e "${regItem.texto}" fica "Conforme". Não é necessário preencher o checklist.`;
+    else if(h.indispMotivo==='nao-rastreado') resto = `Pontuação automática: os demais itens ficam "Não se Aplica" e "${regItem.texto}" fica "Não Conforme". Não é necessário preencher o checklist.`;
+    else resto = 'Selecione o motivo para definir a pontuação automática.';
+  }
+  document.getElementById('carroIndispResto').textContent = resto;
   const banner = document.getElementById('carroIndisponivelBanner');
   banner.style.background = transfer ? 'var(--warn-bg)' : 'var(--bad-bg)';
   banner.style.borderColor = transfer ? 'var(--warn)' : 'var(--bad)';
@@ -5778,12 +5812,17 @@ function applyCarroIndisponivel(checked){
   setCarroIndisponivelUI(checked);
   updateEmprestimoInfo();
 }
-/* "Não disponível" = não conformidade total; exceto equipamento EMPRESTADO, que só é
-   transferido (itens "Não se Aplica", sem pontuar não conformidade). */
+/* "Não disponível" = não conformidade total, salvo módulos com `unavailableScoring`
+   (Equipamento Hospitalar): itens "Não se Aplica" e só o item de controle/registro
+   é pontuado (Conforme se emprestado, Não Conforme se não rastreado). */
 function applyIndispItemStatus(){
   const hd = currentAudit.header;
-  const st = !hd.carroIndisponivel ? null : (isLoanTransfer(hd) ? 'nao-aplica' : 'nao-conforme');
-  currentAudit.items.forEach(i=>{ i.status = st; });
+  const rule = TIPOS[currentTipo].unavailableScoring;
+  currentAudit.items.forEach(i=>{
+    if(!hd.carroIndisponivel) i.status = null;
+    else if(rule) i.status = (i.id===rule.registroItemId) ? (isLoanTransfer(hd) ? 'conforme' : 'nao-conforme') : 'nao-aplica';
+    else i.status = 'nao-conforme';
+  });
 }
 document.getElementById('fCarroIndisponivel').addEventListener('change', (e)=>{
   if(!currentAudit) return;
@@ -5937,12 +5976,14 @@ function sectorHasSelectableCarts(setor){
 }
 /* Texto curto "(emprestado de X)" / "(emprestado para X)" para listas, PDF e relatórios. */
 function carroNote(h){
+  if(h.devolucao) return ` (devolvido a ${h.emprestadoDe})`;
   if(h.emprestadoDe) return ` (emprestado de ${h.emprestadoDe})`;
   if(h.carroIndisponivel && h.indispMotivo==='emprestado' && h.emprestadoPara) return ` (emprestado para ${h.emprestadoPara})`;
   return '';
 }
 function carroCellHtml(a){
   const base = a.carro ? escapeHtml(a.carro) : '—';
+  if(a.devolucao) return `${base} <span class="tag tag-warn">Devolvido a ${escapeHtml(a.emprestadoDe)}</span>`;
   if(a.emprestadoDe) return `${base} <span class="tag tag-warn">Emprestado de ${escapeHtml(a.emprestadoDe)}</span>`;
   if(a.carroIndisponivel && a.indispMotivo==='emprestado' && a.emprestadoPara) return `${base} <span class="tag tag-warn">Emprestado para ${escapeHtml(a.emprestadoPara)}</span>`;
   return base;
@@ -5956,24 +5997,96 @@ async function refreshLoanReturns(){
   if(r===undefined) return; // falha de leitura: mantém o que já tem
   loanReturns = Array.isArray(r) ? r : [];
 }
+let returnLoanCtx = null;
+let returnLoanChoice = '';
 function returnLoan(equip, origem, destino){
-  openConfirm('Devolver equipamento',
-    `Devolver "${equip}" ao setor ${origem}? Ele deixará de aparecer em ${destino} e voltará a ser um equipamento normal de ${origem}.`,
-    async ()=>{
-      const fresh = await storageGet(skey('loan_returns'));
-      if(fresh===undefined){ toast('Não foi possível registrar a devolução. Tente novamente.','bad'); return; }
-      const rec = { id: uid(), equip, origem, destino, em: Date.now(), por: (currentProfile && currentProfile.name) || '' };
-      const updated = [...(Array.isArray(fresh)?fresh:[]), rec];
-      if(!await storageSet(skey('loan_returns'), updated)){ toast('Não foi possível registrar a devolução. Tente novamente.','bad'); return; }
-      loanReturns = updated;
-      toast(`"${equip}" devolvido ao setor ${origem}.`,'ok');
-      renderLoansCard();
-      // Se a tela de nova auditoria está aberta, atualiza o seletor de equipamentos do setor.
-      if(currentAudit && currentAudit.header.setor && document.getElementById('view-new-audit').classList.contains('active')){
-        populateCarroSelect(currentAudit.header.setor);
-      }
-    });
+  const rule = TIPOS[currentTipo].unavailableScoring;
+  const regItem = rule ? ITEMS.find(i=>i.id===rule.registroItemId) : null;
+  returnLoanCtx = { equip, origem, destino };
+  returnLoanChoice = '';
+  const hd = (currentAudit && currentAudit.header) || {};
+  document.getElementById('rlTarget').innerHTML = `Devolver <b>${escapeHtml(equip)}</b> do setor <b>${escapeHtml(destino)}</b> ao setor <b>${escapeHtml(origem)}</b>. Ele deixará de aparecer em ${escapeHtml(destino)} e voltará a ser um equipamento normal de ${escapeHtml(origem)}.`;
+  document.getElementById('rlItemLabel').textContent = (regItem ? regItem.texto.replace(/\.$/,'') : 'Controle do equipamento devidamente registrado') + ' *';
+  document.getElementById('rlData').value = todayISO();
+  document.getElementById('rlAuditor').value = hd.auditor || (currentProfile && currentProfile.name) || '';
+  document.getElementById('rlEnfermeiro').value = hd.enfermeiro || '';
+  document.querySelectorAll('#modalReturnLoan [data-rl]').forEach(b=> b.classList.remove('sel-ok','sel-bad'));
+  document.getElementById('rlError').style.display = 'none';
+  document.getElementById('modalReturnLoan').classList.add('open');
 }
+document.querySelectorAll('#modalReturnLoan [data-rl]').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    returnLoanChoice = b.dataset.rl;
+    document.querySelectorAll('#modalReturnLoan [data-rl]').forEach(x=> x.classList.remove('sel-ok','sel-bad'));
+    b.classList.add(returnLoanChoice==='conforme' ? 'sel-ok' : 'sel-bad');
+  });
+});
+document.getElementById('rlCancel').addEventListener('click', ()=> document.getElementById('modalReturnLoan').classList.remove('open'));
+/* Confirma a devolução: grava uma auditoria do setor que devolve (itens "Não se
+   Aplica", exceto o de controle/registro, escolhido aqui) e registra o fim do
+   empréstimo. A auditoria tem emprestadoDe (não altera o estado do empréstimo
+   nem a cobertura do ciclo) e devolucao:true. */
+document.getElementById('rlConfirm').addEventListener('click', async ()=>{
+  const ctx = returnLoanCtx; if(!ctx) return;
+  const errEl = document.getElementById('rlError');
+  const fail = (m)=>{ errEl.textContent = m; errEl.style.display = 'block'; };
+  errEl.style.display = 'none';
+  const data = document.getElementById('rlData').value;
+  const auditor = document.getElementById('rlAuditor').value.trim();
+  const enfermeiro = document.getElementById('rlEnfermeiro').value.trim();
+  const rule = TIPOS[currentTipo].unavailableScoring;
+  if(!data) return fail('Informe a data.');
+  if(!auditor) return fail('Informe o nome do auditor.');
+  if(!enfermeiro) return fail('Informe o nome do enfermeiro responsável.');
+  if(!returnLoanChoice) return fail('Escolha Conforme ou Não Conforme para o controle do equipamento.');
+  const btn = document.getElementById('rlConfirm'); btn.disabled = true;
+  try{
+    const now = Date.now();
+    const cycle = getCurrentCycle();
+    const audit = {
+      id: uid(),
+      cicloId: cycle ? cycle.id : null,
+      header: { data, setor: ctx.destino, carro: ctx.equip, setorDestino:'', auditor, enfermeiro, enfermeiroOrigem:'', enfermeiroDestino:'',
+        carroIndisponivel:false, indispMotivo:'', emprestadoPara:'', emprestadoDe: ctx.origem, devolucao:true, fase:null, faseSetores:null },
+      items: ITEMS.map(it=>({ id:it.id, status: (rule && it.id===rule.registroItemId) ? returnLoanChoice : 'nao-aplica', obs:'', photos:[], medExtra:'', cartPerfil:null, cartRespostas:{} })),
+      status: 'finalizada', createdAt: now, updatedAt: now,
+    };
+    audit.score = computeScore(audit);
+    audit.counts = computeCounts(audit);
+    audit.subIndicators = computeSubIndicators(audit);
+    if(!await auditSet(audit.id, audit)){ fail('Erro ao salvar a devolução. Tente novamente.'); return; }
+    const hd = audit.header;
+    const summary = {
+      id: audit.id, cicloId: audit.cicloId, carroIndisponivel:false, indispMotivo:null, emprestadoPara:null, emprestadoDe: ctx.origem, devolucao:true,
+      setor: hd.setor, carro: hd.carro, setorDestino:null, faseSetores:null, auditor, enfermeiro, enfermeiroOrigem:null, enfermeiroDestino:null,
+      data, createdAt: now, updatedAt: now, status:'finalizada', score: audit.score, counts: audit.counts,
+      scoreOrigem: undefined, scoreDestino: undefined, subIndicators: audit.subIndicators,
+      itemStatus: audit.items.filter(i=>!subIndicatorItemIds().has(i.id)).map(i=>({id:i.id, status:i.status})),
+    };
+    if(!await updateIndex(idx=> idx.filter(a=>a.id!==audit.id).concat([summary]))){
+      await auditDelete(audit.id);
+      fail('Erro ao registrar a devolução. Tente novamente.'); return;
+    }
+    // Fim do empréstimo (registro mais novo que a auditoria que emprestou).
+    const fresh = await storageGet(skey('loan_returns'));
+    const rec = { id: uid(), equip: ctx.equip, origem: ctx.origem, destino: ctx.destino, em: Date.now(), por: auditor, auditId: audit.id };
+    const updated = [...(Array.isArray(fresh)?fresh:[]), rec];
+    if(fresh===undefined || !await storageSet(skey('loan_returns'), updated)){
+      // desfaz a auditoria para não deixar devolução pela metade
+      await updateIndex(idx=> idx.filter(a=>a.id!==audit.id));
+      await auditDelete(audit.id);
+      fail('Não foi possível registrar a devolução. Tente novamente.'); return;
+    }
+    loanReturns = updated;
+    document.getElementById('modalReturnLoan').classList.remove('open');
+    toast(`"${ctx.equip}" devolvido ao setor ${ctx.origem}.`,'ok');
+    renderLoansCard();
+    if(currentAudit && currentAudit.header.setor && document.getElementById('view-new-audit').classList.contains('active')){
+      populateCarroSelect(currentAudit.header.setor);
+    }
+    if(document.getElementById('view-dashboard').classList.contains('active')){ renderDashboard(); renderCycleBanner(); }
+  }finally{ btn.disabled = false; }
+});
 function returnLoanFromForm(){
   const h = currentAudit && currentAudit.header;
   if(!h || !h.emprestadoDe || !h.carro) return;
@@ -6014,7 +6127,7 @@ function updateEmprestimoInfo(){
   let html = '';
   if(loansSupported() && h && h.carro && h.setor){
     if(h.emprestadoDe){
-      html = `<strong style="color:var(--warn);">Equipamento emprestado.</strong> Este equipamento pertence ao setor <b>${escapeHtml(h.emprestadoDe)}</b> e está emprestado ao setor <b>${escapeHtml(h.setor)}</b>. A auditoria será registrada em ${escapeHtml(h.setor)} como equipamento emprestado de ${escapeHtml(h.emprestadoDe)}.<div style="margin-top:10px;"><button type="button" class="btn btn-secondary btn-sm" onclick="returnLoanFromForm()">↩ Devolver para ${escapeHtml(h.emprestadoDe)}</button></div>`;
+      html = `<strong style="color:var(--warn);">Equipamento emprestado.</strong> Este equipamento pertence ao setor <b>${escapeHtml(h.emprestadoDe)}</b> e está emprestado ao setor <b>${escapeHtml(h.setor)}</b>. A auditoria será registrada em ${escapeHtml(h.setor)} como equipamento emprestado de ${escapeHtml(h.emprestadoDe)}.${(!h.devolucao && loansInto(h.setor).some(l=>l.equip===h.carro)) ? `<div style="margin-top:10px;"><button type="button" class="btn btn-secondary btn-sm" onclick="returnLoanFromForm()">↩ Devolver para ${escapeHtml(h.emprestadoDe)}</button></div>` : ''}`;
     } else {
       const l = loanOut(h.setor, h.carro);
       if(l && !h.carroIndisponivel) html = `<strong style="color:var(--warn);">Equipamento emprestado.</strong> Este equipamento está emprestado para o setor <b>${escapeHtml(l.destino)}</b>. Se ele voltou para ${escapeHtml(h.setor)}, audite normalmente (isso encerra o empréstimo). Se continua emprestado, marque "não disponível no setor" e informe o setor.`;
@@ -6583,12 +6696,9 @@ document.getElementById('btnFinalizeAudit').addEventListener('click', async ()=>
 /* =========================================================================
    DASHBOARD GERAL
    ========================================================================= */
-/* Equipamento emprestado: a auditoria registrada na origem apenas "transfere" o
-   equipamento para outro setor — não é não conformidade e NÃO entra em
-   nenhuma pontuação/média (continua contando como setor/equipamento coberto
-   no ciclo). Serve para summary (índice) e para header. */
+/* Equipamento emprestado (summary do índice ou header). */
 function isLoanTransfer(a){ return !!(a && a.carroIndisponivel && a.indispMotivo==='emprestado'); }
-function finalizedAudits(){ return allAudits.filter(a=>a.status==='finalizada' && !isLoanTransfer(a)); }
+function finalizedAudits(){ return allAudits.filter(a=>a.status==='finalizada'); }
 /* Dashboard Geral mostra só o ciclo em andamento (ou o último, se nenhum
    estiver aberto) — não o acumulado desde sempre. Setores/Histórico
    continuam usando finalizedAudits() puro, pois ali o objetivo é justamente
@@ -6876,7 +6986,7 @@ function applyHistoryFilters(){
       <td>${carroCellHtml(a)}</td>
       <td>${historyCycleCell(a, numeroCiclo)}</td>
       <td>${escapeHtml(a.auditor)}</td>
-      <td>${isLoanTransfer(a) ? '<span class="tag tag-warn" title="Equipamento emprestado: apenas transferido, sem pontuação">Emprestado</span>' : `<span class="score-pill" style="background:${sc.bg};color:${sc.c};">${a.status==='finalizada'?pct(a.score||0):'—'}</span>`}</td>
+      <td><span class="score-pill" style="background:${sc.bg};color:${sc.c};">${a.status==='finalizada'?pct(a.score||0):'—'}</span></td>
       <td>${a.status==='finalizada'?'<span class="tag tag-ok">Finalizada</span>':'<span class="tag tag-neutral">Rascunho</span>'}</td>
       <td style="text-align:right;"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();confirmDeleteAudit('${a.id}')">Excluir</button></td>
     </tr>`;
@@ -6962,7 +7072,7 @@ async function openAuditDetail(id){
   const enfermeiroLine = TIPOS[currentTipo].hasSetorDestino
     ? `${full.header.enfermeiroOrigem? ' · Enf. Origem: '+escapeHtml(full.header.enfermeiroOrigem):''}${full.header.enfermeiroDestino? ' · Enf. Destino: '+escapeHtml(full.header.enfermeiroDestino):''}`
     : (full.header.enfermeiro? ' · Enfermeiro: '+escapeHtml(full.header.enfermeiro):'');
-  document.getElementById('detSub').innerHTML = `Auditor: ${escapeHtml(full.header.auditor)}${enfermeiroLine}${full.header.carroIndisponivel? (TIPOS[currentTipo].supportsLoans ? ' <span class="tag tag-bad">Equipamento não disponível</span>' + (full.header.indispMotivo==='emprestado' ? ' <span class="tag tag-warn">Emprestado para '+escapeHtml(full.header.emprestadoPara||'—')+'</span>' : full.header.indispMotivo==='nao-rastreado' ? ' <span class="tag tag-warn">Não rastreado</span>' : '') : ' <span class="tag tag-bad">Carro não disponível</span>'):''}${full.header.emprestadoDe? ' <span class="tag tag-warn">Equipamento emprestado de '+escapeHtml(full.header.emprestadoDe)+'</span>':''}`;
+  document.getElementById('detSub').innerHTML = `Auditor: ${escapeHtml(full.header.auditor)}${enfermeiroLine}${full.header.carroIndisponivel? (TIPOS[currentTipo].supportsLoans ? ' <span class="tag tag-bad">Equipamento não disponível</span>' + (full.header.indispMotivo==='emprestado' ? ' <span class="tag tag-warn">Emprestado para '+escapeHtml(full.header.emprestadoPara||'—')+'</span>' : full.header.indispMotivo==='nao-rastreado' ? ' <span class="tag tag-warn">Não rastreado</span>' : '') : ' <span class="tag tag-bad">Carro não disponível</span>'):''}${full.header.devolucao ? ' <span class="tag tag-warn">Devolução ao setor '+escapeHtml(full.header.emprestadoDe)+'</span>' : (full.header.emprestadoDe? ' <span class="tag tag-warn">Equipamento emprestado de '+escapeHtml(full.header.emprestadoDe)+'</span>':'')}`;
 
   const sc = scoreColor(full.score||0);
   // Higiene/Manutenção (subindicadores) entram como mini-stats extras,
@@ -6976,7 +7086,7 @@ async function openAuditDetail(id){
     <div class="mini-stat"><div class="l">Conformidade Destino</div><div class="v">${pct(full.scoreDestino||0)}</div></div>
     ${subMiniStats}
   ` : `
-    <div class="mini-stat"><div class="l">Conformidade</div><div class="v" style="color:${isLoanTransfer(full.header)?'var(--warn)':sc.c}">${isLoanTransfer(full.header) ? 'Emprestado' : pct(full.score||0)}</div></div>
+    <div class="mini-stat"><div class="l">Conformidade</div><div class="v" style="color:${sc.c}">${pct(full.score||0)}</div></div>
     <div class="mini-stat"><div class="l">Conforme</div><div class="v">${full.counts?full.counts.conforme:0}</div></div>
     <div class="mini-stat"><div class="l">Parcial</div><div class="v">${full.counts?full.counts.parcial:0}</div></div>
     <div class="mini-stat"><div class="l">Não Conforme</div><div class="v">${full.counts?full.counts['nao-conforme']:0}</div></div>
@@ -6995,7 +7105,7 @@ async function openAuditDetail(id){
         return `<div class="detail-item">
           <div class="stat-dot" style="background:${meta.color}"></div>
           <div class="body">
-            <div class="txt">${it.id}. ${escapeHtml(it.texto)} <span class="tag" style="background:${meta.bg||'#EEF4FA'};color:${meta.color};margin-left:6px;">${meta.label}</span>${resp.medExtra?` <span class="tag tag-warn">${resp.medExtra==='vencido'?'Vencido':resp.medExtra==='proximo'?'Próx. vencimento':'Outro'}</span>`:''}</div>
+            <div class="txt">${TIPOS[currentTipo].hideItemNumbers ? '' : it.id+'. '}${escapeHtml(it.texto)} <span class="tag" style="background:${meta.bg||'#EEF4FA'};color:${meta.color};margin-left:6px;">${meta.label}</span>${resp.medExtra?` <span class="tag tag-warn">${resp.medExtra==='vencido'?'Vencido':resp.medExtra==='proximo'?'Próx. vencimento':'Outro'}</span>`:''}</div>
             ${resp.cartPerfil?cartSummaryHtml(resp, it.id):''}
             ${resp.obs?`<div class="obs">${escapeHtml(resp.obs)}</div>`:''}
             ${resp.photos && resp.photos.length?`<div class="imgs">${resp.photos.map(p=>`<img src="${p}" onclick="openLightbox('${p}')">`).join('')}</div>`:''}
@@ -7385,7 +7495,7 @@ async function buildDashboardReportText(detailed){
           ITEMS.filter(i=>i.cat===cat.id).forEach(it=>{
             const resp = full.items.find(i=>i.id===it.id)||{};
             if(resp.status!=='nao-conforme') return;
-            let line = `    ${it.id}. ${it.texto}`;
+            let line = `    ${TIPOS[currentTipo].hideItemNumbers ? '-' : it.id+'.'} ${it.texto}`;
             if(resp.obs) line += ` | Obs.: ${resp.obs}`;
             if(resp.photos && resp.photos.length) line += ` | ${resp.photos.length} foto(s) anexada(s) (ver PDF completo)`;
             naoConformeLines.push(line);
