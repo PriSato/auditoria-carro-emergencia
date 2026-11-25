@@ -3807,12 +3807,17 @@ async function switchTipo(tipo){
 async function performSwitchTipo(tipo){
   dashboardCycleId = null;
   applyTipo(tipo);
+  // Nada do módulo anterior pode sobrar em memória.
+  allAudits = []; allCycles = []; sectorCarts = {}; inactiveSectors = [];
   await loadInactiveSectors();
   await loadSectorCarts();
   await refreshLoanReturns();
   const fetched = await fetchIndexSafe();
+  if(tipo!==currentTipo) return; // já trocaram para outro módulo
   allAudits = fetched===undefined ? [] : fetched;
+  if(fetched===undefined) toast('Não foi possível carregar o histórico. Verifique a conexão e recarregue o app.','bad');
   if(TIPOS[currentTipo].hasCycles!==false) await ensureCurrentCycle();
+  if(tipo!==currentTipo) return;
   const activeEl = document.querySelector('.view.active');
   let viewName = activeEl ? activeEl.id.replace('view-','') : 'dashboard';
   if(viewName==='cycles' && TIPOS[currentTipo].hasCycles===false) viewName = 'dashboard';
@@ -4392,43 +4397,38 @@ async function auditDelete(id){
 /* Busca o índice com segurança. Retorna [] se de fato não existir ainda,
    ou undefined se a leitura falhou (sinal para os chamadores NÃO sobrescreverem). */
 async function fetchIndexSafe(){
-  const idx = await storageGet(skey('audit_index'));
+  const idx = await storageGet(skey('audit_index'), 3);
   if(idx===undefined) return undefined;
   return idx || [];
 }
 
 /* Atualiza o índice de forma segura: lê o estado mais recente do servidor e
-   só então aplica a função de mutação e salva. Quando a leitura funciona,
-   o servidor é a fonte da verdade — NÃO funde com a cópia em memória desta
-   aba/dispositivo. (Bug corrigido aqui: a versão anterior fazia essa fusão
-   por união de ids, "recuperando" para o índice qualquer auditoria que
-   existisse na memória local mas não no servidor — o que parecia proteger
-   contra uma gravação anterior que tivesse falhado parcialmente, mas na
-   prática também ressuscitava auditorias excluídas por OUTRA aba/sessão
-   que ainda não tinha recarregado: bastava essa outra aba navegar entre
-   telas para ela regravar o índice "curando" de volta o item já excluído.
-   Isso é exatamente o que causava exclusões que "não pegavam".) Só cai
-   para a cópia local quando a leitura de fato falha (fetched===undefined),
-   nunca quando ela só devolve menos itens do que a memória tinha. */
-async function updateIndex(mutatorFn, opts){
-  opts = opts || {};
+   só então aplica a função de mutação e salva. O servidor é a única fonte da
+   verdade — NUNCA grava a partir da cópia em memória deste aparelho:
+   - fundir com a memória ressuscitava auditorias excluídas em outra aba;
+   - usar a memória quando a leitura falhava (versão anterior) gravava uma
+     lista vazia ou antiga por cima da real: centenas de auditorias sumiam da
+     lista (o conteúdo continuava salvo nas chaves 'audit_<id>').
+   Se a leitura falhar, ou o módulo for trocado no meio, nada é gravado.
+   Há ainda uma trava no banco (supabase_protecao_indice.sql). */
+async function updateIndex(mutatorFn){
+  const tipo = currentTipo;
   const fetched = await fetchIndexSafe();
-  let base;
   if(fetched===undefined){
-    // Não foi possível confirmar o estado remoto: usa a última cópia local
-    // conhecida em vez de arriscar apagar tudo.
-    base = allAudits.slice();
-    toast('Não foi possível confirmar o histórico mais recente. Usando última cópia local para não perder dados.','bad');
-  } else {
-    base = fetched;
+    toast('Sem conexão com o histórico: nada foi alterado. Verifique a internet e tente de novo.','bad');
+    return false;
   }
-  const newIdx = mutatorFn(base);
+  if(tipo!==currentTipo){
+    toast('O módulo foi trocado durante a gravação: nada foi alterado. Tente de novo.','bad');
+    return false;
+  }
+  const newIdx = mutatorFn(fetched);
   const ok = await storageSet(skey('audit_index'), newIdx);
   if(!ok){
     toast('Erro ao salvar. Tente novamente em instantes.','bad');
     return false;
   }
-  allAudits = newIdx;
+  if(tipo===currentTipo) allAudits = newIdx;
   return true;
 }
 /* Usado ao entrar em telas de listagem: garante que allAudits reflita o
@@ -4437,8 +4437,9 @@ async function updateIndex(mutatorFn, opts){
    na memória local, para não ressuscitar exclusões feitas por outra aba);
    só mantém a cópia em memória se a leitura falhar de verdade. */
 async function refreshAuditsFromStorage(){
+  const tipo = currentTipo;
   const fetched = await fetchIndexSafe();
-  if(fetched===undefined) return; // mantém o que já está em memória
+  if(fetched===undefined || tipo!==currentTipo) return; // mantém o que já está em memória
   allAudits = fetched;
 }
 
@@ -4474,9 +4475,19 @@ async function loadSectorCarts(){
   sectorCarts = fetched;
 }
 async function refreshSectorCartsFromStorage(){
+  const tipo = currentTipo;
   const fetched = await fetchSectorCartsSafe();
-  if(fetched===undefined || fetched===null) return;
+  if(fetched===undefined || fetched===null || tipo!==currentTipo) return;
   sectorCarts = fetched;
+}
+/* Antes de alterar o cadastro de carros, parte sempre da versão do servidor;
+   se a leitura falhar, não grava (senão a lista padrão cobriria a salva). */
+async function reloadSectorCartsForWrite(){
+  const tipo = currentTipo;
+  const fetched = await fetchSectorCartsSafe();
+  if(fetched===undefined || tipo!==currentTipo){ toast('Sem conexão: nada foi alterado. Tente de novo.','bad'); return false; }
+  if(fetched) sectorCarts = fetched;
+  return true;
 }
 /* Adiciona um novo carro a um setor. Se for o primeiro carro do setor,
    substitui a exigência genérica do setor (chave = nome do setor) pelas
@@ -4484,6 +4495,7 @@ async function refreshSectorCartsFromStorage(){
 async function addCartToSector(setor, carro){
   carro = (carro||'').trim();
   if(!setor || !carro) return false;
+  if(!await reloadSectorCartsForWrite()) return false;
   const existing = cartsForSector(setor);
   if(existing.includes(carro)) return true;
   const wasFirstCart = existing.length===0;
@@ -4510,6 +4522,7 @@ async function addCartToSector(setor, carro){
    era o último carro do setor, volta a rastrear o ciclo pelo nome do
    setor (mesmo comportamento de antes do primeiro carro ser cadastrado). */
 async function removeCartFromSector(setor, carro){
+  if(!await reloadSectorCartsForWrite()) return false;
   const existing = cartsForSector(setor);
   if(!existing.includes(carro)) return true;
   const updatedList = existing.filter(c=>c!==carro);
@@ -4591,11 +4604,20 @@ async function loadInactiveSectors(){
   inactiveSectors = fetched===undefined ? [] : fetched;
 }
 async function refreshInactiveSectorsFromStorage(){
+  const tipo = currentTipo;
   const fetched = await fetchInactiveSectorsSafe();
-  if(fetched===undefined) return;
+  if(fetched===undefined || tipo!==currentTipo) return;
   inactiveSectors = fetched;
 }
+async function reloadInactiveSectorsForWrite(){
+  const tipo = currentTipo;
+  const fetched = await fetchInactiveSectorsSafe();
+  if(fetched===undefined || tipo!==currentTipo){ toast('Sem conexão: nada foi alterado. Tente de novo.','bad'); return false; }
+  inactiveSectors = fetched;
+  return true;
+}
 async function deactivateSector(setorName){
+  if(!await reloadInactiveSectorsForWrite()) return false;
   if(inactiveSectors.includes(setorName)) return true;
   const updatedInactive = [...inactiveSectors, setorName];
   const ok = await storageSet(skey('inactive_sectors'), updatedInactive);
@@ -4610,6 +4632,7 @@ async function deactivateSector(setorName){
   return true;
 }
 async function reactivateSector(setorName){
+  if(!await reloadInactiveSectorsForWrite()) return false;
   const updatedInactive = inactiveSectors.filter(s=>s!==setorName);
   const ok = await storageSet(skey('inactive_sectors'), updatedInactive);
   if(!ok){ toast('Erro ao reativar o setor. Tente novamente.','bad'); return false; }
@@ -4638,8 +4661,15 @@ async function reactivateSector(setorName){
    card do ciclo atual e no histórico de ciclos encerrados. */
 async function ensureCurrentCycle(){
   const cfg = TIPOS[currentTipo];
+  const tipo = currentTipo;
   const fetched = await fetchCyclesSafe();
-  let cycles = fetched===undefined ? allCycles.slice() : fetched;
+  if(tipo!==currentTipo) return null;
+  // Sem leitura confiável (falhou, ou veio vazia quando já havia ciclos), nunca
+  // grava: criar um ciclo aqui sobrescreveria o histórico de ciclos.
+  if(fetched===undefined || (!fetched.length && allCycles.length)){
+    return allCycles.find(c=>c.status==='aberto') || null;
+  }
+  let cycles = fetched;
   let current = cycles.find(c=>c.status==='aberto');
   let changed = false;
 
@@ -4694,8 +4724,9 @@ async function ensureCurrentCycle(){
 /* Mesmo espírito de refreshAuditsFromStorage: revalida em segundo plano sem
    nunca substituir por um resultado vazio caso a leitura falhe. */
 async function refreshCyclesFromStorage(){
+  const tipo = currentTipo;
   const fetched = await fetchCyclesSafe();
-  if(fetched===undefined) return;
+  if(fetched===undefined || tipo!==currentTipo) return;
   allCycles = fetched;
 }
 function getCurrentCycle(){
@@ -5201,8 +5232,9 @@ async function findEmptyCyclesAllTypes(){
     const idxKey = cfg.storagePrefix ? cfg.storagePrefix+'audit_index' : 'audit_index';
     const cyclesData = await storageGet(cyclesKey);
     if(!cyclesData || !cyclesData.length) continue;
-    const auditsData = (await storageGet(idxKey)) || [];
-    const fin = auditsData.filter(a=>a.status==='finalizada');
+    const auditsData = await storageGet(idxKey);
+    if(auditsData===undefined) continue; // leitura falhou: não trata nenhum ciclo como vazio
+    const fin = (auditsData || []).filter(a=>a.status==='finalizada');
     const empty = cyclesData.filter(c=>{
       if(c.status==='aberto') return false;
       const hasAny = cfg.cycleMode==='monthly'
@@ -5543,7 +5575,7 @@ async function startNewAuditForm(){
   await refreshInactiveSectorsFromStorage();
   await refreshSectorCartsFromStorage();
   await refreshLoanReturns();
-  const cycle = getCurrentCycle();
+  const cycle = getCurrentCycle() || (TIPOS[currentTipo].hasCycles!==false ? await ensureCurrentCycle() : null);
   const cfg = TIPOS[currentTipo];
   currentAudit = {
     id: uid(),
@@ -6073,8 +6105,7 @@ document.getElementById('rlConfirm').addEventListener('click', async ()=>{
     const updated = [...(Array.isArray(fresh)?fresh:[]), rec];
     if(fresh===undefined || !await storageSet(skey('loan_returns'), updated)){
       // desfaz a auditoria para não deixar devolução pela metade
-      await updateIndex(idx=> idx.filter(a=>a.id!==audit.id));
-      await auditDelete(audit.id);
+      if(await updateIndex(idx=> idx.filter(a=>a.id!==audit.id))) await auditDelete(audit.id);
       fail('Não foi possível registrar a devolução. Tente novamente.'); return;
     }
     loanReturns = updated;
@@ -6650,7 +6681,9 @@ async function persistAudit(finalize){
   currentAudit.subIndicators = computeSubIndicators(currentAudit);
   currentAudit.updatedAt = Date.now();
 
+  const tipoDaAuditoria = currentTipo;
   if(TIPOS[currentTipo].cycleMode!=='monthly' && !h.emprestadoDe) await ensureSectorInCycle(currentAudit.cicloId, trackKey(h.setor, h.carro));
+  if(tipoDaAuditoria!==currentTipo) return false; // módulo trocado: não grava no módulo errado
 
   const savedDetail = await auditSet(currentAudit.id, currentAudit);
   if(!savedDetail){
@@ -6677,6 +6710,7 @@ async function persistAudit(finalize){
     // entre auditorias, também não os misturam ao resultado geral do setor.
     itemStatus: currentAudit.items.filter(i=>!subIndicatorItemIds().has(i.id)).map(i=>({id:i.id, status:i.status})),
   };
+  if(tipoDaAuditoria!==currentTipo) return false;
   const ok = await updateIndex(idx=>{
     const filtered = idx.filter(a=>a.id!==currentAudit.id);
     filtered.push(summary);
@@ -7639,6 +7673,7 @@ async function init(){
   applyTipo(currentTipo);
   const fetched = await fetchIndexSafe();
   allAudits = fetched===undefined ? [] : fetched;
+  if(fetched===undefined) toast('Não foi possível carregar o histórico. Verifique a conexão e recarregue o app.','bad');
   await loadInactiveSectors();
   await loadSectorCarts();
   await refreshLoanReturns();
